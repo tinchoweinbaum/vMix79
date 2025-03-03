@@ -13,6 +13,7 @@ from typing import List
 from pathlib import Path
 import pause
 import random
+import math
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
@@ -51,8 +52,8 @@ class Rutas(str, Enum):
 
 class Scheduler:
     def __init__(self, vMix: VmixApi, database: Database):
-        self.bloqueAire = None # Lista de objetos de la clase Contenido representando el bloque actual
-        self.bloqueProx = None 
+        self.bloqueAire: List[Contenido] = [] # Lista de objetos de la clase Contenido representando el bloque actual
+        self.bloqueProx: List[Contenido] = [] 
         self.indexBloque = 0 # Puntero al contenido del bloque actual en emisión.
 
         self.vMix = vMix # Objeto de la api de vMix.
@@ -81,6 +82,7 @@ class Scheduler:
         Recibe como parámetro el objeto database que ya tiene la conexión con la db abierta.
         """
         #Calculo bloque:
+        
         database = self.database
         duraBloque = 5 # DURACIÓN DE LOS BLOQUES. SI CAMBIAN, SE CAMBIA ESTA VARIABLE. NO HAY #define COMO EN C.
 
@@ -88,7 +90,7 @@ class Scheduler:
         fechaAct = datetime.now().date()
         minutoAct = horaAct.hour * 60 +  horaAct.minute
 
-        nroBloque = minutoAct // duraBloque
+        nroBloque = minutoAct // duraBloque + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0
         self.bloqueAire = database.getBloque_num(fechaAct, nroBloque) # Devuelve el bloque actual en una lista.
 
         # Calculo index:
@@ -113,11 +115,6 @@ class Scheduler:
 
     def start(self,blipPath):
 
-        if self.bloqueAire is None:
-            print("Bloque de arranque vacío.")
-            self.stop()
-            return
-
         self.running = True
         print("Scheduler iniciado")
 
@@ -138,6 +135,13 @@ class Scheduler:
 
         self._buscaBloque() # Asigna valor correcto actual a.indexBloque
         self._cargaProx() # Precarga los inputs prox para el primer tick
+
+        # print("El bloqueAire tiene " + str(len(self.bloqueAire)) + "  elementos y el index a esta hora es " + str(self.indexBloque))
+
+        if not self.bloqueAire:
+            print("Bloque de arranque vacío.")
+            self.stop()
+            return
 
         self._startAudio()
 
