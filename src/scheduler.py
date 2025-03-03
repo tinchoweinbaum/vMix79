@@ -13,7 +13,6 @@ from typing import List
 from pathlib import Path
 import pause
 import random
-import math
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
@@ -21,7 +20,6 @@ import math
 # TO DO: La musica se carga ineficientemente. Cada vez que se reproduce un video se carga de nuevo la musica.
 # TO DO: A veces al arrancar los videos disparan música.
 # TO DO: Mal manejo de musicaAct y musicaProx junton con finTemaAct. Hay veces que se carga en el input incorrecto la musica y no sale musica al aire.
-# TO DO: Reimplementar la obtención de datos por medio de la DB, no por excel.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -82,7 +80,7 @@ class Scheduler:
         Recibe como parámetro el objeto database que ya tiene la conexión con la db abierta.
         """
         #Calculo bloque:
-        
+
         database = self.database
         duraBloque = 5 # DURACIÓN DE LOS BLOQUES. SI CAMBIAN, SE CAMBIA ESTA VARIABLE. NO HAY #define COMO EN C.
 

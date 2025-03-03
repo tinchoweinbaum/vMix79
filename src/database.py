@@ -46,6 +46,9 @@ class Database:
         Devuelve un bloque de 5 minutos de programación, representado por una lista
         de objetos de la clase Contenido.
         """
+
+        # Query:
+        
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida a la Database para pedir un bloque.")
             return
@@ -62,6 +65,8 @@ class Database:
         queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
         
+        # Formateo correctamente para scheduler.py
+
         listaCont = []
         for fila in queryRes:
             hora, path, nombre, tipo = fila # fila es una tupla -> hacemos unpacking de esta manera que python lo permite, gracias python.
@@ -71,7 +76,7 @@ class Database:
                                        nroBloque, tipo = tipo, 
                                        id_mult = None, dura = None,
                                        nombre = nombre, path = path, 
-                                       orden = None, es_publi = None)) # Creo objeto contenido
+                                       orden = None, es_publi = None)) # Creo objeto de la clase Contenido
 
         return listaCont
     
