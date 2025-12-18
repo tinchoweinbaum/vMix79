@@ -1,0 +1,11 @@
+->Los overlays en vmix funcionan de la siguiente manera:
+
+existen 4 canales de overlays, en los que pueden ponerse CUALQUIER input. Cuando se quiere poner uno al aire se selecciona en la sección de inputs, en el overlay deseado el canal en el que debe salir el overlay (los numeros abajo del input). Estos 4 canales son completamente customizables y se modifican para, por ejemplo, ocupar distintas partes de la pantalla, que duren un determinado tiempo, etc.
+
+->Se pueden combinar varios inputs en uno solo, como por ejemplo una camara con una placa permanentemente encima. De esta manera lo que son 2 slots de inputs, ahora es 1 solo. Esto se llama Multiview
+
+->Con los triggers se puede automatizar muy bien una cadena de videos. Cuando uno termina automáticamente se puede poner que empiece otro o ejecutar cualquier otra acción.
+
+->Si el botón de stream se pone amarillo significa que hay algún problema con la transmisión, ya sea de hardware o ancho de banda.
+
+->En el final del 4to video de la serie Getting Started with vMix está explicado como sacar el output por otro monitor, para tener separada la interfaz de vMix con el output.
