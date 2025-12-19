@@ -7,7 +7,7 @@ y no un homínido que lo hace x request html a pelo
 import requests
 
 class VmixApi:
-    def __init__(self,host = "10.149.53.175" , port = "8080"):
+    def __init__(self,host = "127.0.0.1" , port = "8088"):
         self.host = host #la IP del host es la ip de la máquina que está corriendo vmix
         self.port = port #Puerto default de vMix
         self.api_url = f"http://{host}:{port}/api/"
@@ -22,7 +22,7 @@ class VmixApi:
         }
 
         try: 
-            query = requests.get(self.api_url,params = params,timeout = 2.0)
+            query = requests.get(self.api_url,params = params,timeout = 15.0)
             query.raise_for_status()
             return query.text #devuelve el xml de vMix
         
