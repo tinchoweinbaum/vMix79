@@ -1,10 +1,8 @@
 """
 Este módulo es un wrapper para la api de vmix, así puedo importar
-este módulo en otros archivos y puedo hacer llamados a la API de forma abstraída.
+este módulo en otros archivos y puedo hacer llamados a la API de forma abstracta.
 
 Las duraciones de las requests van en ms.
-
-
 """
 
 import requests
