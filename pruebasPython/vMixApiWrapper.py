@@ -26,21 +26,56 @@ class VmixApi:
 
     def cut(self):
         self.__makeRequest("Cut")
-        self._updateState()
     
     def fade(self,duration = 500):
         self.__makeRequest("Fade",duration)
-        self._updateState()
 
-    def __makeRequest(self,function,duration = 0): #TODOS LLAMAN A ESTA FUNCIÓN PARA EFECTUAR LA REQUEST.
+    def cutDirect_key(self,inputKey):
+        """
+        Lleva un input identificado por key directamente al aire por cut.
+        Si se llegase a necesitar se puede hacer una función que lo haga por cualquier otro método
+        """
+
+        input = self.inputs.get(inputKey) #Checkea que exista el input
+        if not input:
+            print(f"No existe el input {inputKey}")
+            return
+        
+        inputNum = input["number"]
+
+        self.__makeRequest("Cut", extraParams={"Input": inputNum})
+
+    def cutDirect_number(self,inputNum):
+        """
+        Lleva un input identificado por número directamente al aire por cut.
+        Si se llegase a necesitar se puede hacer una función que lo haga por cualquier otro método
+        """
+        inputKey = None
+
+        for key, data in self.inputs.items(): #Itera por el diccionario de keys (inputs) buscando que input tiene el numero pedido
+            if data["number"] == inputNum:
+                inputKey = key
+                break
+
+        if not inputKey:
+            print(f"No existe el input con número {inputNum}")
+            return
+
+        self.cutDirect_key(inputKey)
+
+    def __makeRequest(self,function,duration = 0,extraParams = None): #TODOS LLAMAN A ESTA FUNCIÓN PARA EFECTUAR LA REQUEST.
         params = { #Creo un diccionario para hacer la request.
             "Function": function,
             "Duration": duration
         }
 
+        if extraParams is not None: #Parametros extra para otras funciones que requieran mas parametros
+            params.update(extraParams)
+
         try: 
             query = requests.get(self.api_url,params = params,timeout = 15.0)
             query.raise_for_status()
+            self._updateState() #Updatea el estado del objeto con el vMix en vivo
             return query.text #devuelve el xml de vMix
         
         except requests.exceptions.HTTPError as e:
@@ -157,11 +192,6 @@ class VmixApi:
 
         print("================================\n")
 
-        
-
-
-        
 if __name__ == "__main__":
     vMix = VmixApi()
-    vMix.cut()
-    vMix.print_state()
+    vMix._updateState()
