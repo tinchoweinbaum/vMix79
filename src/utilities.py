@@ -8,7 +8,7 @@ from datetime import date, time
 from vMixApiWrapper import VmixApi
 
 class Contenido:
-    def __init__(self, id_playlist: str, fecha: date, hora: time, bloque: str, tipo: str, id_mult: str, dura: int, nombre: str, path: str):
+    def __init__(self, id_playlist: str, fecha: date, hora: time, bloque: str, tipo: str, id_mult: str, dura: int, nombre: str, path: str, orden: int, es_publi: bool):
         self.id_playlist = id_playlist
         self.fecha = fecha
         self.hora = hora
@@ -18,6 +18,8 @@ class Contenido:
         self.dura = dura
         self.nombre = nombre
         self.path = path
+        self.orden = orden
+        self.es_publi = es_publi
 
     def go_live(self):
         """
