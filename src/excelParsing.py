@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from utilities import Contenido
 
-def crea_lista(pathExcel: str) -> list[Contenido]:
+def crea_lista(pathExcel: str,ordenaHora = True) -> list[Contenido]:
     df = pd.read_excel(pathExcel) #abre el excel y lo guarda como dataframe en df
     listaProgra = [] #Lista de contenidos a retornar
 
@@ -20,7 +20,7 @@ def crea_lista(pathExcel: str) -> list[Contenido]:
 
     for _, fila in df.iterrows():
         contenido = Contenido(
-            id_playlist = str(fila["IDPLAYLIST"]),
+            id_playlist = str(fila["IDPLAYLIST"]), #Cada atributo es parte de una columna en el excel que se identifica por su header (primer fila del documento)
             fecha = fila["FECHA"],
             hora = fila["HORA"],
             bloque = fila["BLOQUE"],
@@ -34,7 +34,9 @@ def crea_lista(pathExcel: str) -> list[Contenido]:
         )
         listaProgra.append(contenido)
 
-    listaProgra.sort(key = lambda c: c.hora) # MUY IMPORTANTE: DEVUELVE LA LISTA ORDENADA POR HORA DE CADA ELEMENTO.
+    if(ordenaHora):
+        listaProgra.sort(key = lambda c: c.hora) # MUY IMPORTANTE: DEVUELVE LA LISTA ORDENADA POR HORA DE CADA ELEMENTO SI SE MARCA EL FLAG.
+
     return listaProgra
 
 def printLista(lista):
@@ -57,10 +59,3 @@ def printLista(lista):
         print(f"path        : {c.path}")
 
     print("\n====== FIN DEBUG ======\n")
-
-listaProgra =crea_lista(r"D:\proyectos-repos\vmix79\vMix79\src\playlist.xlsx")
-#printLista(listaProgra)
-
-
-
- 
