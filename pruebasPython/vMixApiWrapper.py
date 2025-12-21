@@ -7,7 +7,6 @@ Las duraciones de las requests van en ms.
 
 import requests
 import xml.etree.ElementTree as ET
-from datetime import datetime
 
 class VmixApi:
     def __init__(self, host="127.0.0.1", port=8088, timeout=15.0):
