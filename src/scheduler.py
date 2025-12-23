@@ -34,7 +34,10 @@ class Scheduler:
 
     def _tick(self):
         horaAct = datetime.now().time()
-
         contAct = self.contenidos[self.contenidosIndex]
+
+        if horaAct >= contAct.hora:
+            #mandar al aire
+            self.contenidosIndex += 1
 
 
