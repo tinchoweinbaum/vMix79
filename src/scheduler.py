@@ -71,6 +71,8 @@ class Scheduler:
 
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
+
+        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER LA FUNCION QUE SE ENCARGA DE ESO
         """
         if contAct == None:
             print("Contenido inexistente")
