@@ -8,6 +8,8 @@ lo mismo con las placas, separadores, micros, etc.
 """
 
 import time
+import excelParser as excParser #Parser del excel
+from enum import IntEnum
 from datetime import datetime
 from typing import List
 from utilities import Contenido # Clase de contenido (fila del excel)
@@ -34,10 +36,24 @@ class Scheduler:
 
     def _tick(self):
         horaAct = datetime.now().time()
-        contAct = self.contenidos[self.contenidosIndex]
+        contAct = self.contenidos[self.contenidosIndex] # Objeto del contenido actual
 
-        if horaAct >= contAct.hora:
+        if self.contenidosIndex > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
+            self.stop()
+
+        if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             #mandar al aire
             self.contenidosIndex += 1
 
+class TipoContenido(IntEnum):
+    VIDEO = 1
+    CAMARA = 2
+    PLACA = 3
+    MUSICA = 4
+    IMAGENCAM = 5
+    FOTOBMP = 6
 
+if __name__ == "__main__":
+    pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlist.xlsx"
+    programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
+    schMain = Scheduler(programacion,VmixApi()) # Objeto principal Scheduler

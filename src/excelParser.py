@@ -7,7 +7,6 @@ df contiene al excel playlist.xlsx
 Este programa devuelve una lista de objetos de la clase Contenido
 """
 
-import numpy as np
 import pandas as pd
 from utilities import Contenido
 

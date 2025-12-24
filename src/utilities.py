@@ -26,3 +26,32 @@ class Contenido:
         En este método habría que checkear que tipo de media es self, para poder actualizar el input correspondiente
         en el vMix y mandarlo al aire con el wrapper de la api
         """
+
+    def debug_check_tipo3_paths(self):
+
+
+
+        """
+        Verifica que todos los contenidos de tipo 3
+        tengan un path que comience con 'C:\\Placas'
+        """
+
+        print("=== DEBUG: Chequeo de paths para tipo 3 ===")
+
+        ok = True
+
+        for idx, contenido in enumerate(self.contenidos):
+            if contenido.tipo == 3:
+                if not contenido.path.startswith(r"C:\Placas"):
+                    ok = False
+                    print(
+                        f"[ERROR] Index {idx} | "
+                        f"Hora: {contenido.hora} | "
+                        f"Nombre: {contenido.nombre} | "
+                        f"Path inválido: {contenido.path}"
+                    )
+
+        if ok:
+            print("OK: Todos los contenidos de tipo 3 tienen paths válidos")
+
+        print("==========================================")
