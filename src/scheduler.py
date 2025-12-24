@@ -60,13 +60,14 @@ class Scheduler:
         contAct = self.contenidos[self.contenidosIndex] # Objeto del contenido actual
 
         if self.contenidosIndex > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
+            print("Se transmitió todo el playlist.")
             self.stop()
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
-            self._swapAct(contAct)
+            self._goLive(contAct)
             self.contenidosIndex += 1
 
-    def _swapAct(self,contAct):
+    def _goLive(self,contAct):
 
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
@@ -93,12 +94,18 @@ class Scheduler:
 
     def _swapInput_num(self,numInput_act,numInput_prox):
         """
-        OJO XQ ESTE METODO VA DE LA MANO CON EL PRESET DE VMIX. HACER ENUM Y DEFINIR EL PRESET DE VMIX FINAL.
-
-        Lo que hace es poner el input prox en el act para que salga al aire, siempre por cut.
+        Pone el contenido de prox en act y pone al aire act, también vacía prox
         """
+        vMix = self.vMix
+
+        pathProx = vMix.getInputPath_num(numInput_prox)
+        if pathProx is None:
+            raise RuntimeError("El input prox no tiene contenido")
         
-        pass
+        vMix.listClear(numInput_prox) # swapea
+        vMix.listAddInput(numInput_act,pathProx)
+
+        vMix.setOutput_number(numInput_act) # manda al aire
 
 
 

@@ -62,6 +62,54 @@ class VmixApi:
 
         self.cutDirect_key(inputKey)
 
+    def listClear(self,listNum):
+        function = "ListRemoveAll"
+        self.__makeRequest(function,extraParams = {"Input": listNum})
+
+    def listAddInput(self,listNum,path):
+        function = "ListAdd"
+        self.__makeRequest(function,extraParams = {"Input": listNum, "Value": path})
+
+    def getInputPath_num(self, inputNum):
+        self._updateState()
+        xmlAct = self.__getState()  # root del XML (ElementTree)
+
+        # Buscar el input por número
+        for input_node in xmlAct.findall(".//input"):
+            if input_node.get("number") == str(inputNum):
+
+                input_type = input_node.get("type")
+
+                # CASO 1: Video / Image / Audio file
+                file_node = input_node.find("file")
+                if file_node is not None and file_node.text:
+                    return file_node.text
+
+                # CASO 2: List con 1 solo item
+                list_node = input_node.find("list")
+                if list_node is not None:
+                    items = list_node.findall("item")
+                    if len(items) == 1:
+                        return items[0].text
+                    elif len(items) == 0:
+                        return None
+                    else:
+                        # por contrato tuyo esto no debería pasar
+                        raise RuntimeError(
+                            f"List input {inputNum} tiene más de un item"
+                        )
+
+                # CASO 3: Input sin path (Camera, GT, Color, etc)
+                return None
+
+        print(f"No se encontró el input {inputNum}")
+        return None
+
+    def setOutput_number(self,inputNum):
+        function = "ActiveInput"
+        self.__makeRequest(function,extraParams = {"Input": inputNum})
+
+
     def __makeRequest(self,function,duration = 0,extraParams = None): #TODOS LLAMAN A ESTA FUNCIÓN PARA EFECTUAR LA REQUEST.
         params = { #Creo un diccionario para hacer la request.
             "Function": function,
@@ -87,7 +135,7 @@ class VmixApi:
     
     def __getState(self):
         try:
-            query = requests.get(self.api_url) #pide el xml como texto y lo convierte a arbol para __setState
+            query = requests.get(self.api_url) #pide el xml como texto (GET) y lo convierte a arbol
             query.raise_for_status()
 
             xmlArbol = ET.fromstring(query.text) #convierte
