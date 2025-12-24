@@ -21,12 +21,6 @@ class Contenido:
         self.orden = orden
         self.es_publi = es_publi
 
-    def go_live(self):
-        """
-        En este método habría que checkear que tipo de media es self, para poder actualizar el input correspondiente
-        en el vMix y mandarlo al aire con el wrapper de la api
-        """
-
     def debug_check_tipo3_paths(self):
 
 
