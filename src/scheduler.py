@@ -26,6 +26,8 @@ class Scheduler:
         self.running = True
         print("Scheduler iniciado")
 
+        # Precargar los inputs prox.
+
         while self.running:
             self._tick()
             time.sleep(0.5)
@@ -42,8 +44,41 @@ class Scheduler:
             self.stop()
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
-            #mandar al aire
+            self._swapAct(contAct)
             self.contenidosIndex += 1
+
+    def _swapAct(self,contAct):
+
+        """
+        Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
+        """
+        if contAct == None:
+            print("Contenido inexistente")
+
+        tipo = contAct.tipo
+        match tipo:
+            case TipoContenido.VIDEO:
+                self._swapActTipo(TipoContenido.VIDEO)
+            case TipoContenido.CAMARA:
+                pass # No se como voy a manejar todavia las camaras ni la música
+            case TipoContenido.PLACA:
+                self._swapActTipo(TipoContenido.PLACA)
+            case TipoContenido.MUSICA:
+                pass
+            case TipoContenido.IMAGENCAM:
+                self._swapActTipo(TipoContenido.IMAGENCAM)
+            case TipoContenido.FOTOBMP:
+                self._swapActTipo(TipoContenido.FOTOBMP)
+            case _:
+                print(f"Tipo de contenido desconocido: {tipo}")
+
+    def _swapActTipo(self,tipo):
+        """
+        OJO XQ ESTE METODO VA DE LA MANO CON EL PRESET DE VMIX. HACER ENUM Y DEFINIR EL PRESET DE VMIX FINAL.
+
+        Lo que hace es poner el input prox en el act para que salga al aire, siempre por cut.
+        """
+        pass
 
 class TipoContenido(IntEnum):
     VIDEO = 1
