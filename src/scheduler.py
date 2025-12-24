@@ -15,6 +15,25 @@ from typing import List
 from utilities import Contenido # Clase de contenido (fila del excel)
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
 
+class TipoContenido(IntEnum):
+    VIDEO = 1
+    CAMARA = 2
+    PLACA = 3
+    MUSICA = 4
+    IMAGENCAM = 5
+    FOTOBMP = 6
+
+class NumsInput(IntEnum):
+    CAMARA_ACT = 1
+    PLACA_ACT = 2
+    MUSICA_ACT = 3
+    VIDEO_ACT = 4
+    MICRO_ACT = 5
+    PLACA_PROX = 6
+    MUSICA_PROX = 7
+    VIDEO_PROX = 8
+    MICRO_PROX = 9
+
 class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
         self.contenidos = contenidos # Lista de objetos de la clase Contenido
@@ -58,37 +77,33 @@ class Scheduler:
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                self._swapActTipo(TipoContenido.VIDEO)
+                self._swapInput_num(NumsInput.VIDEO_ACT,NumsInput.VIDEO_PROX)
             case TipoContenido.CAMARA:
                 pass # No se como voy a manejar todavia las camaras ni la música
             case TipoContenido.PLACA:
-                self._swapActTipo(TipoContenido.PLACA)
+                self._swapInput_num(NumsInput.PLACA_ACT,NumsInput.PLACA_PROX)
             case TipoContenido.MUSICA:
                 pass
             case TipoContenido.IMAGENCAM:
-                self._swapActTipo(TipoContenido.IMAGENCAM)
+                self._swapInput_num(TipoContenido.IMAGENCAM) #q pija es imagen cam
             case TipoContenido.FOTOBMP:
-                self._swapActTipo(TipoContenido.FOTOBMP)
+                self._swapInput_num(NumsInput.MICRO_ACT,NumsInput.MICRO_PROX)
             case _:
                 print(f"Tipo de contenido desconocido: {tipo}")
 
-    def _swapActTipo(self,tipo):
+    def _swapInput_num(self,numInput_act,numInput_prox):
         """
         OJO XQ ESTE METODO VA DE LA MANO CON EL PRESET DE VMIX. HACER ENUM Y DEFINIR EL PRESET DE VMIX FINAL.
 
         Lo que hace es poner el input prox en el act para que salga al aire, siempre por cut.
         """
+        
         pass
 
-class TipoContenido(IntEnum):
-    VIDEO = 1
-    CAMARA = 2
-    PLACA = 3
-    MUSICA = 4
-    IMAGENCAM = 5
-    FOTOBMP = 6
+
 
 if __name__ == "__main__":
     pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlist.xlsx"
     programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
     schMain = Scheduler(programacion,VmixApi()) # Objeto principal Scheduler
+    #schMain.start()
