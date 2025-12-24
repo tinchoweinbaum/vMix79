@@ -38,7 +38,7 @@ class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
         self.contenidos = contenidos # Lista de objetos de la clase Contenido
         self.vMix = VmixApi # Objeto de la api de vMix
-        self.contenidosIndex = 0 # El index de contenidos indica cuál es el próximo contenido a emitir. "Puntero"
+        self.indexEmision = 0 # El index de contenidos indica cuál es el próximo contenido a emitir. "Puntero"
         self.running = False
 
     def start(self):
@@ -57,15 +57,27 @@ class Scheduler:
 
     def _tick(self):
         horaAct = datetime.now().time()
-        contAct = self.contenidos[self.contenidosIndex] # Objeto del contenido actual
+        contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
-        if self.contenidosIndex > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
+        if self.indexEmision > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
             print("Se transmitió todo el playlist.")
             self.stop()
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self._goLive(contAct)
-            self.contenidosIndex += 1
+            self.indexEmision += 1
+            
+    def _checkProxCargados(self):
+
+
+    def _cargaProx(self):
+        """
+        Este método se encarga de cargar los inputs XXXX_PROX para que siempre haya algo cargado para poder ponerlo en act
+        y sacarlo al aire. IMPORTANTE: SE TIENE QUE LLAMAR A _cargaProx al iniciar el programa.
+        Basicamente tengo que recorrer la lista desde indexEmision + 1 hasta que estén todos los prox cargados.
+        """
+        posAct = self.indexEmision + 1
+        while posAct <= len(self.contenidos) and not self._checkProxCargados():
 
     def _goLive(self,contAct):
 
