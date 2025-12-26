@@ -10,7 +10,7 @@ lo mismo con las placas, separadores, micros, etc.
 import time
 import excelParser as excParser #Parser del excel
 from enum import IntEnum
-from datetime import datetime
+from datetime import datetime, time as dt, timedelta
 from typing import List
 from utilities import Contenido # Clase de contenido (fila del excel)
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
@@ -42,10 +42,19 @@ class Scheduler:
         self.running = False
         self.todo_precargado = False
 
+        # ---- RELOJ SIMULADO ----
+        self.sim_start_real = None      # datetime real cuando arranca el scheduler
+        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
+
+    def _get_sim_time(self):
+        elapsed = datetime.now() - self.sim_start_real
+        sim_datetime = datetime.combine(datetime.today(), self.sim_start_time) + elapsed
+        return sim_datetime.time()
+
     def start(self):
         self.running = True
         print("Scheduler iniciado")
-
+        self.sim_start_real = datetime.now()  # momento real de arranque
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         while self.running:
@@ -61,7 +70,7 @@ class Scheduler:
         _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
         si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
         """
-        horaAct = datetime.now().time()
+        horaAct = self._get_sim_time()
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
         if self.indexEmision > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
