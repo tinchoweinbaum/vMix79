@@ -40,6 +40,7 @@ class Scheduler:
         self.vMix = VmixApi # Objeto de la api de vMix
         self.indexEmision = 0 # El index de contenidos indica cuál es el próximo contenido a emitir. "Puntero"
         self.running = False
+        self.todo_precargado = False
 
     def start(self):
         self.running = True
@@ -75,7 +76,7 @@ class Scheduler:
     def _checkProxDescargados(self):
         # Devuelve un diccionario, las key son los nums de los inputs prox y los values son booleans
 
-        vMix = self.vMix
+        vMix = self.vMix()
         # True si no tiene nada cargado
         return {
             NumsInput.PLACA_PROX: vMix.getInputPath_num(NumsInput.PLACA_PROX) is None,
@@ -88,9 +89,9 @@ class Scheduler:
         """
         Este método se encarga de cargar los inputs XXXX_PROX para que siempre haya algo cargado para poder ponerlo en act y sacarlo al aire.
         """
-        vMix = self.vMix
+        vMix = self.vMix()
         estadoAct = self._checkProxDescargados()
-        if all(estadoAct.values()):
+        if not any(estadoAct.values()):
             return
 
         # True si no tiene nada cargado
@@ -107,15 +108,22 @@ class Scheduler:
         }
 
         indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
+
         for cont in self.contenidos[indexLista + 1:]:
             if not any(tipos_descargados.values()): # Si son todos False
                 return
             
-            if tipos_descargados[cont.tipo]: # Si tengo que cargar el cont. actual
-                vMix.listAddInput(inputProxTipo[cont.tipo],cont.path)
-                tipos_descargados[cont.tipo] = False
+            if tipos_descargados.get(cont.tipo, False): # Si tengo que cargar el cont. actual
+                if cont.path_valido():
+                    vMix.listAddInput(inputProxTipo[cont.tipo],cont.path)
+                    tipos_descargados[cont.tipo] = False
+                else:
+                    print(f"{cont.nombre} no tiene un path valido: {cont.path}")
 
+        self.todo_precargado = True
         print("No se encontraron más contenidos para precargar")
+
+
 
     def _goLive(self,contAct):
 
@@ -144,17 +152,19 @@ class Scheduler:
             case _:
                 print(f"Tipo de contenido desconocido: {tipo}")
 
-        self._cargaProx() # Después de mandar al aire precarga el prox
+        if self.todo_precargado == False:
+            self._cargaProx() # Después de mandar al aire precarga el prox
 
     def _swapInput_num(self,numInput_act,numInput_prox):
         """
         Pone el contenido de prox en act y pone al aire act, también vacía prox
         """
-        vMix = self.vMix
+        vMix = self.vMix()
 
         pathProx = vMix.getInputPath_num(numInput_prox)
         if pathProx is None:
-            raise RuntimeError("El input prox no tiene contenido")
+            print("El input prox no tiene contenido.")
+            return
         
         vMix.listClear(numInput_prox) # swapea
         vMix.listAddInput(numInput_act,pathProx)
@@ -168,4 +178,4 @@ if __name__ == "__main__":
     programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
 
     schMain = Scheduler(programacion,VmixApi()) # Objeto principal Scheduler
-    #schMain.start()
+    schMain.start()
