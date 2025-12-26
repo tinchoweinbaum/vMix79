@@ -94,7 +94,7 @@ class VmixApi:
                     elif len(items) == 0:
                         return None
                     else:
-                        # por contrato tuyo esto no debería pasar
+                        # Esto en teoría NUNCA debería pasar
                         raise RuntimeError(
                             f"List input {inputNum} tiene más de un item"
                         )

@@ -45,7 +45,7 @@ class Scheduler:
         self.running = True
         print("Scheduler iniciado")
 
-        # Precargar los inputs prox.
+        self._cargaProx() # Precarga los inputs prox para el primer tick
 
         while self.running:
             self._tick()
@@ -56,28 +56,66 @@ class Scheduler:
         self.running = False
 
     def _tick(self):
+        """
+        _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
+        si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
+        """
         horaAct = datetime.now().time()
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
         if self.indexEmision > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
             print("Se transmitió todo el playlist.")
             self.stop()
+            return
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self._goLive(contAct)
             self.indexEmision += 1
             
-    def _checkProxCargados(self):
+    def _checkProxDescargados(self):
+        # Devuelve un diccionario, las key son los nums de los inputs prox y los values son booleans
+
+        vMix = self.vMix
+        # True si no tiene nada cargado
+        return {
+            NumsInput.PLACA_PROX: vMix.getInputPath_num(NumsInput.PLACA_PROX) is None,
+            NumsInput.VIDEO_PROX: vMix.getInputPath_num(NumsInput.VIDEO_PROX) is None,
+            NumsInput.MICRO_PROX: vMix.getInputPath_num(NumsInput.MICRO_PROX) is None,
+        }
 
 
     def _cargaProx(self):
         """
-        Este método se encarga de cargar los inputs XXXX_PROX para que siempre haya algo cargado para poder ponerlo en act
-        y sacarlo al aire. IMPORTANTE: SE TIENE QUE LLAMAR A _cargaProx al iniciar el programa.
-        Basicamente tengo que recorrer la lista desde indexEmision + 1 hasta que estén todos los prox cargados.
+        Este método se encarga de cargar los inputs XXXX_PROX para que siempre haya algo cargado para poder ponerlo en act y sacarlo al aire.
         """
-        posAct = self.indexEmision + 1
-        while posAct <= len(self.contenidos) and not self._checkProxCargados():
+        vMix = self.vMix
+        estadoAct = self._checkProxDescargados()
+        if all(estadoAct.values()):
+            return
+
+        # True si no tiene nada cargado
+        tipos_descargados = {
+            TipoContenido.PLACA: estadoAct[NumsInput.PLACA_PROX],
+            TipoContenido.VIDEO: estadoAct[NumsInput.VIDEO_PROX],
+            TipoContenido.FOTOBMP: estadoAct[NumsInput.MICRO_PROX]
+        }
+
+        inputProxTipo = {
+            TipoContenido.PLACA: NumsInput.PLACA_PROX,
+            TipoContenido.VIDEO: NumsInput.VIDEO_PROX,
+            TipoContenido.FOTOBMP: NumsInput.MICRO_PROX
+        }
+
+        indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
+        for cont in self.contenidos[indexLista + 1:]:
+            if not any(tipos_descargados.values()): # Si son todos False
+                return
+            
+            if tipos_descargados[cont.tipo]: # Si tengo que cargar el cont. actual
+                vMix.listAddInput(inputProxTipo[cont.tipo],cont.path)
+                tipos_descargados[cont.tipo] = False
+
+        print("No se encontraron más contenidos para precargar")
 
     def _goLive(self,contAct):
 
@@ -106,6 +144,8 @@ class Scheduler:
             case _:
                 print(f"Tipo de contenido desconocido: {tipo}")
 
+        self._cargaProx() # Después de mandar al aire precarga el prox
+
     def _swapInput_num(self,numInput_act,numInput_prox):
         """
         Pone el contenido de prox en act y pone al aire act, también vacía prox
@@ -126,5 +166,6 @@ class Scheduler:
 if __name__ == "__main__":
     pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlist.xlsx"
     programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
+
     schMain = Scheduler(programacion,VmixApi()) # Objeto principal Scheduler
     #schMain.start()
