@@ -164,6 +164,7 @@ class Scheduler:
         pathProx = vMix.getInputPath_num(numInput_prox)
         if pathProx is None:
             print("El input prox no tiene contenido.")
+            #Cuando pasa esto (nunca deberia pasar segun el flujo del programa) ver que tiene uqe pasar, error, pantalla en negro, nose
             return
         
         vMix.listClear(numInput_prox) # swapea
