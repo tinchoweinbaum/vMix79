@@ -25,14 +25,14 @@ class TipoContenido(IntEnum):
 
 class NumsInput(IntEnum):
     CAMARA_ACT = 1
-    PLACA_ACT = 2
+    PLACA_A = 2
     MUSICA_ACT = 3
-    VIDEO_ACT = 4
-    MICRO_ACT = 5
-    PLACA_PROX = 6
+    VIDEO_A = 4
+    MICRO_A = 5
+    PLACA_B = 6
     MUSICA_PROX = 7
-    VIDEO_PROX = 8
-    MICRO_PROX = 9
+    VIDEO_B = 8
+    MICRO_B = 9
 
 class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
@@ -55,6 +55,7 @@ class Scheduler:
         self.running = True
         print("Scheduler iniciado")
         self.sim_start_real = datetime.now()  # momento real de arranque
+        #funcion que limpie todos los listInputs
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         while self.running:
@@ -81,51 +82,59 @@ class Scheduler:
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self._goLive(contAct)
             self.indexEmision += 1
-            
-    def _checkProxDescargados(self):
-        # Devuelve un diccionario, las key son los nums de los inputs prox y los values son booleans
 
+    def _checkAB_descargado(self, A, B):
+
+        """
+        A y B son numeros de inputs, sus valores cambian según el tipo de contenido que se quiera consultar.
+        Se devuelve el número de input a precargar con el próximo contenido.
+        IMPORTANTE: No se "contemplan" los casos de que uno esté al aire y el otro ya esté precargado, porque en ese caso,
+        no hay que hacer nada, asumiendo que el contenido precargado en el input que no está al aire es el correcto.
+        """
         vMix = self.vMix()
-        # True si no tiene nada cargado
-        return {
-            NumsInput.PLACA_PROX: vMix.getInputPath_num(NumsInput.PLACA_PROX) is None,
-            NumsInput.VIDEO_PROX: vMix.getInputPath_num(NumsInput.VIDEO_PROX) is None,
-            NumsInput.MICRO_PROX: vMix.getInputPath_num(NumsInput.MICRO_PROX) is None,
-        }
 
+        A_live = vMix._isInputLive(A)
+        B_live = vMix._isInputLive(B)
+
+        if A_live == B_live: # Si ninguno está en vivo -> se precarga el A
+            return A
+
+        if A_live == True and vMix.getInputPath_num(B) is None: # Si A está en vivo y B no está precargado
+            return B
+        
+        if B_live == True and vMix.getInputPath_num(A) is None: # Si B está en vivo y A no está precargado
+            return A
+        
+        return None # Si no hay que precargar nada, no se precarga nada XD
+
+    def _checkProxDescargados(self):
+        return {
+            TipoContenido.PLACA: self._checkAB_descargado(NumsInput.PLACA_A, NumsInput.PLACA_B),
+            TipoContenido.VIDEO: self._checkAB_descargado(NumsInput.VIDEO_A, NumsInput.VIDEO_B),
+            TipoContenido.FOTOBMP: self._checkAB_descargado(NumsInput.MICRO_A, NumsInput.MICRO_B),
+        }
 
     def _cargaProx(self):
         """
-        Este método se encarga de cargar los inputs XXXX_PROX para que siempre haya algo cargado para poder ponerlo en act y sacarlo al aire.
+        Rehacer este método para que funcione correctamente con la lógica de input_A e input_B.
+        Este método tiene que cargar el input que NO esté al aire del tipo correspondiente.
         """
         vMix = self.vMix()
-        estadoAct = self._checkProxDescargados()
-        if not any(estadoAct.values()):
+        estadoAct = self._checkProxDescargados() # Diccionario de números de input a cargar. 
+
+        if all(v is None for v in estadoAct.values()): # Si no hay nada a precargar
             return
-
-        # True si no tiene nada cargado
-        tipos_descargados = {
-            TipoContenido.PLACA: estadoAct[NumsInput.PLACA_PROX],
-            TipoContenido.VIDEO: estadoAct[NumsInput.VIDEO_PROX],
-            TipoContenido.FOTOBMP: estadoAct[NumsInput.MICRO_PROX]
-        }
-
-        inputProxTipo = {
-            TipoContenido.PLACA: NumsInput.PLACA_PROX,
-            TipoContenido.VIDEO: NumsInput.VIDEO_PROX,
-            TipoContenido.FOTOBMP: NumsInput.MICRO_PROX
-        }
 
         indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
 
         for cont in self.contenidos[indexLista + 1:]:
-            if not any(tipos_descargados.values()): # Si son todos False
+            if all(v is None for v in estadoAct.values()): # Si no hay que precargar nada
                 return
             
-            if tipos_descargados.get(cont.tipo, False): # Si tengo que cargar el cont. actual
+            if estadoAct.get(cont.tipo) is not None: # Si tengo que cargar el cont. actual
                 if cont.path_valido():
-                    vMix.listAddInput(inputProxTipo[cont.tipo],cont.path)
-                    tipos_descargados[cont.tipo] = False
+                    vMix.listAddInput(estadoAct.get(cont.tipo),cont.path)
+                    estadoAct[cont.tipo] = None
                 else:
                     print(f"{cont.nombre} no tiene un path valido: {cont.path}")
 
@@ -135,57 +144,46 @@ class Scheduler:
 
 
     def _goLive(self,contAct):
-        print("Hora actual simulada:" + str(self._get_sim_time()))
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
 
         OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX.
         """
+        print("Hora actual simulada:" + str(self._get_sim_time()))
         if contAct == None:
             print("Contenido inexistente")
-
-        print("Se va a sacar al aire un contenido tipo: " + str(contAct.tipo))
 
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                self._swapInput_num(NumsInput.VIDEO_ACT,NumsInput.VIDEO_PROX)
+                self._toggleLiveInput_num(NumsInput.VIDEO_A,NumsInput.VIDEO_B)
             case TipoContenido.CAMARA:
                 self.vMix().cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
-                self._swapInput_num(NumsInput.PLACA_ACT,NumsInput.PLACA_PROX)
+                self._toggleLiveInput_num(NumsInput.PLACA_A,NumsInput.PLACA_B) # Reemplazar por funcion de swap overlay
             case TipoContenido.MUSICA:
                 pass
             case TipoContenido.IMAGENCAM:
-                self._swapInput_num(TipoContenido.IMAGENCAM) #q pija es imagen cam
+                pass # que corno es imagencam
             case TipoContenido.FOTOBMP:
-                self._swapInput_num(NumsInput.MICRO_ACT,NumsInput.MICRO_PROX)
+                self._toggleLiveInput_num(NumsInput.MICRO_A,NumsInput.MICRO_B)
             case _:
                 print(f"Tipo de contenido desconocido: {tipo}")
 
         if self.todo_precargado == False:
             self._cargaProx() # Después de mandar al aire precarga el prox
 
-    def _swapInput_num(self,numInput_act,numInput_prox):
+    def _toggleLiveInput_num(self,numInput_A,numInput_B):
         """
-        Pone el contenido de prox en act y pone al aire act, también vacía prox
+        Swapea input A por B del tipo correspondiente
         """
         vMix = self.vMix()
 
-        pathProx = vMix.getInputPath_num(numInput_prox)
-        if pathProx is None:
-            print("El input prox no tiene contenido.")
-            #Cuando pasa esto (nunca deberia pasar segun el flujo del programa) ver que tiene uqe pasar, error, pantalla en negro, nose
-            return
+        if vMix._isInputLive(numInput_A):
+            vMix.setOutput_number(numInput_B)
+        else:
+            vMix.setOutput_number(numInput_A) # OJO: Si ninguno de los 2 está al aire, sale el A. Tener en cuenta al precargar.
         
-        vMix.listClear(numInput_prox) # swapea
-        vMix.listClear(numInput_act) # Saca el elemento actual del aire
-        vMix.listAddInput(numInput_act,pathProx)
-
-        vMix.setOutput_number(numInput_act) # Pone el nuevo al aire
-
-
-
 if __name__ == "__main__":
     pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlistprueba.xlsx"
     programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia

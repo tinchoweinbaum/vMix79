@@ -202,6 +202,21 @@ class VmixApi:
         streaming = arbolXml.find("streaming")
         self.streaming = True if streaming.text == "True" else False
 
+    def _isInputLive(self, inputNum):
+        """
+        Recibe un numero de input y devuelve True si está al aire
+        """
+
+        self._updateState()
+        estadoAct = self.__getState()
+
+        inputAct = estadoAct.find("active")
+        if inputAct is None or inputAct.text is None:
+            return False
+
+        return inputAct.text == str(inputNum)
+            
+
     def _updateState(self):
         estadoAct = self.__getState()
         self.__setState(estadoAct)
