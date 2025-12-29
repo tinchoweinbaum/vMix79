@@ -135,21 +135,23 @@ class Scheduler:
 
 
     def _goLive(self,contAct):
-
+        print("Hora actual simulada:" + str(self._get_sim_time()))
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
 
-        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER LA FUNCION QUE SE ENCARGA DE ESO
+        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX.
         """
         if contAct == None:
             print("Contenido inexistente")
+
+        print("Se va a sacar al aire un contenido tipo: " + str(contAct.tipo))
 
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
                 self._swapInput_num(NumsInput.VIDEO_ACT,NumsInput.VIDEO_PROX)
             case TipoContenido.CAMARA:
-                pass # No se como voy a manejar todavia las camaras ni la música
+                self.vMix().cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
                 self._swapInput_num(NumsInput.PLACA_ACT,NumsInput.PLACA_PROX)
             case TipoContenido.MUSICA:
@@ -177,14 +179,15 @@ class Scheduler:
             return
         
         vMix.listClear(numInput_prox) # swapea
+        vMix.listClear(numInput_act) # Saca el elemento actual del aire
         vMix.listAddInput(numInput_act,pathProx)
 
-        vMix.setOutput_number(numInput_act) # manda al aire
+        vMix.setOutput_number(numInput_act) # Pone el nuevo al aire
 
 
 
 if __name__ == "__main__":
-    pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlist.xlsx"
+    pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlistprueba.xlsx"
     programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
 
     schMain = Scheduler(programacion,VmixApi()) # Objeto principal Scheduler

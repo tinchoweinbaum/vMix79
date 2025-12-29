@@ -126,11 +126,11 @@ class VmixApi:
             return query.text #devuelve el xml de vMix
         
         except requests.exceptions.HTTPError as e:
-            print(f"Error HTTP al comunicarse con la API de vMix: {e}")
+            print(f"Error HTTP al comunicarse con la API de vMix, probablemente no este vMix abierto: {e}")
             return None
 
         except requests.RequestException as e:
-            print(f"Error de conexion o timeout con la API de vMix: {e}")
+            print(f"Error de conexion o timeout con la API de vMix, probablemente no este vMix abierto: {e}")
             return None
     
     def __getState(self):
@@ -142,7 +142,7 @@ class VmixApi:
             return xmlArbol
 
         except requests.RequestException as e:
-            print(f"Error de conexion o timeout con la API de vMix: {e}")
+            print(f"Error de conexion o timeout con la API de vMix, probablemente no este vMix abierto: {e}")
             return None
 
         except ET.ParseError as e:
