@@ -37,14 +37,14 @@ class NumsInput(IntEnum):
 class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
         self.contenidos = contenidos # Lista de objetos de la clase Contenido
-        self.vMix = VmixApi # Objeto de la api de vMix
+        self.vMix = vMix # Objeto de la api de vMix
         self.indexEmision = 0 # El index de contenidos indica cuál es el próximo contenido a emitir. "Puntero"
         self.running = False
         self.todo_precargado = False
 
         # ---- RELOJ SIMULADO ----
         self.sim_start_real = None      # datetime real cuando arranca el scheduler
-        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
+        self.sim_start_time = dt(0,4) # hora simulada inicial (00:00)
 
     def _get_sim_time(self):
         elapsed = datetime.now() - self.sim_start_real
@@ -53,6 +53,7 @@ class Scheduler:
 
     def start(self):
         self.running = True
+        self.__clearAll()
         print("Scheduler iniciado")
         self.sim_start_real = datetime.now()  # momento real de arranque
         #funcion que limpie todos los listInputs
@@ -60,7 +61,7 @@ class Scheduler:
 
         while self.running:
             self._tick()
-            time.sleep(0.5)
+            time.sleep(0.2)
         
     
     def stop(self):
@@ -71,13 +72,14 @@ class Scheduler:
         _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
         si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
         """
-        horaAct = self._get_sim_time()
-        contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
         if self.indexEmision > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
             print("Se transmitió todo el playlist.")
             self.stop()
             return
+        
+        horaAct = self._get_sim_time()
+        contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self._goLive(contAct)
@@ -91,21 +93,21 @@ class Scheduler:
         IMPORTANTE: No se "contemplan" los casos de que uno esté al aire y el otro ya esté precargado, porque en ese caso,
         no hay que hacer nada, asumiendo que el contenido precargado en el input que no está al aire es el correcto.
         """
-        vMix = self.vMix()
+        vMix = self.vMix
 
         A_live = vMix._isInputLive(A)
         B_live = vMix._isInputLive(B)
 
-        if A_live == B_live: # Si ninguno está en vivo -> se precarga el A
-            return A
+        A_cargado = vMix.getInputPath_num(A) is not None
+        B_cargado = vMix.getInputPath_num(B) is not None
 
-        if A_live == True and vMix.getInputPath_num(B) is None: # Si A está en vivo y B no está precargado
+        if not A_live and not A_cargado:
+            return A
+        
+        if not B_live and not B_cargado:
             return B
         
-        if B_live == True and vMix.getInputPath_num(A) is None: # Si B está en vivo y A no está precargado
-            return A
-        
-        return None # Si no hay que precargar nada, no se precarga nada XD
+        return None
 
     def _checkProxDescargados(self):
         return {
@@ -118,36 +120,37 @@ class Scheduler:
         """
         Rehacer este método para que funcione correctamente con la lógica de input_A e input_B.
         Este método tiene que cargar el input que NO esté al aire del tipo correspondiente.
-        """
-        vMix = self.vMix()
-        estadoAct = self._checkProxDescargados() # Diccionario de números de input a cargar. 
 
-        if all(v is None for v in estadoAct.values()): # Si no hay nada a precargar
+        OJO ARREGLAR: CUANDO TERMINA DE PRECARGAR TODO EL PLAYLIST SE SALE DEL INDEX DE LA LISTA. MANEJAR ESO.
+        """
+        vMix = self.vMix
+        inputsParaCargar = self._checkProxDescargados() # Diccionario de números de input a cargar. 
+
+        if all(v is None for v in inputsParaCargar.values()): # Si no hay nada a precargar
             return
 
         indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
 
         for cont in self.contenidos[indexLista + 1:]:
-            if all(v is None for v in estadoAct.values()): # Si no hay que precargar nada
+            if all(v is None for v in inputsParaCargar.values()): # Si no hay que precargar nada
                 return
             
-            if estadoAct.get(cont.tipo) is not None: # Si tengo que cargar el cont. actual
+            if inputsParaCargar.get(cont.tipo) is not None: # Si tengo que cargar el cont. actual
                 if cont.path_valido():
-                    vMix.listAddInput(estadoAct.get(cont.tipo),cont.path)
-                    estadoAct[cont.tipo] = None
+                    print("cargo en input " + str(NumsInput(inputsParaCargar.get(cont.tipo))))
+                    vMix.listAddInput(inputsParaCargar.get(cont.tipo),cont.path)
+                    inputsParaCargar[cont.tipo] = None # Problema!!!
                 else:
                     print(f"{cont.nombre} no tiene un path valido: {cont.path}")
 
-        self.todo_precargado = True
-        print("No se encontraron más contenidos para precargar")
-
-
+        #self.todo_precargado = True
+        #print("No se encontraron más contenidos para precargar")
 
     def _goLive(self,contAct):
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
 
-        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX.
+        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER HACER ALGO PARA RESOLVER CUANDO NO ES ASÍ.
         """
         print("Hora actual simulada:" + str(self._get_sim_time()))
         if contAct == None:
@@ -158,7 +161,7 @@ class Scheduler:
             case TipoContenido.VIDEO:
                 self._toggleLiveInput_num(NumsInput.VIDEO_A,NumsInput.VIDEO_B)
             case TipoContenido.CAMARA:
-                self.vMix().cutDirect_number(1) # PLACEHOLDER
+                self.vMix.cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
                 self._toggleLiveInput_num(NumsInput.PLACA_A,NumsInput.PLACA_B) # Reemplazar por funcion de swap overlay
             case TipoContenido.MUSICA:
@@ -177,16 +180,32 @@ class Scheduler:
         """
         Swapea input A por B del tipo correspondiente
         """
-        vMix = self.vMix()
+        print("llamo toggle")
+        vMix = self.vMix
 
         if vMix._isInputLive(numInput_A):
             vMix.setOutput_number(numInput_B)
+            vMix.listClear(numInput_A)
         else:
             vMix.setOutput_number(numInput_A) # OJO: Si ninguno de los 2 está al aire, sale el A. Tener en cuenta al precargar.
+            vMix.listClear(numInput_B)
+
+    def __clearAll(self):
+        vMix = self.vMix
+        vMix.listClear(NumsInput.MICRO_A)
+        vMix.listClear(NumsInput.MICRO_B)
+
+        vMix.listClear(NumsInput.PLACA_A)
+        vMix.listClear(NumsInput.PLACA_B)
+
+        vMix.listClear(NumsInput.VIDEO_A)
+        vMix.listClear(NumsInput.VIDEO_B)
+
         
 if __name__ == "__main__":
     pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlistprueba.xlsx"
     programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
 
-    schMain = Scheduler(programacion,VmixApi()) # Objeto principal Scheduler
+    vMix = VmixApi() # Objeto API de vMix
+    schMain = Scheduler(programacion,vMix)
     schMain.start()
