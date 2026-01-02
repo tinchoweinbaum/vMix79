@@ -34,6 +34,9 @@ class NumsInput(IntEnum):
     VIDEO_B = 8
     MICRO_B = 9
 
+class OverlaySlots(IntEnum):
+    PLACA_ACT = 1
+
 class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
         self.contenidos = contenidos # Lista de objetos de la clase Contenido
@@ -44,7 +47,7 @@ class Scheduler:
 
         # ---- RELOJ SIMULADO ----
         self.sim_start_real = None      # datetime real cuando arranca el scheduler
-        self.sim_start_time = dt(0,4) # hora simulada inicial (00:00)
+        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
 
     def _get_sim_time(self):
         elapsed = datetime.now() - self.sim_start_real
@@ -163,7 +166,7 @@ class Scheduler:
             case TipoContenido.CAMARA:
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
-                self._toggleLiveInput_num(NumsInput.PLACA_A,NumsInput.PLACA_B) # Reemplazar por funcion de swap overlay
+                self._toggleLiveInput_num(NumsInput.PLACA_A,NumsInput.PLACA_B) # Cuando es placa swappea el input del overlay 1.
             case TipoContenido.MUSICA:
                 pass
             case TipoContenido.IMAGENCAM:
@@ -176,19 +179,44 @@ class Scheduler:
         if self.todo_precargado == False:
             self._cargaProx() # Después de mandar al aire precarga el prox
 
+            
+
     def _toggleLiveInput_num(self,numInput_A,numInput_B):
         """
         Swapea input A por B del tipo correspondiente
         """
         print("llamo toggle")
         vMix = self.vMix
+        
+        # Esta cantidad de ifs anidados es un acto de terrorismo, reescribir y reorganizar el flujo del toggle y el swap
 
-        if vMix._isInputLive(numInput_A):
-            vMix.setOutput_number(numInput_B)
-            vMix.listClear(numInput_A)
-        else:
-            vMix.setOutput_number(numInput_A) # OJO: Si ninguno de los 2 está al aire, sale el A. Tener en cuenta al precargar.
-            vMix.listClear(numInput_B)
+        if numInput_A != NumsInput.PLACA_A: # Si no es placa
+            if vMix._isInputLive(numInput_A):
+                vMix.setOutput_number(numInput_B)
+
+                if numInput_B == NumsInput.VIDEO_B:
+                    self.vMix.restartInput_number(numInput_B)
+                    self.vMix.playInput_number(numInput_B)
+
+                vMix.listClear(numInput_A)
+            else:
+                vMix.setOutput_number(numInput_A) # OJO: Si ninguno de los 2 está al aire, sale el A. Tener en cuenta al precargar.
+
+                if numInput_A == NumsInput.VIDEO_A:
+                    self.vMix.restartInput_number(numInput_A)
+                    self.vMix.playInput_number(numInput_A)
+
+                vMix.listClear(numInput_B)
+        else: # Es placa
+            if vMix._isOverlayLive(OverlaySlots.PLACA_ACT): # Si está saliendo actualmente una placa al aire:
+                if(vMix._getOverlayInput(OverlaySlots.PLACA_ACT) == NumsInput.PLACA_A):
+                    vMix.setOverlay_on(NumsInput.PLACA_B,OverlaySlots.PLACA_ACT) # Mando PLACA_B al aire x overlay.
+                else:
+                    vMix.setOverlay_on(NumsInput.PLACA_A,OverlaySlots.PLACA_ACT) # Mando PLACA_A al aire x overlay
+            else:
+                vMix.setOverlay_on(NumsInput.PLACA_A,OverlaySlots.PLACA_ACT) # OJO: Si ninguno de los 2 está al aire, sale el A. Tener en cuenta al precargar.
+
+
 
     def __clearAll(self):
         vMix = self.vMix
@@ -201,9 +229,11 @@ class Scheduler:
         vMix.listClear(NumsInput.VIDEO_A)
         vMix.listClear(NumsInput.VIDEO_B)
 
+        vMix.setOverlay_off(OverlaySlots.PLACA_ACT)
+
         
 if __name__ == "__main__":
-    pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlistprueba.xlsx"
+    pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlistprueba.xlsx" # Estandarizar ruta de excel
     programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
 
     vMix = VmixApi() # Objeto API de vMix

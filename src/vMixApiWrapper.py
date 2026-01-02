@@ -102,12 +102,20 @@ class VmixApi:
                 # CASO 3: Input sin path (Camera, GT, Color, etc)
                 return None
 
-        print(f"No se encontró el input {inputNum}")
+        print(f"No se encontró el input {inputNum}, probablemente no este el preset correcto cargado.")
         return None
 
     def setOutput_number(self,inputNum):
         function = "ActiveInput"
         self.__makeRequest(function,extraParams = {"Input": inputNum})
+
+    def setOverlay_on(self,inputNum,overNum):
+        function = f"OverlayInput{overNum}"
+        self.__makeRequest(function, extraParams = {"Input": inputNum, "Value": "On"})
+
+    def setOverlay_off(self,overNum):
+        function = f"OverlayInput{overNum}"
+        self.__makeRequest(function, extraParams = {"Value": "Off"})
 
 
     def __makeRequest(self,function,duration = 0,extraParams = None): #TODOS LLAMAN A ESTA FUNCIÓN PARA EFECTUAR LA REQUEST.
@@ -215,7 +223,43 @@ class VmixApi:
             return False
 
         return inputAct.text == str(inputNum)
-            
+    
+    def _isOverlayLive(self,overlayNum):
+        """
+        Recibe un número de overlay y checkea si está activo.
+        """        
+        estado = self.__getState()
+        overlay = estado.find(f".//overlay[@number='{overlayNum}']")
+        if overlay is None:
+            return False
+        
+        if overlay.text != "0":
+            return True
+        else:
+            return False
+        
+    def _getOverlayInput(self,overlayNum):
+        """
+        Recibe un número de overlay y devuelve que input está saliendo por ese slot.
+        La idea es llamarlo SÓLO cuando _isOverlayLive devolvió True
+        """
+        estado = self.__getState()
+        overlay = estado.find(f".//overlay[@number='{overlayNum}']")
+
+        if overlay is None: # Si no existe el numero de overlay
+            return None
+        
+        if overlay.text is None: # Si no tiene ningun input el overlay.
+            return None
+        
+        return int(overlay.text)
+    
+    def restartInput_number(self, inputNum):
+        self.__makeRequest("Restart", {"Input": inputNum})
+
+    def playInput_number(self, inputNum):
+        self.__makeRequest("Play", {"Input": inputNum})
+
 
     def _updateState(self):
         estadoAct = self.__getState()
