@@ -14,6 +14,7 @@ from datetime import datetime, time as dt, timedelta
 from typing import List
 from utilities import Contenido # Clase de contenido (fila del excel)
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
+from pathlib import Path
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -133,7 +134,7 @@ class Scheduler:
             return
 
         indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
-
+        
         for cont in self.contenidos[indexLista + 1:]:
             if all(v is None for v in inputsParaCargar.values()): # Si no hay que precargar nada
                 return
@@ -156,11 +157,11 @@ class Scheduler:
         vMix = self.vMix
         match cont.tipo:
             case TipoContenido.VIDEO:
-                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) != cont.path) and (vMix.getInputPath_num(NumsInput.VIDEO_B) != cont.path))
+                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path) and (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path))
             case TipoContenido.PLACA:
-                return ((vMix.getInputPath_num(NumsInput.PLACA_A) != cont.path) and (vMix.getInputPath_num(NumsInput.PLACA_B) != cont.path))
+                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path) and (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path))
             case TipoContenido.FOTOBMP:
-                return ((vMix.getInputPath_num(NumsInput.MICRO_A) != cont.path) and (vMix.getInputPath_num(NumsInput.MICRO_B) != cont.path))
+                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path) and (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path))
             case TipoContenido.MUSICA:
                 pass
 
@@ -250,9 +251,12 @@ class Scheduler:
 
         
 if __name__ == "__main__":
-    pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlistprueba.xlsx" # Estandarizar ruta de excel
-    programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
-
-    vMix = VmixApi() # Objeto API de vMix
-    schMain = Scheduler(programacion,vMix)
-    schMain.start()
+    BASE_DIR = Path(__file__).resolve().parent
+    pathExcel = BASE_DIR / "playlist.xlsx"
+    if pathExcel.exists:
+        programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
+        vMix = VmixApi() # Objeto API de vMix
+        schMain = Scheduler(programacion,vMix)
+        schMain.start()
+    else:
+        print("No se encontró el playlist.xlsx")
