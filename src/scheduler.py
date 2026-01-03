@@ -136,7 +136,7 @@ class Scheduler:
 
         indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
 
-        for cont in self.contenidos[indexLista + 1:]:
+        for cont in self.contenidos[indexLista]:
             if all(v is None for v in inputsParaCargar.values()): # Si no hay que precargar nada
                 return
             
