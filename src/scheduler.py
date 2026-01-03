@@ -57,10 +57,11 @@ class Scheduler:
 
     def start(self):
         self.running = True
-        self.__clearAll()
         print("Scheduler iniciado")
-        self.sim_start_real = datetime.now()  # momento real de arranque
-        #funcion que limpie todos los listInputs
+
+        self.sim_start_real = datetime.now()  # hora simulada
+
+        self.__clearAll()
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         while self.running:
@@ -134,7 +135,7 @@ class Scheduler:
             return
 
         indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
-        
+
         for cont in self.contenidos[indexLista + 1:]:
             if all(v is None for v in inputsParaCargar.values()): # Si no hay que precargar nada
                 return
@@ -198,15 +199,14 @@ class Scheduler:
     def _goLiveVideo(self):
         vMix = self.vMix
         A_live = vMix._isInputLive(NumsInput.VIDEO_A)
-        B_live = vMix._isInputLive(NumsInput.VIDEO_B)
 
-        if A_live or (A_live == False and B_live == False): # Si está A (o ninguno) al aire.
+        if A_live: # Si está A al aire.
             vMix.restartInput_number(NumsInput.VIDEO_B)
             vMix.playInput_number(NumsInput.VIDEO_B)
             vMix.setOutput_number(NumsInput.VIDEO_B)
             vMix.listClear(NumsInput.VIDEO_A)
         else:
-            vMix.restartInput_number(NumsInput.VIDEO_A) # Si está B al aire.
+            vMix.restartInput_number(NumsInput.VIDEO_A) # Si está B (o ninguno) al aire.
             vMix.playInput_number(NumsInput.VIDEO_A)
             vMix.setOutput_number(NumsInput.VIDEO_A)
             vMix.listClear(NumsInput.VIDEO_B)
@@ -227,13 +227,12 @@ class Scheduler:
     def _goLiveMicro(self):
         vMix = self.vMix
         A_live = vMix._isInputLive(NumsInput.VIDEO_A)
-        B_live = vMix._isInputLive(NumsInput.VIDEO_B)
 
-        if A_live or (A_live == False and B_live == False): # Si está A (o ninguno) al aire.
+        if A_live: # Si está A al aire.
             vMix.setOutput_number(NumsInput.MICRO_B)
             vMix.listClear(NumsInput.MICRO_A)
         else:
-            vMix.setOutput_number(NumsInput.MICRO_A) # Si está B al aire.
+            vMix.setOutput_number(NumsInput.MICRO_A) # Si está B (o ninguno) al aire.
             vMix.listClear(NumsInput.MICRO_B)
 
     def __clearAll(self):
@@ -252,7 +251,7 @@ class Scheduler:
         
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
-    pathExcel = BASE_DIR / "playlist.xlsx"
+    pathExcel = BASE_DIR / "playlistprueba.xlsx"
     if pathExcel.exists:
         programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
         vMix = VmixApi() # Objeto API de vMix
