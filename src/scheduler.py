@@ -139,7 +139,7 @@ class Scheduler:
                 return
             
             if inputsParaCargar.get(cont.tipo) is not None: # Si tengo que cargar el cont. actual
-                if cont.path_valido():
+                if cont.path_valido() and not self._yaCargado(cont):
                     print("cargo en input " + str(NumsInput(inputsParaCargar.get(cont.tipo))))
                     vMix.listAddInput(inputsParaCargar.get(cont.tipo),cont.path)
                     inputsParaCargar[cont.tipo] = None # Problema!!!
@@ -149,74 +149,91 @@ class Scheduler:
         #self.todo_precargado = True
         #print("No se encontraron más contenidos para precargar")
 
+    def _yaCargado(self, cont):
+        """
+        Recibe un objeto de contenido y devuelve True si ya está precargado. False si no, XD.
+        """
+        vMix = self.vMix
+        match cont.tipo:
+            case TipoContenido.VIDEO:
+                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) != cont.path) and (vMix.getInputPath_num(NumsInput.VIDEO_B) != cont.path))
+            case TipoContenido.PLACA:
+                return ((vMix.getInputPath_num(NumsInput.PLACA_A) != cont.path) and (vMix.getInputPath_num(NumsInput.PLACA_B) != cont.path))
+            case TipoContenido.FOTOBMP:
+                return ((vMix.getInputPath_num(NumsInput.MICRO_A) != cont.path) and (vMix.getInputPath_num(NumsInput.MICRO_B) != cont.path))
+            case TipoContenido.MUSICA:
+                pass
+
     def _goLive(self,contAct):
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
 
         OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER HACER ALGO PARA RESOLVER CUANDO NO ES ASÍ.
         """
-        print("Hora actual simulada:" + str(self._get_sim_time()))
+        print("Hora actual simulada: " + str(self._get_sim_time()))
         if contAct == None:
             print("Contenido inexistente")
 
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                self._toggleLiveInput_num(NumsInput.VIDEO_A,NumsInput.VIDEO_B)
+                self._goLiveVideo()
             case TipoContenido.CAMARA:
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
-                self._toggleLiveInput_num(NumsInput.PLACA_A,NumsInput.PLACA_B) # Cuando es placa swappea el input del overlay 1.
+                self._goLivePlaca() # Cuando es placa swappea el input del overlay 1.
             case TipoContenido.MUSICA:
                 pass
             case TipoContenido.IMAGENCAM:
-                pass # que corno es imagencam
+                self.vMix.cutDirect_number(1) # placheolder de camara
             case TipoContenido.FOTOBMP:
-                self._toggleLiveInput_num(NumsInput.MICRO_A,NumsInput.MICRO_B)
+                self._goLiveMicro()
             case _:
                 print(f"Tipo de contenido desconocido: {tipo}")
 
         if self.todo_precargado == False:
             self._cargaProx() # Después de mandar al aire precarga el prox
 
-            
-
-    def _toggleLiveInput_num(self,numInput_A,numInput_B):
-        """
-        Swapea input A por B del tipo correspondiente
-        """
-        print("llamo toggle")
+    def _goLiveVideo(self):
         vMix = self.vMix
-        
-        # Esta cantidad de ifs anidados es un acto de terrorismo, reescribir y reorganizar el flujo del toggle y el swap
+        A_live = vMix._isInputLive(NumsInput.VIDEO_A)
+        B_live = vMix._isInputLive(NumsInput.VIDEO_B)
 
-        if numInput_A != NumsInput.PLACA_A: # Si no es placa
-            if vMix._isInputLive(numInput_A):
-                vMix.setOutput_number(numInput_B)
+        if A_live or (A_live == False and B_live == False): # Si está A (o ninguno) al aire.
+            vMix.restartInput_number(NumsInput.VIDEO_B)
+            vMix.playInput_number(NumsInput.VIDEO_B)
+            vMix.setOutput_number(NumsInput.VIDEO_B)
+            vMix.listClear(NumsInput.VIDEO_A)
+        else:
+            vMix.restartInput_number(NumsInput.VIDEO_A) # Si está B al aire.
+            vMix.playInput_number(NumsInput.VIDEO_A)
+            vMix.setOutput_number(NumsInput.VIDEO_A)
+            vMix.listClear(NumsInput.VIDEO_B)
 
-                if numInput_B == NumsInput.VIDEO_B:
-                    self.vMix.restartInput_number(numInput_B)
-                    self.vMix.playInput_number(numInput_B)
+    def _goLivePlaca(self):
+        vMix = self.vMix
 
-                vMix.listClear(numInput_A)
+        if vMix._isOverlayLive(OverlaySlots.PLACA_ACT): # Si está saliendo una placa ya al aire.
+            if(vMix._getOverlayInput(OverlaySlots.PLACA_ACT) == NumsInput.PLACA_A): # Si era A.
+                vMix.setOverlay_on(NumsInput.PLACA_B,OverlaySlots.PLACA_ACT)
+                vMix.listClear(NumsInput.PLACA_A)
             else:
-                vMix.setOutput_number(numInput_A) # OJO: Si ninguno de los 2 está al aire, sale el A. Tener en cuenta al precargar.
+                vMix.setOverlay_on(NumsInput.PLACA_A,OverlaySlots.PLACA_ACT) # Si era B.
+                vMix.listClear(NumsInput.PLACA_B)
+        else:
+            vMix.setOverlay_on(NumsInput.PLACA_A,OverlaySlots.PLACA_ACT)
 
-                if numInput_A == NumsInput.VIDEO_A:
-                    self.vMix.restartInput_number(numInput_A)
-                    self.vMix.playInput_number(numInput_A)
+    def _goLiveMicro(self):
+        vMix = self.vMix
+        A_live = vMix._isInputLive(NumsInput.VIDEO_A)
+        B_live = vMix._isInputLive(NumsInput.VIDEO_B)
 
-                vMix.listClear(numInput_B)
-        else: # Es placa
-            if vMix._isOverlayLive(OverlaySlots.PLACA_ACT): # Si está saliendo actualmente una placa al aire:
-                if(vMix._getOverlayInput(OverlaySlots.PLACA_ACT) == NumsInput.PLACA_A):
-                    vMix.setOverlay_on(NumsInput.PLACA_B,OverlaySlots.PLACA_ACT) # Mando PLACA_B al aire x overlay.
-                else:
-                    vMix.setOverlay_on(NumsInput.PLACA_A,OverlaySlots.PLACA_ACT) # Mando PLACA_A al aire x overlay
-            else:
-                vMix.setOverlay_on(NumsInput.PLACA_A,OverlaySlots.PLACA_ACT) # OJO: Si ninguno de los 2 está al aire, sale el A. Tener en cuenta al precargar.
-
-
+        if A_live or (A_live == False and B_live == False): # Si está A (o ninguno) al aire.
+            vMix.setOutput_number(NumsInput.MICRO_B)
+            vMix.listClear(NumsInput.MICRO_A)
+        else:
+            vMix.setOutput_number(NumsInput.MICRO_A) # Si está B al aire.
+            vMix.listClear(NumsInput.MICRO_B)
 
     def __clearAll(self):
         vMix = self.vMix
