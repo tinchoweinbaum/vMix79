@@ -5,6 +5,10 @@ el estado actual de la transmisión (método _tick()) para decidir si mandar otr
 
 El preset de vMix que se use debe tener 2 inputs por cada contenido dinámico. Tiene que precargar, por ejemplo, el próximo anuncio a salir antes de terminar de sacar el actual aire,
 lo mismo con las placas, separadores, micros, etc.
+
+
+IMPORTANTE: REHACER LOS METODOS QUE USEN _isInputLive(). IMPLEMENTAR ATRIBUTOS EN LA CLASE SCHEDULER QUE DETERMINAN SI EL INPUT DE CADA TIPO ES EL A O EL B.
+TIENE QUE SER DETERMENÍSTICO E INDEPENDIENTE DE VMIX, NO PUEDO PREGUNTARLE TANTAS VECES AL VMIX QUE ES LO QUE ESTÁ PASANDO.
 """
 
 import time
@@ -142,11 +146,12 @@ class Scheduler:
             
             if inputsParaCargar.get(cont.tipo) is not None: # Si tengo que cargar el cont. actual
                 if cont.path_valido() and not self._yaCargado(cont):
-                    print("cargo "  + str(cont.nombre) + "en input " + str(NumsInput(inputsParaCargar.get(cont.tipo))))
+                    #print("cargo "  + str(cont.path) + "en input " + str(NumsInput(inputsParaCargar.get(cont.tipo))))
                     vMix.listAddInput(inputsParaCargar.get(cont.tipo),cont.path)
                     inputsParaCargar[cont.tipo] = None # Problema!!!
-                else:
-                    print(f"{cont.nombre} no tiene un path valido: {cont.path}")
+            elif not cont.path_valido():
+                #print(cont.nombre + " no tiene un path valido")
+                pass
 
         #self.todo_precargado = True
         #print("No se encontraron más contenidos para precargar")
@@ -237,6 +242,7 @@ class Scheduler:
 
     def __clearAll(self):
         vMix = self.vMix
+
         vMix.listClear(NumsInput.MICRO_A)
         vMix.listClear(NumsInput.MICRO_B)
 
@@ -244,9 +250,12 @@ class Scheduler:
         vMix.listClear(NumsInput.PLACA_B)
 
         vMix.listClear(NumsInput.VIDEO_A)
-        vMix.listClear(NumsInput.VIDEO_B)
+        vMix.listClear(NumsInput.VIDEO_B)    
 
         vMix.setOverlay_off(OverlaySlots.PLACA_ACT)
+
+        # Forzar salida neutra
+        vMix.cutDirect_number(NumsInput.CAMARA_ACT)
 
         
 if __name__ == "__main__":
