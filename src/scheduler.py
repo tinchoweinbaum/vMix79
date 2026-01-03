@@ -158,11 +158,11 @@ class Scheduler:
         vMix = self.vMix
         match cont.tipo:
             case TipoContenido.VIDEO:
-                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path) and (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path))
+                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path) or (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path))
             case TipoContenido.PLACA:
-                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path) and (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path))
+                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path) or (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path))
             case TipoContenido.FOTOBMP:
-                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path) and (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path))
+                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path) or (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path))
             case TipoContenido.MUSICA:
                 pass
 
