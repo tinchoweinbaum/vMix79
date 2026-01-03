@@ -142,7 +142,7 @@ class Scheduler:
             
             if inputsParaCargar.get(cont.tipo) is not None: # Si tengo que cargar el cont. actual
                 if cont.path_valido() and not self._yaCargado(cont):
-                    print("cargo en input " + str(NumsInput(inputsParaCargar.get(cont.tipo))))
+                    print("cargo "  + str(cont.nombre) + "en input " + str(NumsInput(inputsParaCargar.get(cont.tipo))))
                     vMix.listAddInput(inputsParaCargar.get(cont.tipo),cont.path)
                     inputsParaCargar[cont.tipo] = None # Problema!!!
                 else:
