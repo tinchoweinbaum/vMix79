@@ -297,7 +297,7 @@ class Scheduler:
         
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
-    pathExcel = BASE_DIR / "playlistprueba.xlsx"
+    pathExcel = BASE_DIR / "playlist.xlsx"
     if pathExcel.exists:
         programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
         vMix = VmixApi() # Objeto API de vMix
