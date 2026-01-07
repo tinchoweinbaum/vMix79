@@ -189,16 +189,16 @@ class Scheduler:
 
     def _yaCargado(self, cont):
         """
-        Recibe un objeto de contenido y devuelve True si ya está precargado. False si no, XD.
+        Recibe un objeto de contenido y devuelve True si ya está precargado en el próximo input que va a salir al aire. False si no.
         """
         vMix = self.vMix
         match cont.tipo:
             case TipoContenido.VIDEO:
-                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path) or (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path))
+                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path and self.videoProx == NumsInput.VIDEO_A) or (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path and self.videoProx == NumsInput.VIDEO_B))
             case TipoContenido.PLACA:
-                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path) or (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path))
+                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path and self.placaProx == NumsInput.PLACA_A) or (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path and self.placaProx == NumsInput.PLACA_B))
             case TipoContenido.FOTOBMP:
-                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path) or (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path))
+                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path and self.microProx == NumsInput.MICRO_A) or (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path and self.microProx == NumsInput.MICRO_B))
             case TipoContenido.MUSICA:
                 pass
 
