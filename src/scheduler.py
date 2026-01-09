@@ -62,7 +62,7 @@ class Scheduler:
 
         # ---- RELOJ SIMULADO ----
         self.sim_start_real = None      # datetime real cuando arranca el scheduler
-        self.sim_start_time = dt(0,4) # hora simulada inicial (00:00)
+        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
 
     def _get_sim_time(self):
         elapsed = datetime.now() - self.sim_start_real
@@ -236,14 +236,17 @@ class Scheduler:
     def _goLiveVideo(self):
         # Toggle de inputs de video.
         vMix = self.vMix
+        vMix.setOverlay_off(OverlaySlots.PLACA_ACT)
 
         if self.videoProx is None:
             print("Error de precarga de video. (post)")
             return
 
+        vMix.setOutput_number(self.videoProx) # Manda al aire
         vMix.restartInput_number(self.videoProx)
+        time.sleep(0.05) # Reinicia, espera y manda play
         vMix.playInput_number(self.videoProx)
-        vMix.setOutput_number(self.videoProx)
+
 
         if self.videoAct is not None:
             vMix.listClear(self.videoAct)
@@ -271,6 +274,7 @@ class Scheduler:
     def _goLiveMicro(self):
         # Toggle de inputs de micro (.bmp).
         vMix = self.vMix
+        vMix.setOverlay_off(OverlaySlots.PLACA_ACT)
 
         if self.microProx is None:
             print("Error de precarga de micro.")

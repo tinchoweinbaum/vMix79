@@ -3,25 +3,123 @@ Este módulo es un wrapper para la api de vmix, así puedo importar
 este módulo en otros archivos y puedo hacer llamados a la API de forma abstracta.
 
 Las duraciones de las requests van en ms.
+
+Rehacer todo esto usando protocolo TCP en vez de HTTPS, es bocha más rápido
+
 """
 
-import requests
+import socket
+import threading
+import time
 import xml.etree.ElementTree as ET
 
 class VmixApi:
-    def __init__(self, host="127.0.0.1", port=8088, timeout=15.0):
+    def __init__(self, host="127.0.0.1", port=8099, timeout=None):
+        # Nota: El puerto TCP por defecto de vMix es 8099, no 8088.
+        # Si pasas 8088 (HTTP) por error, intentaremos forzar 8099 o usar el dado si es explícito.
+        if port != 8089: 
+            print("La api de vMixTCP solo funciona en el puerto 8099. Se conectara por ese puerto y no por el especificado.")
+            self.port = 8099
+        else:
+            self.port = port
+            
         self.host = host
-        self.port = port
-        self.timeout = timeout
-        self.api_url = f"http://{host}:{port}/api/"
-
-        #Estos atributos se usan para representar el estado actual del vMix
+        self.timeout = timeout # Se mantiene por compatibilidad, aunque TCP usa socket timeout
+        
+        # --- Atributos de Estado (Idénticos al wrapper anterior) ---
         self.live = None
         self.preview = None
         self.inputs = {}
         self.overlays = {}
         self.audio = {}
         self.streaming = False
+        
+        # --- Variables Internas TCP ---
+        self._sock = None # socket de conexion tcp
+        self._running = False
+        self._lock = threading.Lock() # Para evitar conflictos de lectura/escritura. Se asegura de que el buffer que se tiene guardado se mantenga en memoria.
+        self._xml_root = None # Xml en memoria para acceso rápido.
+        self._buffer = ""
+        
+        # Iniciar conexión inmediatamente
+        self._connect_tcp()
+
+    def _connect_tcp(self):
+        """
+        Metodo que se encarga de crear la conexion TCP de la api.
+        """
+        try:
+            self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Objeto de la clase socket, usando IPv4 y TCP (sock_stream)
+            self._sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # Desactiva optimizaciones de ancho de banda para reducir latencia
+            self._sock.connect((self.host, self.port))
+            self._running = True # Realiza la conexión misma a la api por TCP.
+            
+            # Listener TCP, la funcion va sin () porque NO se está llamando. Es un puntero a ella.
+            self._thread = threading.Thread(target=self._tcp_listener, daemon=True) # Crea un objeto de la clase thread y lo arranca, target es un puntero a una función que se encarga del loop de lectura de la api.
+            self._thread.start() # daemon = True lo marca como subproceso para el garbage collector de python, entonces si este script se detiene, también lo hace el daemon.
+            
+            # Suscripciones iniciales y petición de estado completo
+            self._send_raw("SUBSCRIBE TALLY") # Pide a la api de vMix que pushee datos por el socket tcp cada vez que hay un cambio en el software.
+            self._send_raw("SUBSCRIBE ACTS")
+            self._send_raw("XML") # Pide el estado inicial completo
+            
+            # Pequeña espera para asegurar que el primer XML llegue y se pueblen los inputs
+            # antes de que el usuario intente hacer algo.
+            time.sleep(0.2)
+            
+        except Exception as e:
+            print(f"ERROR CRÍTICO: No se pudo conectar a vMix por TCP ({self.host}:{self.port}): {e}")
+
+    def _send_raw(self, text):
+        """Envío crudo de strings a la api de vMix con el formato especifico que se pide en la documentación: terminadas en CRLF."""
+        if self._sock and self._running:
+            try:
+                msg = text + "\r\n" # Arma el string con formato correcto
+                self._sock.sendall(msg.encode('utf-8')) # Lo envía
+            except socket.error:
+                self._running = False
+
+    def _tcp_listener(self):
+        """Loop de lectura en hilo secundario."""
+        while self._running:
+            try:
+                data = self._sock.recv(8192)
+                if not data: break
+                
+                self._buffer += data.decode('utf-8', errors='ignore')
+                
+                while '\r\n' in self._buffer:
+                    line, self._buffer = self._buffer.split('\r\n', 1)
+                    self._parse_tcp_line(line)
+            except:
+                self._running = False
+                break
+
+    def _parse_tcp_line(self, line):
+        """Parsea líneas individuales del stream TCP."""
+        parts = line.split(" ")
+        
+        with self._lock:
+            # Procesar TALLY (Live/Preview)
+            if parts[0] == "TALLY" and len(parts) > 2 and parts[1] == "OK":
+                tally_str = parts[2]
+                for i, char in enumerate(tally_str):
+                    input_num = i + 1
+                    if char == '1': self.live = input_num
+                    elif char == '2': self.preview = input_num
+            
+            # Procesar XML (Estado completo)
+            elif "XML" in line and "<vmix>" in line:
+                try:
+                    start = line.find("<vmix>")
+                    end = line.find("</vmix>") + 7
+                    if start != -1 and end != -1:
+                        xml_raw = line[start:end]
+                        self._xml_root = ET.fromstring(xml_raw)
+                        self.__setState(self._xml_root)
+                except:
+                    print("No se pudo parsear el XML de vMix.")
+                    pass
 
     def cut(self):
         self.__makeRequest("Cut")
@@ -118,44 +216,23 @@ class VmixApi:
         self.__makeRequest(function, extraParams = {"Value": "Off"})
 
 
-    def __makeRequest(self,function,duration = 0,extraParams = None): #TODOS LLAMAN A ESTA FUNCIÓN PARA EFECTUAR LA REQUEST.
-        params = { #Creo un diccionario para hacer la request.
-            "Function": function,
-            "Duration": duration
-        }
-
-        if extraParams is not None: #Parametros extra para otras funciones que requieran mas parametros
-            params.update(extraParams)
-
-        try: 
-            query = requests.get(self.api_url,params = params,timeout = 15.0)
-            query.raise_for_status()
-            self._updateState() #Updatea el estado del objeto con el vMix en vivo
-            return query.text #devuelve el xml de vMix
+    def __makeRequest(self, function, duration=0, extraParams=None):
+        """
+        Envía rawtext a la api de vMix por TCP, que es la forma en que lo pide.
+        """
+        cmd = f"FUNCTION {function}"
+        if duration > 0:
+            cmd += f" Duration={duration}"
         
-        except requests.exceptions.HTTPError as e:
-            print(f"Error HTTP al comunicarse con la API de vMix, probablemente no este vMix abierto: {e}")
-            return None
-
-        except requests.RequestException as e:
-            print(f"Error de conexion o timeout con la API de vMix, probablemente no este vMix abierto: {e}")
-            return None
+        if extraParams: # Si hay parámetros extras como numero de input, overlay, etc.
+            for k, v in extraParams.items():
+                cmd += f" {k}={v}"
+        
+        self._send_raw(cmd)
+        return "TCP_SENT"
     
     def __getState(self):
-        try:
-            query = requests.get(self.api_url) #pide el xml como texto (GET) y lo convierte a arbol
-            query.raise_for_status()
-
-            xmlArbol = ET.fromstring(query.text) #convierte
-            return xmlArbol
-
-        except requests.RequestException as e:
-            print(f"Error de conexion o timeout con la API de vMix, probablemente no este vMix abierto: {e}")
-            return None
-
-        except ET.ParseError as e:
-            print(f"Error al parsear XML de vMix: {e}")
-            return None
+        return self._xml_root # 
     
     def __setState(self,arbolXml):
         if arbolXml is None:
