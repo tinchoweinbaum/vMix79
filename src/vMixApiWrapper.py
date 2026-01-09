@@ -17,7 +17,7 @@ class VmixApi:
     def __init__(self, host="127.0.0.1", port=8099, timeout=None):
         # Nota: El puerto TCP por defecto de vMix es 8099, no 8088.
         # Si pasas 8088 (HTTP) por error, intentaremos forzar 8099 o usar el dado si es explícito.
-        if port != 8089: 
+        if port != 8099: 
             print("La api de vMixTCP solo funciona en el puerto 8099. Se conectara por ese puerto y no por el especificado.")
             self.port = 8099
         else:
@@ -96,30 +96,26 @@ class VmixApi:
                 break
 
     def _parse_tcp_line(self, line):
-        """Parsea líneas individuales del stream TCP."""
-        parts = line.split(" ")
-        
-        with self._lock:
-            # Procesar TALLY (Live/Preview)
-            if parts[0] == "TALLY" and len(parts) > 2 and parts[1] == "OK":
-                tally_str = parts[2]
+        # Manejo de Tally (Cambios de Live/Preview)
+        if line.startswith("TALLY OK"):
+            tally_str = line.split(" ")[2]
+            with self._lock:
                 for i, char in enumerate(tally_str):
-                    input_num = i + 1
-                    if char == '1': self.live = input_num
-                    elif char == '2': self.preview = input_num
-            
-            # Procesar XML (Estado completo)
-            elif "XML" in line and "<vmix>" in line:
-                try:
-                    start = line.find("<vmix>")
-                    end = line.find("</vmix>") + 7
-                    if start != -1 and end != -1:
-                        xml_raw = line[start:end]
-                        self._xml_root = ET.fromstring(xml_raw)
-                        self.__setState(self._xml_root)
-                except:
-                    print("No se pudo parsear el XML de vMix.")
-                    pass
+                    if char == '1': self.live = i + 1
+                    elif char == '2': self.preview = i + 1
+            return
+
+        # Manejo de XML (Estado Completo)
+        if "<vmix>" in line:
+            try:
+                start, end = line.find("<vmix>"), line.find("</vmix>") + 7
+                root = ET.fromstring(line[start:end])
+                with self._lock:
+                    self._xml_root = root
+                self.__setState(root)
+            except:
+                print("No se pudo parsear el XML de vMix.")
+                pass
 
     def cut(self):
         self.__makeRequest("Cut")
@@ -162,47 +158,50 @@ class VmixApi:
 
     def listClear(self,listNum):
         function = "ListRemoveAll"
-        self.__makeRequest(function,extraParams = {"Input": listNum})
+        self.__makeRequest(function,extraParams = {"Input": listNum}) # No pido árbol XML acá porque no es necesario para borrar.
 
     def listAddInput(self,listNum,path):
         function = "ListAdd"
         self.__makeRequest(function,extraParams = {"Input": listNum, "Value": path})
+        self._send_raw("XML")
 
     def getInputPath_num(self, inputNum):
-        self._updateState()
-        xmlAct = self.__getState()  # root del XML (ElementTree)
+            """
+            Retorna el path del archivo cargado en un input específico.
+            Versión optimizada para TCP y Multithreading.
+            """
+            xmlAct = self.__getState()  # __getState usa threadlock.
 
-        # Buscar el input por número
-        for input_node in xmlAct.findall(".//input"):
-            if input_node.get("number") == str(inputNum):
-
-                input_type = input_node.get("type")
-
-                # CASO 1: Video / Image / Audio file
+            if xmlAct is None:
+                print("Error: El XML aún no ha sido cargado.")
+                return None
+            
+            input_node = xmlAct.find(f".//input[@number='{inputNum}']")
+            
+            if input_node is not None:
+                # CASO 1: Video / Image / Audio file (Nodo <file>)
                 file_node = input_node.find("file")
                 if file_node is not None and file_node.text:
                     return file_node.text
 
-                # CASO 2: List con 1 solo item
+                # CASO 2: List (Nodo <list>)
                 list_node = input_node.find("list")
                 if list_node is not None:
                     items = list_node.findall("item")
-                    if len(items) == 1:
-                        return items[0].text
-                    elif len(items) == 0:
-                        return None
+                    if len(items) == 0:
+                        return None # Lista vacía
+                    if len(items) > 0:
+                        print(f"ERROR: La lista {inputNum} tiene mas de 1 item")
                     else:
-                        # Esto en teoría NUNCA debería pasar
-                        raise RuntimeError(
-                            f"List input {inputNum} tiene más de un item"
-                        )
+                        return items[0].text
+            
+                print(f"El input {inputNum} no es file ni list.")
+                return None # el tipo de input no es file ni list. (no debería pasar nunca tampoco)
+            
 
-                # CASO 3: Input sin path (Camera, GT, Color, etc)
-                return None
-
-        print(f"No se encontró el input {inputNum}, probablemente no este el preset correcto cargado.")
-        return None
-
+            print(f"No se encontró el input {inputNum}. Probablemente no este cargado el preset correcto de vMix.")
+            return None
+    
     def setOutput_number(self,inputNum):
         function = "ActiveInput"
         self.__makeRequest(function,extraParams = {"Input": inputNum})
@@ -216,7 +215,7 @@ class VmixApi:
         self.__makeRequest(function, extraParams = {"Value": "Off"})
 
 
-    def __makeRequest(self, function, duration=0, extraParams=None):
+    def __makeRequest(self, function, extraParams=None,duration = 0):
         """
         Envía rawtext a la api de vMix por TCP, que es la forma en que lo pide.
         """
@@ -232,67 +231,51 @@ class VmixApi:
         return "TCP_SENT"
     
     def __getState(self):
-        return self._xml_root # 
+        with self._lock:
+            return self._xml_root # Le pide al daemon TCP que lockee el árbol en su estado actual para no devolverlo mientras se está modificando.
     
-    def __setState(self,arbolXml):
-        if arbolXml is None:
-            return
+    def __setState(self, root):
+        """Parsea el XML a diccionarios locales y hace el swap atómico."""
+        temp_inputs = {}
+        temp_overlays = {}
         
-        # Resetea el estado de vMix
-        self.inputs.clear()
-        self.overlays.clear()
-        self.live = None
-        self.preview = None
-        self.streaming = False
-
-        #Actualización de live/preview:
-        active = arbolXml.find("active") #Se fija que inputs están de preview/live y actualiza
-        preview = arbolXml.find("preview")
-
-        if active is not None:
-            self.live = int(active.text)
-
-        if preview is not None:
-            self.preview = int(preview.text)
-
-        #Actualización de inputs:
-
-        inputs = arbolXml.find("inputs")
-        
-        if inputs is not None: #Itera por todos los inputs del preset y actualiza su estado
-            for input in inputs.findall("input"):
-                key = input.attrib.get("key")
-                self.inputs[key] = {
-                    "number": int(input.attrib.get("number",0)),
-                    "type": input.attrib.get("type"),
-                    "state": input.attrib.get("state"),
-                    "title": input.attrib.get("title")
+        # Parsear Inputs
+        ins_node = root.find("inputs")
+        if ins_node is not None:
+            for inp in ins_node.findall("input"):
+                key = inp.attrib.get("key")
+                temp_inputs[key] = {
+                    "number": int(inp.attrib.get("number", 0)),
+                    "type": inp.attrib.get("type"),
+                    "title": inp.attrib.get("title")
                 }
 
-        #Actualización de overlays:
+        # Parsear Overlays
+        ov_node = root.find("overlays")
+        if ov_node is not None:
+            for ov in ov_node.findall("overlay"):
+                num = int(ov.attrib.get("number"))
+                val = ov.text
+                temp_overlays[num] = int(val) if val and val != "0" else None
 
-        overlays = arbolXml.find("overlays")
+        # Update de punteros (Thread Safe)
+        with self._lock:
+            self.inputs = temp_inputs
+            self.overlays = temp_overlays
+            
+            st_node = root.find("streaming")
+            if st_node is not None:
+                self.streaming = st_node.text == "True"
 
-        if overlays is not None:
-            for overlay in overlays:
-                num = int(overlay.attrib.get("number", 0)) #Itera por los overlays tomando su numero y su input
-
-                if overlay.text is not None:
-                    self.overlays[num] = int(overlay.text)
-                else:
-                    self.overlays[num] = None
-
-        #Actualizacion de streaming:
-
-        streaming = arbolXml.find("streaming")
-        self.streaming = True if streaming.text == "True" else False
+            act, pre = root.find("active"), root.find("preview")
+            if act is not None: self.live = int(act.text)
+            if pre is not None: self.preview = int(pre.text)
 
     def _isInputLive(self, inputNum):
         """
         Recibe un numero de input y devuelve True si está al aire
         """
 
-        self._updateState()
         estadoAct = self.__getState()
 
         inputAct = estadoAct.find("active")
@@ -337,11 +320,6 @@ class VmixApi:
     def playInput_number(self, inputNum):
         self.__makeRequest("Play", {"Input": inputNum})
 
-
-    def _updateState(self):
-        estadoAct = self.__getState()
-        self.__setState(estadoAct)
-
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
         print(f"Host: {self.host}")
@@ -377,4 +355,3 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    vMix._updateState()
