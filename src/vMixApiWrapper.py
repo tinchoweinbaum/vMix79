@@ -75,6 +75,7 @@ class VmixApi:
         if self._sock and self._running:
             try:
                 msg = text + "\r\n" # Arma el string con formato correcto
+                print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
                 self._sock.sendall(msg.encode('utf-8')) # Lo envía
             except socket.error:
                 self._running = False
@@ -84,12 +85,14 @@ class VmixApi:
         while self._running:
             try:
                 data = self._sock.recv(8192)
-                if not data: break
+                if not data:
+                    break
                 
                 self._buffer += data.decode('utf-8', errors='ignore')
                 
                 while '\r\n' in self._buffer:
                     line, self._buffer = self._buffer.split('\r\n', 1)
+                    print(f"VMIX RESPONDE: {line}")
                     self._parse_tcp_line(line)
             except:
                 self._running = False
@@ -215,20 +218,25 @@ class VmixApi:
         self.__makeRequest(function, extraParams = {"Value": "Off"})
 
 
-    def __makeRequest(self, function, extraParams=None,duration = 0):
-        """
-        Envía rawtext a la api de vMix por TCP, que es la forma en que lo pide.
-        """
+    def __makeRequest(self, function, extraParams=None, duration=0):
         cmd = f"FUNCTION {function}"
+        
+        params_list = [] # lista de parametros para el call.
+        
         if duration > 0:
-            cmd += f" Duration={duration}"
-        
-        if extraParams: # Si hay parámetros extras como numero de input, overlay, etc.
+            params_list.append(f"Duration={duration}")
+            
+        if extraParams:
             for k, v in extraParams.items():
-                cmd += f" {k}={v}"
+                params_list.append(f"{k}={v}")
         
-        self._send_raw(cmd)
-        return "TCP_SENT"
+        # Concateno parámetros con & para TCP, espacios no.
+        if params_list:
+            query_string = "&".join(params_list) # La versión de TCP que usa la API de vMix no acepta espacios para concatenar. cosas de vMix 29.
+            cmd = f"{cmd} {query_string}"
+            
+            self._send_raw(cmd)
+            return "TCP_SENT"
     
     def __getState(self):
         with self._lock:
@@ -355,3 +363,5 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
+    vMix.listAddInput(2,r"D:\MEME.jpg")
+    vMix.setOutput_number(2)
