@@ -92,7 +92,7 @@ class VmixApi:
                 
                 while '\r\n' in self._buffer:
                     line, self._buffer = self._buffer.split('\r\n', 1)
-                    print(f"VMIX RESPONDE: {line}")
+                    #print(f"VMIX RESPONDE: {line}")
                     self._parse_tcp_line(line)
             except:
                 self._running = False
