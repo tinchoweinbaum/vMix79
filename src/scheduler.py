@@ -125,10 +125,8 @@ class Scheduler:
             inputLibre = NumsInput.VIDEO_B
         else:
             inputLibre = NumsInput.VIDEO_A
-
-        if self.vMix.getInputPath_num(inputLibre) is not None:
-            return
-
+        
+        vMix.listClear(inputLibre)
         vMix.listAddInput(inputLibre, cont.path)
 
         self.videoProx = inputLibre
@@ -144,9 +142,7 @@ class Scheduler:
         else:
             inputLibre = NumsInput.PLACA_A
 
-        if self.vMix.getInputPath_num(inputLibre) is not None:
-            return
-
+        vMix.listClear(inputLibre)
         vMix.listAddInput(inputLibre, cont.path)
 
         self.placaProx = inputLibre
@@ -162,32 +158,44 @@ class Scheduler:
         else:
             inputLibre = NumsInput.MICRO_A
 
-        if self.vMix.getInputPath_num(inputLibre) is not None:
-            return
-
+        vMix.listClear(inputLibre)
         vMix.listAddInput(inputLibre, cont.path)
 
         self.microProx = inputLibre
         
     def _cargaProx(self):
         """
-        Checkea que hace falta precargar en A o B para todos los tipos de contenido
+        Busca en la lista de contenidos el PRÓXIMO de cada tipo para precargar.
         """
-        indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
+        # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
+        buscando_video = self.videoProx is None
+        buscando_placa = self.placaProx is None
+        buscando_micro = self.microProx is None
 
-        for cont in self.contenidos[indexLista:]:
-            if cont.path_valido() and not self._yaCargado(cont):
-                match cont.tipo:
-                    case TipoContenido.VIDEO: self._precargaVideo(cont)
-                    case TipoContenido.PLACA: self._precargaPlaca(cont)
-                    case TipoContenido.FOTOBMP: self._precargaMicro(cont)
+        for cont in self.contenidos[self.indexEmision:]:
+            print("index emision actual: " + str(self.indexEmision))
+            print("cont actual: " + str(cont.nombre))
+            if not cont.path_valido():
+                print(cont.nombre + " No tiene un path valido.")
+                continue
 
-                if (self.videoProx is not None and self.placaProx is not None and self.microProx is not None): # Cuando haya precargado todo.
-                    return
-            elif(not cont.path_valido()):
-                print(cont.nombre + " no tiene un path valido.")
-            else:
-                pass
+            match cont.tipo:
+                case TipoContenido.VIDEO:
+                    if buscando_video:
+                        self._precargaVideo(cont)
+                        buscando_video = False # Actualizo las flags cuando encuentro
+                
+                case TipoContenido.PLACA:
+                    if buscando_placa:
+                        self._precargaPlaca(cont)
+                        buscando_placa = False
+                
+                case TipoContenido.FOTOBMP:
+                    if buscando_micro:
+                        self._precargaMicro(cont)
+                        buscando_micro = False
+                case TipoContenido.MUSICA:
+                    pass
 
     def _yaCargado(self, cont):
         """
@@ -196,11 +204,11 @@ class Scheduler:
         vMix = self.vMix
         match cont.tipo:
             case TipoContenido.VIDEO:
-                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path and self.videoProx == NumsInput.VIDEO_A) or (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path and self.videoProx == NumsInput.VIDEO_B))
+                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path and self.videoAct == NumsInput.VIDEO_A) or (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path and self.videoAct == NumsInput.VIDEO_B))
             case TipoContenido.PLACA:
-                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path and self.placaProx == NumsInput.PLACA_A) or (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path and self.placaProx == NumsInput.PLACA_B))
+                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path and self.placaAct == NumsInput.PLACA_A) or (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path and self.placaAct == NumsInput.PLACA_B))
             case TipoContenido.FOTOBMP:
-                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path and self.microProx == NumsInput.MICRO_A) or (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path and self.microProx == NumsInput.MICRO_B))
+                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path and self.microAct == NumsInput.MICRO_A) or (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path and self.microAct == NumsInput.MICRO_B))
             case TipoContenido.MUSICA:
                 pass
 

@@ -12,6 +12,15 @@ import socket
 import threading
 import time
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
+
+def print_xml_bonito(root):
+    if root is not None:
+        # Convertimos a string
+        raw_str = ET.tostring(root, encoding='utf-8')
+        # Usamos minidom para darle formato
+        pretty_str = minidom.parseString(raw_str).toprettyxml(indent="  ")
+        print(pretty_str)
 
 class VmixApi:
     def __init__(self, host="127.0.0.1", port=8099, timeout=None):
@@ -75,7 +84,7 @@ class VmixApi:
         if self._sock and self._running:
             try:
                 msg = text + "\r\n" # Arma el string con formato correcto
-                print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
+                #print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
                 self._sock.sendall(msg.encode('utf-8')) # Lo envía
             except socket.error:
                 self._running = False
@@ -363,5 +372,4 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    vMix.listAddInput(2,r"D:\MEME.jpg")
-    vMix.setOutput_number(2)
+    print_xml_bonito(vMix._xml_root)
