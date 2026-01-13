@@ -218,13 +218,15 @@ class VmixApi:
         function = "ActiveInput"
         self.__makeRequest(function,extraParams = {"Input": inputNum})
 
-    def setOverlay_on(self,inputNum,overNum):
-        function = f"OverlayInput{overNum}"
-        self.__makeRequest(function, extraParams = {"Input": inputNum, "Value": "On"})
+    def setOverlay_on(self, inputNum, overNum):
+            # OverlayInputXIn fuerza la entrada del overlay independientemente de si estaba puesto o no
+            function = f"OverlayInput{overNum}In" 
+            self.__makeRequest(function, extraParams = {"Input": inputNum})
 
-    def setOverlay_off(self,overNum):
-        function = f"OverlayInput{overNum}"
-        self.__makeRequest(function, extraParams = {"Value": "Off"})
+    def setOverlay_off(self, overNum):
+        # OverlayInputXOut fuerza la salida, no importa qué input tenga
+        function = f"OverlayInput{overNum}Out"
+        self.__makeRequest(function)
 
 
     def __makeRequest(self, function, extraParams=None, duration=0):
@@ -244,8 +246,11 @@ class VmixApi:
             query_string = "&".join(params_list) # La versión de TCP que usa la API de vMix no acepta espacios para concatenar. cosas de vMix 29.
             cmd = f"{cmd} {query_string}"
             
+        try:
             self._send_raw(cmd)
             return "TCP_SENT"
+        except Exception as e:
+            print(f"ERROR TCP: No se pudo enviar el comando {function}, {e}")
     
     def __getState(self):
         with self._lock:

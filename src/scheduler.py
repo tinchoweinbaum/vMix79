@@ -40,7 +40,7 @@ class NumsInput(IntEnum):
     MICRO_B = 9
 
 class OverlaySlots(IntEnum):
-    PLACA_ACT = 1
+    SLOT_PLACA = 1
 
 class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
@@ -62,7 +62,7 @@ class Scheduler:
 
         # ---- RELOJ SIMULADO ----
         self.sim_start_real = None      # datetime real cuando arranca el scheduler
-        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
+        self.sim_start_time = dt(0,4) # hora simulada inicial (00:00)
 
     def _get_sim_time(self):
         elapsed = datetime.now() - self.sim_start_real
@@ -101,7 +101,7 @@ class Scheduler:
         si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
         """
 
-        if self.indexEmision > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
+        if self.indexEmision >= len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
             print("Se transmitió todo el playlist.")
             self.stop()
             return
@@ -110,21 +110,21 @@ class Scheduler:
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
-            self._goLive(contAct)
             self.indexEmision += 1
+            self._goLive(contAct)
     
     def _precargaVideo(self,cont):
         vMix = self.vMix
-
+        # print("Llamo precarga video.")
         if self.videoProx is not None: # Si no hace falta precargar:
             print("Error de precarga de video. (pre)")
             print(cont.path)
             return
         
-        if self.videoAct == NumsInput.VIDEO_A:
+        if self.videoAct == NumsInput.VIDEO_A: # Si estaba A al aire, B es prox
             inputLibre = NumsInput.VIDEO_B
         else:
-            inputLibre = NumsInput.VIDEO_A
+            inputLibre = NumsInput.VIDEO_A # Si estaba B al aire (o ninguno), prox es A
         
         vMix.listClear(inputLibre)
         vMix.listAddInput(inputLibre, cont.path)
@@ -133,8 +133,9 @@ class Scheduler:
 
     def _precargaPlaca(self,cont):
         vMix = self.vMix
-
+        # print("Llamo precarga placa.")
         if self.placaProx is not None:
+            print("Mala inicializacion de placa.")
             return
 
         if self.placaAct == NumsInput.PLACA_A:
@@ -149,7 +150,7 @@ class Scheduler:
 
     def _precargaMicro(self, cont):
         vMix = self.vMix
-    
+        # print("Llamo precarga micro.")
         if self.microProx is not None:
             return
 
@@ -173,8 +174,9 @@ class Scheduler:
         buscando_micro = self.microProx is None
 
         for cont in self.contenidos[self.indexEmision:]:
-            print("index emision actual: " + str(self.indexEmision))
-            print("cont actual: " + str(cont.nombre))
+            if not buscando_video and not buscando_placa and not buscando_micro:
+                return
+            
             if not cont.path_valido():
                 print(cont.nombre + " No tiene un path valido.")
                 continue
@@ -195,6 +197,8 @@ class Scheduler:
                         self._precargaMicro(cont)
                         buscando_micro = False
                 case TipoContenido.MUSICA:
+                    pass
+                case _: # Default
                     pass
 
     def _yaCargado(self, cont):
@@ -244,7 +248,7 @@ class Scheduler:
     def _goLiveVideo(self):
         # Toggle de inputs de video.
         vMix = self.vMix
-        vMix.setOverlay_off(OverlaySlots.PLACA_ACT)
+        vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
         if self.videoProx is None:
             print("Error de precarga de video. (post)")
@@ -270,7 +274,7 @@ class Scheduler:
             print("Error de precarga de placa.")
             return
 
-        vMix.setOverlay_on(self.placaProx, OverlaySlots.PLACA_ACT)
+        vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
 
         if self.placaAct is not None:
             vMix.listClear(self.placaAct)
@@ -282,7 +286,7 @@ class Scheduler:
     def _goLiveMicro(self):
         # Toggle de inputs de micro (.bmp).
         vMix = self.vMix
-        vMix.setOverlay_off(OverlaySlots.PLACA_ACT)
+        vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
         if self.microProx is None:
             print("Error de precarga de micro.")
@@ -308,7 +312,7 @@ class Scheduler:
         vMix.listClear(NumsInput.VIDEO_A)
         vMix.listClear(NumsInput.VIDEO_B)    
 
-        vMix.setOverlay_off(OverlaySlots.PLACA_ACT)
+        vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
         
 if __name__ == "__main__":
