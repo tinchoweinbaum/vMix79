@@ -1,14 +1,7 @@
 """
-Este archivo es el principal del proyecto, es el scheduler que se encarga de la lógica de todo lo que debe salir al aire.
-Usa todas las clases desarrolladas en el proyecto para organizar la transmisión por medio de una clase Scheduler que checkea cada medio segundo
-el estado actual de la transmisión (método _tick()) para decidir si mandar otro contenido al aire o no.
-
-El preset de vMix que se use debe tener 2 inputs por cada contenido dinámico. Tiene que precargar, por ejemplo, el próximo anuncio a salir antes de terminar de sacar el actual aire,
-lo mismo con las placas, separadores, micros, etc.
-
-
-IMPORTANTE: REHACER LOS METODOS QUE USEN _isInputLive(). IMPLEMENTAR ATRIBUTOS EN LA CLASE SCHEDULER QUE DETERMINAN SI EL INPUT DE CADA TIPO ES EL A O EL B.
-TIENE QUE SER DETERMENÍSTICO E INDEPENDIENTE DE VMIX, NO PUEDO PREGUNTARLE TANTAS VECES AL VMIX QUE ES LO QUE ESTÁ PASANDO.
+Archivo principal del proyecto, se encarga de organizar la transmisión y de mandar al aire el contenido que corresponda a la hora que corresponda.
+Usa las clases de excelParser y vMixApiWrapper (TCP) para hacer esto.
+Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
 """
 
 import time
@@ -38,6 +31,7 @@ class NumsInput(IntEnum):
     MUSICA_PROX = 7
     VIDEO_B = 8
     MICRO_B = 9
+    BLIP = 10
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
@@ -62,14 +56,14 @@ class Scheduler:
 
         # ---- RELOJ SIMULADO ----
         self.sim_start_real = None      # datetime real cuando arranca el scheduler
-        self.sim_start_time = dt(0,4) # hora simulada inicial (00:00)
+        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
 
     def _get_sim_time(self):
         elapsed = datetime.now() - self.sim_start_real
         sim_datetime = datetime.combine(datetime.today(), self.sim_start_time) + elapsed
         return sim_datetime.time()
 
-    def start(self):
+    def start(self,blipPath):
         self.running = True
         print("Scheduler iniciado")
 
@@ -86,6 +80,8 @@ class Scheduler:
 
         self.__clearAll()
         self._cargaProx() # Precarga los inputs prox para el primer tick
+
+        self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
 
         while self.running:
             self._tick()
@@ -216,6 +212,12 @@ class Scheduler:
             case TipoContenido.MUSICA:
                 pass
 
+    def playBlip(self):
+        vMix = self.vMix
+
+        vMix.setAudio_on(NumsInput.BLIP) # Algorítimicamente es lo mismo preguntar si está apagado el sonido que prenderlo todas las veces
+        vMix.playInput_number(NumsInput.BLIP)
+
     def _goLive(self,contAct):
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
@@ -275,6 +277,7 @@ class Scheduler:
             return
 
         vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
+        self.playBlip()
 
         if self.placaAct is not None:
             vMix.listClear(self.placaAct)
@@ -312,16 +315,20 @@ class Scheduler:
         vMix.listClear(NumsInput.VIDEO_A)
         vMix.listClear(NumsInput.VIDEO_B)    
 
+        vMix.listClear(NumsInput.BLIP)
+
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
         
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
+    blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
     pathExcel = BASE_DIR / "playlistprueba.xlsx"
+
     if pathExcel.exists:
         programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
         vMix = VmixApi() # Objeto API de vMix
         schMain = Scheduler(programacion,vMix)
-        schMain.start()
+        schMain.start(blipPath)
     else:
         print("No se encontró el playlist.xlsx")

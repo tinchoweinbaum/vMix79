@@ -214,6 +214,9 @@ class VmixApi:
             print(f"No se encontró el input {inputNum}. Probablemente no este cargado el preset correcto de vMix.")
             return None
     
+    def setAudio_on(self,inputNum):
+        self.__makeRequest("AudioOn", extraParams = {"Input": inputNum})
+
     def setOutput_number(self,inputNum):
         function = "ActiveInput"
         self.__makeRequest(function,extraParams = {"Input": inputNum})
