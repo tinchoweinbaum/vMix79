@@ -1,19 +1,17 @@
 """
-Este archivo es el principal del proyecto, es el scheduler que se encarga de la lógica de todo lo que debe salir al aire.
-Usa todas las clases desarrolladas en el proyecto para organizar la transmisión por medio de una clase Scheduler que checkea cada medio segundo
-el estado actual de la transmisión (método _tick()) para decidir si mandar otro contenido al aire o no.
-
-El preset de vMix que se use debe tener 2 inputs por cada contenido dinámico. Tiene que precargar, por ejemplo, el próximo anuncio a salir antes de terminar de sacar el actual aire,
-lo mismo con las placas, separadores, micros, etc.
+Archivo principal del proyecto, se encarga de organizar la transmisión y de mandar al aire el contenido que corresponda a la hora que corresponda.
+Usa las clases de excelParser y vMixApiWrapper (TCP) para hacer esto.
+Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
 """
 
 import time
 import excelParser as excParser #Parser del excel
 from enum import IntEnum
-from datetime import datetime
+from datetime import datetime, time as dt, timedelta
 from typing import List
 from utilities import Contenido # Clase de contenido (fila del excel)
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
+from pathlib import Path
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -25,32 +23,69 @@ class TipoContenido(IntEnum):
 
 class NumsInput(IntEnum):
     CAMARA_ACT = 1
-    PLACA_ACT = 2
+    PLACA_A = 2
     MUSICA_ACT = 3
-    VIDEO_ACT = 4
-    MICRO_ACT = 5
-    PLACA_PROX = 6
+    VIDEO_A = 4
+    MICRO_A = 5
+    PLACA_B = 6
     MUSICA_PROX = 7
-    VIDEO_PROX = 8
-    MICRO_PROX = 9
+    VIDEO_B = 8
+    MICRO_B = 9
+    BLIP = 10
+
+class OverlaySlots(IntEnum):
+    SLOT_PLACA = 1
 
 class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
         self.contenidos = contenidos # Lista de objetos de la clase Contenido
-        self.vMix = VmixApi # Objeto de la api de vMix
+        self.vMix = vMix # Objeto de la api de vMix
         self.indexEmision = 0 # El index de contenidos indica cuál es el próximo contenido a emitir. "Puntero"
+
+        self.videoAct = None
+        self.videoProx = None
+
+        self.placaAct = None # Estos 3 atributos están para no depender de las respuestas de vMix que tardan en llegar.
+        self.placaProx = None
+
+        self.microAct = None
+        self.microProx = None
+
         self.running = False
         self.todo_precargado = False
 
-    def start(self):
+        # ---- RELOJ SIMULADO ----
+        self.sim_start_real = None      # datetime real cuando arranca el scheduler
+        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
+
+    def _get_sim_time(self):
+        elapsed = datetime.now() - self.sim_start_real
+        sim_datetime = datetime.combine(datetime.today(), self.sim_start_time) + elapsed
+        return sim_datetime.time()
+
+    def start(self,blipPath):
         self.running = True
         print("Scheduler iniciado")
 
+        self.sim_start_real = datetime.now()  # hora simulada
+
+        self.videoAct = None
+        self.videoProx = None
+
+        self.placaAct = None # Modelo act/prox para videos/placas/micros. Act = al aire. Prox = Por salir
+        self.placaProx = None # xAct y xProx son números de input en vMix: VIDEO_A o VIDEO_B por ejemplo
+
+        self.microAct = None
+        self.microProx = None
+
+        self.__clearAll()
         self._cargaProx() # Precarga los inputs prox para el primer tick
+
+        self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
 
         while self.running:
             self._tick()
-            time.sleep(0.5)
+            time.sleep(0.2)
         
     
     def stop(self):
@@ -61,122 +96,239 @@ class Scheduler:
         _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
         si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
         """
-        horaAct = datetime.now().time()
-        contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
-        if self.indexEmision > len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
+        if self.indexEmision >= len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
             print("Se transmitió todo el playlist.")
             self.stop()
             return
+        
+        horaAct = self._get_sim_time()
+        contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
-            self._goLive(contAct)
             self.indexEmision += 1
-            
-    def _checkProxDescargados(self):
-        # Devuelve un diccionario, las key son los nums de los inputs prox y los values son booleans
+            self._goLive(contAct)
+    
+    def _precargaVideo(self,cont):
+        vMix = self.vMix
+        # print("Llamo precarga video.")
+        if self.videoProx is not None: # Si no hace falta precargar:
+            print("Error de precarga de video. (pre)")
+            print(cont.path)
+            return
+        
+        if self.videoAct == NumsInput.VIDEO_A: # Si estaba A al aire, B es prox
+            inputLibre = NumsInput.VIDEO_B
+        else:
+            inputLibre = NumsInput.VIDEO_A # Si estaba B al aire (o ninguno), prox es A
+        
+        vMix.listClear(inputLibre)
+        vMix.listAddInput(inputLibre, cont.path)
 
-        vMix = self.vMix()
-        # True si no tiene nada cargado
-        return {
-            NumsInput.PLACA_PROX: vMix.getInputPath_num(NumsInput.PLACA_PROX) is None,
-            NumsInput.VIDEO_PROX: vMix.getInputPath_num(NumsInput.VIDEO_PROX) is None,
-            NumsInput.MICRO_PROX: vMix.getInputPath_num(NumsInput.MICRO_PROX) is None,
-        }
+        self.videoProx = inputLibre
 
-
-    def _cargaProx(self):
-        """
-        Este método se encarga de cargar los inputs XXXX_PROX para que siempre haya algo cargado para poder ponerlo en act y sacarlo al aire.
-        """
-        vMix = self.vMix()
-        estadoAct = self._checkProxDescargados()
-        if not any(estadoAct.values()):
+    def _precargaPlaca(self,cont):
+        vMix = self.vMix
+        # print("Llamo precarga placa.")
+        if self.placaProx is not None:
+            print("Mala inicializacion de placa.")
             return
 
-        # True si no tiene nada cargado
-        tipos_descargados = {
-            TipoContenido.PLACA: estadoAct[NumsInput.PLACA_PROX],
-            TipoContenido.VIDEO: estadoAct[NumsInput.VIDEO_PROX],
-            TipoContenido.FOTOBMP: estadoAct[NumsInput.MICRO_PROX]
-        }
+        if self.placaAct == NumsInput.PLACA_A:
+            inputLibre = NumsInput.PLACA_B
+        else:
+            inputLibre = NumsInput.PLACA_A
 
-        inputProxTipo = {
-            TipoContenido.PLACA: NumsInput.PLACA_PROX,
-            TipoContenido.VIDEO: NumsInput.VIDEO_PROX,
-            TipoContenido.FOTOBMP: NumsInput.MICRO_PROX
-        }
+        vMix.listClear(inputLibre)
+        vMix.listAddInput(inputLibre, cont.path)
 
-        indexLista = self.indexEmision # Recorro la lista desde el ultimo contenido emitido
+        self.placaProx = inputLibre
 
-        for cont in self.contenidos[indexLista + 1:]:
-            if not any(tipos_descargados.values()): # Si son todos False
+    def _precargaMicro(self, cont):
+        vMix = self.vMix
+        # print("Llamo precarga micro.")
+        if self.microProx is not None:
+            return
+
+        if self.microAct == NumsInput.MICRO_A:
+            inputLibre = NumsInput.MICRO_B
+        else:
+            inputLibre = NumsInput.MICRO_A
+
+        vMix.listClear(inputLibre)
+        vMix.listAddInput(inputLibre, cont.path)
+
+        self.microProx = inputLibre
+        
+    def _cargaProx(self):
+        """
+        Busca en la lista de contenidos el PRÓXIMO de cada tipo para precargar.
+        """
+        # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
+        buscando_video = self.videoProx is None
+        buscando_placa = self.placaProx is None
+        buscando_micro = self.microProx is None
+
+        for cont in self.contenidos[self.indexEmision:]:
+            if not buscando_video and not buscando_placa and not buscando_micro:
                 return
             
-            if tipos_descargados.get(cont.tipo, False): # Si tengo que cargar el cont. actual
-                if cont.path_valido():
-                    vMix.listAddInput(inputProxTipo[cont.tipo],cont.path)
-                    tipos_descargados[cont.tipo] = False
-                else:
-                    print(f"{cont.nombre} no tiene un path valido: {cont.path}")
+            if not cont.path_valido():
+                print(cont.nombre + " No tiene un path valido.")
+                continue
 
-        self.todo_precargado = True
-        print("No se encontraron más contenidos para precargar")
+            match cont.tipo:
+                case TipoContenido.VIDEO:
+                    if buscando_video:
+                        self._precargaVideo(cont)
+                        buscando_video = False # Actualizo las flags cuando encuentro
+                
+                case TipoContenido.PLACA:
+                    if buscando_placa:
+                        self._precargaPlaca(cont)
+                        buscando_placa = False
+                
+                case TipoContenido.FOTOBMP:
+                    if buscando_micro:
+                        self._precargaMicro(cont)
+                        buscando_micro = False
+                case TipoContenido.MUSICA:
+                    pass
+                case _: # Default
+                    pass
 
+    def _yaCargado(self, cont):
+        """
+        Recibe un objeto de contenido y devuelve True si ya está precargado en el próximo input que va a salir al aire. False si no.
+        """
+        vMix = self.vMix
+        match cont.tipo:
+            case TipoContenido.VIDEO:
+                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path and self.videoAct == NumsInput.VIDEO_A) or (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path and self.videoAct == NumsInput.VIDEO_B))
+            case TipoContenido.PLACA:
+                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path and self.placaAct == NumsInput.PLACA_A) or (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path and self.placaAct == NumsInput.PLACA_B))
+            case TipoContenido.FOTOBMP:
+                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path and self.microAct == NumsInput.MICRO_A) or (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path and self.microAct == NumsInput.MICRO_B))
+            case TipoContenido.MUSICA:
+                pass
 
+    def playBlip(self):
+        vMix = self.vMix
+
+        vMix.setAudio_on(NumsInput.BLIP) # Algorítimicamente es lo mismo preguntar si está apagado el sonido que prenderlo todas las veces
+        vMix.playInput_number(NumsInput.BLIP)
 
     def _goLive(self,contAct):
-
         """
         Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
 
-        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER LA FUNCION QUE SE ENCARGA DE ESO
+        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER HACER ALGO PARA RESOLVER CUANDO NO ES ASÍ.
         """
+        print("Hora actual simulada: " + str(self._get_sim_time()))
         if contAct == None:
             print("Contenido inexistente")
 
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                self._swapInput_num(NumsInput.VIDEO_ACT,NumsInput.VIDEO_PROX)
+                self._goLiveVideo()
             case TipoContenido.CAMARA:
-                pass # No se como voy a manejar todavia las camaras ni la música
+                self.vMix.cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
-                self._swapInput_num(NumsInput.PLACA_ACT,NumsInput.PLACA_PROX)
+                self._goLivePlaca() # Cuando es placa swappea el input del overlay 1.
             case TipoContenido.MUSICA:
                 pass
             case TipoContenido.IMAGENCAM:
-                self._swapInput_num(TipoContenido.IMAGENCAM) #q pija es imagen cam
+                self.vMix.cutDirect_number(1) # PLACEHOLDER TAMBIEN
             case TipoContenido.FOTOBMP:
-                self._swapInput_num(NumsInput.MICRO_ACT,NumsInput.MICRO_PROX)
+                self._goLiveMicro()
             case _:
                 print(f"Tipo de contenido desconocido: {tipo}")
 
-        if self.todo_precargado == False:
-            self._cargaProx() # Después de mandar al aire precarga el prox
+        self._cargaProx() # Después de mandar al aire precarga el prox.
 
-    def _swapInput_num(self,numInput_act,numInput_prox):
-        """
-        Pone el contenido de prox en act y pone al aire act, también vacía prox
-        """
-        vMix = self.vMix()
+    def _goLiveVideo(self):
+        # Toggle de inputs de video.
+        vMix = self.vMix
+        vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
-        pathProx = vMix.getInputPath_num(numInput_prox)
-        if pathProx is None:
-            print("El input prox no tiene contenido.")
-            #Cuando pasa esto (nunca deberia pasar segun el flujo del programa) ver que tiene uqe pasar, error, pantalla en negro, nose
+        if self.videoProx is None:
+            print("Error de precarga de video. (post)")
             return
+
+        vMix.setOutput_number(self.videoProx) # Manda al aire
+        vMix.restartInput_number(self.videoProx)
+        time.sleep(0.05) # Reinicia, espera y manda play
+        vMix.playInput_number(self.videoProx)
+
+
+        if self.videoAct is not None:
+            vMix.listClear(self.videoAct)
+
+        self.videoAct = self.videoProx
+        self.videoProx = None
+
+    def _goLivePlaca(self):
+        # Toggle de inputs de placa.
+        vMix = self.vMix
+
+        if self.placaProx is None:
+            print("Error de precarga de placa.")
+            return
+
+        vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
+        self.playBlip()
+
+        if self.placaAct is not None:
+            vMix.listClear(self.placaAct)
+
+        self.placaAct = self.placaProx
+        self.placaProx = None
+
+
+    def _goLiveMicro(self):
+        # Toggle de inputs de micro (.bmp).
+        vMix = self.vMix
+        vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
+
+        if self.microProx is None:
+            print("Error de precarga de micro.")
+            return
+
+        vMix.setOutput_number(self.microProx) # Swapeo
+
+        if self.microAct is not None:
+            vMix.listClear(self.microAct) # Cleareo anterior
+
+        self.microAct = self.microProx
+        self.microProx = None
+
+    def __clearAll(self):
+        vMix = self.vMix
+
+        vMix.listClear(NumsInput.MICRO_A)
+        vMix.listClear(NumsInput.MICRO_B)
+
+        vMix.listClear(NumsInput.PLACA_A)
+        vMix.listClear(NumsInput.PLACA_B)
+
+        vMix.listClear(NumsInput.VIDEO_A)
+        vMix.listClear(NumsInput.VIDEO_B)    
+
+        vMix.listClear(NumsInput.BLIP)
+
+        vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
+
         
-        vMix.listClear(numInput_prox) # swapea
-        vMix.listAddInput(numInput_act,pathProx)
-
-        vMix.setOutput_number(numInput_act) # manda al aire
-
-
-
 if __name__ == "__main__":
-    pathExcel = r"D:\proyectos-repos\vmix79\vMix79\src\playlist.xlsx"
-    programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
+    BASE_DIR = Path(__file__).resolve().parent
+    blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
+    pathExcel = BASE_DIR / "playlistprueba.xlsx"
 
-    schMain = Scheduler(programacion,VmixApi()) # Objeto principal Scheduler
-    schMain.start()
+    if pathExcel.exists:
+        programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
+        vMix = VmixApi() # Objeto API de vMix
+        schMain = Scheduler(programacion,vMix)
+        schMain.start(blipPath)
+    else:
+        print("No se encontró el playlist.xlsx")
