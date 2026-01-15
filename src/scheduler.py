@@ -13,6 +13,10 @@ from utilities import Contenido # Clase de contenido (fila del excel)
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
 from pathlib import Path
 
+# TO DO: Fallback a negro cuando no existe un video. Placa transparente (camara desnuda) cuando no hay placa.
+# TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
+# TO DO: otra cosa más que no me puedo acordar ahora
+
 class TipoContenido(IntEnum):
     VIDEO = 1
     CAMARA = 2
@@ -54,20 +58,20 @@ class Scheduler:
         self.running = False
         self.todo_precargado = False
 
-        # ---- RELOJ SIMULADO ----
-        self.sim_start_real = None      # datetime real cuando arranca el scheduler
-        self.sim_start_time = dt(0,0) # hora simulada inicial (00:00)
+    def _buscaHora(self):
+        horaAct = datetime.now().time() 
+        
+        # Recorro la lista con enumerate xq devuelve dos valores: Index y valor.
+        for i, cont in enumerate(self.contenidos):
+            if cont.hora >= horaAct:
+                self.indexEmision = i
+                return
 
-    def _get_sim_time(self):
-        elapsed = datetime.now() - self.sim_start_real
-        sim_datetime = datetime.combine(datetime.today(), self.sim_start_time) + elapsed
-        return sim_datetime.time()
+        self.indexEmision = len(self.contenidos)
 
     def start(self,blipPath):
         self.running = True
         print("Scheduler iniciado")
-
-        self.sim_start_real = datetime.now()  # hora simulada
 
         self.videoAct = None
         self.videoProx = None
@@ -79,6 +83,8 @@ class Scheduler:
         self.microProx = None
 
         self.__clearAll()
+
+        self._buscaHora() # Asigna valor correcto actual a indexEmision
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
@@ -102,8 +108,8 @@ class Scheduler:
             self.stop()
             return
         
-        horaAct = self._get_sim_time()
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
+        horaAct = datetime.now().time()
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self.indexEmision += 1
@@ -224,7 +230,7 @@ class Scheduler:
 
         OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER HACER ALGO PARA RESOLVER CUANDO NO ES ASÍ.
         """
-        print("Hora actual simulada: " + str(self._get_sim_time()))
+        print("Hora actual: " + str(datetime.now().time()))
         if contAct == None:
             print("Contenido inexistente")
 
