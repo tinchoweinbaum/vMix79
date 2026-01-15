@@ -16,6 +16,8 @@ from pathlib import Path
 # TO DO: Fallback a negro cuando no existe un video. Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
 # TO DO: otra cosa más que no me puedo acordar ahora
+# TO DO: Terminar de implementar la hora de inicio. Cuando arranca a una hora que no sea la hora exacta de arranque de un contenido queda con cualquier cosa
+        # Hasta que detecta que tiene q mandar un nuevo contenido al aire. Ahí funciona perfecto después.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
