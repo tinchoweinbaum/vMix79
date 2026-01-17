@@ -91,7 +91,7 @@ class Scheduler:
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         self._goLive(self.contenidos[self.indexEmision]) # Manda al aire el contenido correspondiente a la hora de ejecución.
-        self.indexEmision += 1
+       # self.indexEmision += 1
 
         while self.running:
             self._tick()
