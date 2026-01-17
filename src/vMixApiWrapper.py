@@ -135,6 +135,10 @@ class VmixApi:
     def fade(self,duration = 500):
         self.__makeRequest("Fade",duration)
 
+    def adelantaVideo(self,inputNum,segundos):
+        ms = segundos * 1000
+        self.__makeRequest("SetPosition", extraParams={"Input": inputNum, "Value": f"+{ms}"})
+
     def cutDirect_key(self,inputKey):
         """
         Lleva un input identificado por key directamente al aire por cut.
