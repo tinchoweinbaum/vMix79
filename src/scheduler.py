@@ -86,10 +86,12 @@ class Scheduler:
 
         self.__clearAll()
 
+        self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
         self._buscaHora() # Asigna valor correcto actual a indexEmision
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
-        self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
+        self._goLive(self.contenidos[self.indexEmision]) # Manda al aire el contenido correspondiente a la hora de ejecución.
+        self.indexEmision += 1
 
         while self.running:
             self._tick()
@@ -331,7 +333,7 @@ class Scheduler:
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
-    pathExcel = BASE_DIR / "playlistprueba.xlsx"
+    pathExcel = BASE_DIR / "playlist.xlsx"
 
     if pathExcel.exists:
         programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
