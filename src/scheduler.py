@@ -233,7 +233,7 @@ class Scheduler:
         if contAct == None:
             print("[ERROR]: Contenido inexistente")
 
-        if not contAct.path_valido():
+        if not contAct.path_valido() and contAct.path not in ["CAMARA", "MUSICA"]:
             print("[ERROR]: No se encontró " + contAct.path + ", la imagen va a quedar congelada.")
             return
 
