@@ -152,7 +152,7 @@ class VmixApi:
         
         inputNum = input["number"]
 
-        self.__makeRequest("Cut", extraParams={"Input": inputNum})
+        self.__makeRequest("CutDirect", extraParams={"Input": inputNum})
 
     def cutDirect_number(self,inputNum):
         """
