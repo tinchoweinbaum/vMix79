@@ -61,15 +61,20 @@ class Scheduler:
         self.todo_precargado = False
 
     def _buscaHora(self):
+        """
+        Deja indexEmision en el valor que apunte al contenido de la hora actual.
+        """
         horaAct = datetime.now().time() 
         
         # Recorro la lista con enumerate xq devuelve dos valores: Index y valor.
         for i, cont in enumerate(self.contenidos):
-            if cont.hora >= horaAct:
-                self.indexEmision = i
-                return
-
-        self.indexEmision = len(self.contenidos)
+            try:
+                if  horaAct >= cont.hora and horaAct < self.contenidos[i + 1].hora:
+                    self.indexEmision = i 
+                    return
+            except IndexError:
+                    self.indexEmision = len(self.contenidos)
+                    return
 
     def start(self,blipPath):
         self.running = True
@@ -91,7 +96,7 @@ class Scheduler:
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         self._goLive(self.contenidos[self.indexEmision]) # Manda al aire el contenido correspondiente a la hora de ejecución.
-       # self.indexEmision += 1
+        self.indexEmision += 1
 
         while self.running:
             self._tick()
