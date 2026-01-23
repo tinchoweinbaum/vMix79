@@ -57,6 +57,8 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
+        self.camaraLive = False
+
         self.running = False
         self.todo_precargado = False
 
@@ -88,6 +90,8 @@ class Scheduler:
 
         self.microAct = None
         self.microProx = None
+
+        self.camaraLive = False
 
         self.__clearAll()
 
@@ -128,7 +132,7 @@ class Scheduler:
         vMix = self.vMix
         # print("Llamo precarga video.")
         if self.videoProx is not None: # Si no hace falta precargar:
-            print("Error de precarga de video. (pre)")
+            print("[ERROR]: Error de precarga de video. (pre)")
             print(cont.path)
             return
         
@@ -146,7 +150,7 @@ class Scheduler:
         vMix = self.vMix
         # print("Llamo precarga placa.")
         if self.placaProx is not None:
-            print("Mala inicializacion de placa.")
+            print("[ERROR]: Mala inicializacion de placa.")
             return
 
         if self.placaAct == NumsInput.PLACA_A:
@@ -189,7 +193,7 @@ class Scheduler:
                 return
             
             if not cont.path_valido():
-                print(cont.nombre + " No tiene un path valido.")
+                #print(cont.nombre + " No tiene un path valido.")
                 continue
 
             match cont.tipo:
@@ -210,22 +214,8 @@ class Scheduler:
                 case TipoContenido.MUSICA:
                     pass
                 case _: # Default
+                    print("[ERROR]: Tipo de cointenido desconocido.")
                     pass
-
-    def _yaCargado(self, cont):
-        """
-        Recibe un objeto de contenido y devuelve True si ya está precargado en el próximo input que va a salir al aire. False si no.
-        """
-        vMix = self.vMix
-        match cont.tipo:
-            case TipoContenido.VIDEO:
-                return ((vMix.getInputPath_num(NumsInput.VIDEO_A) == cont.path and self.videoAct == NumsInput.VIDEO_A) or (vMix.getInputPath_num(NumsInput.VIDEO_B) == cont.path and self.videoAct == NumsInput.VIDEO_B))
-            case TipoContenido.PLACA:
-                return ((vMix.getInputPath_num(NumsInput.PLACA_A) == cont.path and self.placaAct == NumsInput.PLACA_A) or (vMix.getInputPath_num(NumsInput.PLACA_B) == cont.path and self.placaAct == NumsInput.PLACA_B))
-            case TipoContenido.FOTOBMP:
-                return ((vMix.getInputPath_num(NumsInput.MICRO_A) == cont.path and self.microAct == NumsInput.MICRO_A) or (vMix.getInputPath_num(NumsInput.MICRO_B) == cont.path and self.microAct == NumsInput.MICRO_B))
-            case TipoContenido.MUSICA:
-                pass
 
     def playBlip(self):
         vMix = self.vMix
@@ -241,13 +231,18 @@ class Scheduler:
         """
         print("Hora actual: " + str(datetime.now().time()))
         if contAct == None:
-            print("Contenido inexistente")
+            print("[ERROR]: Contenido inexistente")
+
+        if not contAct.path_valido():
+            print("[ERROR]: No se encontró " + contAct.path + ", la imagen va a quedar congelada.")
+            return
 
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
                 self._goLiveVideo()
             case TipoContenido.CAMARA:
+                self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
                 self._goLivePlaca() # Cuando es placa swappea el input del overlay 1.
@@ -258,7 +253,7 @@ class Scheduler:
             case TipoContenido.FOTOBMP:
                 self._goLiveMicro()
             case _:
-                print(f"Tipo de contenido desconocido: {tipo}")
+                print(f"[ERROR]: Tipo de contenido desconocido: {tipo}")
 
         self._cargaProx() # Después de mandar al aire precarga el prox.
 
@@ -268,7 +263,7 @@ class Scheduler:
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
         if self.videoProx is None:
-            print("Error de precarga de video. (post)")
+            print("[ERROR]: Error de precarga de video. (post)")
             return
 
         vMix.setOutput_number(self.videoProx) # Manda al aire
@@ -276,6 +271,7 @@ class Scheduler:
         time.sleep(0.05) # Reinicia, espera y manda play
         vMix.playInput_number(self.videoProx)
 
+        self.camaraLive = False # Ya no sale al aire cámara.
 
         if self.videoAct is not None:
             vMix.listClear(self.videoAct)
@@ -288,8 +284,12 @@ class Scheduler:
         vMix = self.vMix
 
         if self.placaProx is None:
-            print("Error de precarga de placa.")
+            print("[ERROR]: Error de precarga de placa.")
             return
+        
+        if not self.camaraLive:
+            vMix.cutDirect_key(NumsInput.CAMARA_ACT)
+            self.camaraLive = True
 
         vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
         self.playBlip()
@@ -307,10 +307,12 @@ class Scheduler:
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
         if self.microProx is None:
-            print("Error de precarga de micro.")
+            print("[ERROR]: Error de precarga de micro.")
             return
 
         vMix.setOutput_number(self.microProx) # Swapeo
+
+        self.camaraLive = False # Ya no sale al aire cámara
 
         if self.microAct is not None:
             vMix.listClear(self.microAct) # Cleareo anterior
@@ -346,4 +348,5 @@ if __name__ == "__main__":
         schMain = Scheduler(programacion,vMix)
         schMain.start(blipPath)
     else:
-        print("No se encontró el playlist.xlsx")
+        print("[ERROR]: No se encontró el playlist.xlsx")
+        time.sleep(5)

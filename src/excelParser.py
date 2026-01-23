@@ -4,13 +4,16 @@ de datos que el scheduler necesita para sacar el contenido al aire
 
 df contiene al excel playlist.xlsx
 
-Este programa devuelve una lista de objetos de la clase Contenido
+Este programa devuelve una lista de objetos de la clase Contenido.
+
+IMPORTANTE: NO hay que ordenar el playlist por hora porque eso hace que pasen cosas como que salga primero las placas y despues las cámaras, o que salgan cámaras encima de micros.
+Hay que ver más adelante una manera de ordenar esto correctamente o de usar Excel de tal manera que tenga esto en cuenta.
 """
 
 import pandas as pd
 from utilities import Contenido
 
-def crea_lista(pathExcel: str,ordenaHora = True) -> list[Contenido]:
+def crea_lista(pathExcel: str, ordenaHora = False) -> list[Contenido]:
     df = pd.read_excel(pathExcel) #abre el excel y lo guarda como dataframe en df
     listaProgra = [] #Lista de contenidos a retornar
 
