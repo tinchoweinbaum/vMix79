@@ -67,6 +67,10 @@ class Scheduler:
         horaAct = datetime.now().time() 
         
         # Recorro la lista con enumerate xq devuelve dos valores: Index y valor.
+        if horaAct >= self.contenidos[-1].hora:
+            self.indexEmision = len(self.contenidos)
+            return
+        
         for i, cont in enumerate(self.contenidos):
             try:
                 if  horaAct >= cont.hora and horaAct < self.contenidos[i + 1].hora:
