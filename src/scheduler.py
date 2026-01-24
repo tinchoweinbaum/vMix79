@@ -94,6 +94,7 @@ class Scheduler:
         self.__clearAll()
 
         self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
+
         self._buscaHora() # Asigna valor correcto actual a indexEmision
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
@@ -115,8 +116,11 @@ class Scheduler:
         """
 
         if self.indexEmision >= len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
-            print("Se transmitió todo el playlist.")
-            self.stop()
+            print("Se transmitió todo el playlist. Reiniciando.")
+            BASE_DIR = Path(__file__).resolve().parent
+            blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
+            self.start(blipPath)
+            # self.stop()
             return
         
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
