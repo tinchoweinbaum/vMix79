@@ -207,6 +207,7 @@ class Scheduler:
         self.microProx = inputLibre
 
     def _precargaMusica(self,path):
+        print("precargo musica")
         vMix = self.vMix
         if self.musicaProx is not None:
             print("[ERROR]: Error de precarga de musica. (pre)")
@@ -276,8 +277,12 @@ class Scheduler:
 
                 case TipoContenido.MUSICA:
                     if buscando_musica:
-                        self._precargaMusica(self.__randomMusica()) # _precargaMusica a diferencia de las otras funciones espera un path, no un cont
-                        buscando_musica = False
+                        musica = self.__randomMusica()
+                        if musica is not None:
+                            self._precargaMusica(musica) # _precargaMusica a diferencia de las otras funciones espera un path, no un cont
+                            buscando_musica = False
+                        else:
+                            print("No se pudo elegir una musica aleatoria.")
       
                 case _: # Default
                     print("[ERROR]: Tipo de cointenido desconocido.")
