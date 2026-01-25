@@ -221,6 +221,9 @@ class VmixApi:
     def setAudio_on(self,inputNum):
         self.__makeRequest("AudioOn", extraParams = {"Input": inputNum})
 
+    def setAudio_off(self,inputNum):
+        self.__makeRequest("AudioOff", extraParams = {"Input": inputNum})
+
     def setOutput_number(self,inputNum):
         function = "ActiveInput"
         self.__makeRequest(function,extraParams = {"Input": inputNum})

@@ -6,17 +6,20 @@ Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums es
 
 import time
 import excelParser as excParser #Parser del excel
-from enum import IntEnum
+from enum import IntEnum, Enum
 from datetime import datetime, time as dt, timedelta
 from typing import List
 from utilities import Contenido # Clase de contenido (fila del excel)
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
 from pathlib import Path
 import pause
+import random
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
 # TO DO: Música. Es nada más seleccionar un archivo random en una carpeta.
+# TO DO: A veces cuando se arranca en mitad de una tanda de anuncios no salen bien. Sale 2 veces el mismo o se saltea uno.
+# TO DO: Cuando se arranca en mitad de un reporte local en vez de la cámara manda el mapa de fondo. ???
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -29,17 +32,21 @@ class TipoContenido(IntEnum):
 class NumsInput(IntEnum):
     CAMARA_ACT = 1
     PLACA_A = 2
-    MUSICA_ACT = 3
+    MUSICA_A = 3
     VIDEO_A = 4
     MICRO_A = 5
     PLACA_B = 6
-    MUSICA_PROX = 7
+    MUSICA_B = 7
     VIDEO_B = 8
     MICRO_B = 9
     BLIP = 10
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
+
+class Rutas(str, Enum):
+    MUSICA = r"C:\SERVERLOC_RES\MusicaAire"
+
 
 class Scheduler:
     def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
@@ -55,6 +62,9 @@ class Scheduler:
 
         self.microAct = None
         self.microProx = None
+
+        self.musicaAct = None
+        self.musicaProx = None
 
         self.camaraLive = False
 
@@ -195,7 +205,34 @@ class Scheduler:
         vMix.listAddInput(inputLibre, cont.path)
 
         self.microProx = inputLibre
+
+    def _precargaMusica(self,cont):
+        vMix = self.vMix
+        print("Llamo precarga musica")
+        if self.musicaProx is not None:
+            return
+
+        if self.musicaAct == NumsInput.MUSICA_A:
+            inputLibre = NumsInput.MUSICA_B
+        else:
+            inputLibre = NumsInput.MUSICA_A
+
+        vMix.listClear(inputLibre)
+        vMix.listAddInput(inputLibre, cont.path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
+
+        self.musicaProx = inputLibre
+    
+    def __randomMusica():
+        """
+        Elige un archivo al azar de la carpeta de música
+        """
+        musicas = [item for item in Rutas.MUSICA.iterdir() if item.is_file()]
         
+        if not musicas:
+            return None
+        return str(random.choice(musicas))
+
+
     def _cargaProx(self):
         """
         Busca en la lista de contenidos el PRÓXIMO de cada tipo para precargar.
@@ -229,7 +266,7 @@ class Scheduler:
                         self._precargaMicro(cont)
                         buscando_micro = False
                 case TipoContenido.MUSICA:
-                    pass
+                    self._precargaMusica(self.__randomMusica())
                 case _: # Default
                     print("[ERROR]: Tipo de cointenido desconocido.")
                     pass
@@ -264,7 +301,7 @@ class Scheduler:
             case TipoContenido.PLACA:
                 self._goLivePlaca() # Cuando es placa swappea el input del overlay 1.
             case TipoContenido.MUSICA:
-                pass
+                self._goLiveMusica()
             case TipoContenido.IMAGENCAM:
                 self.vMix.cutDirect_number(1) # PLACEHOLDER TAMBIEN
             case TipoContenido.FOTOBMP:
@@ -273,6 +310,25 @@ class Scheduler:
                 print(f"[ERROR]: Tipo de contenido desconocido: {tipo}")
 
         self._cargaProx() # Después de mandar al aire precarga el prox.
+
+    def _goLiveMusica(self):
+        vMix = self.vMix
+
+        if self.musicaProx is None:
+            print("[ERROR]: Error de precarga de música.")
+            return
+
+        if self.musicaAct is not None:
+            vMix.setAudio_off(self.musicaAct)
+            vMix.listClear(self.musicaAct) # Apago y cleareo música anterior
+
+        vMix.setAudio_on(self.musicaProx)
+        vMix.restartInput_number(self.musicaProx)
+        vMix.playInput_number(self.musicaProx)
+
+        self.musicaAct = self.musicaProx
+        self.musicaProx = None
+
 
     def _goLiveVideo(self):
         # Toggle de inputs de video.
