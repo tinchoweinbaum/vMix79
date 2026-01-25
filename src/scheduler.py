@@ -300,6 +300,9 @@ class Scheduler:
                             buscando_musica = False
                         else:
                             print("No se pudo elegir una musica aleatoria.")
+                
+                case TipoContenido.CAMARA:
+                    pass
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}")
@@ -326,7 +329,7 @@ class Scheduler:
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                if contAct.nombre not in ["mapas"]: # Si se necesita que otro video tenga música, se agrega a la lista.
+                if contAct.nombre in ["mapas"]: # Si se necesita que otro video tenga música, se agrega a la lista.
                     self._goLiveVideo(musica = True)
                 else:
                     self._goLiveVideo()
