@@ -125,6 +125,7 @@ class Scheduler:
         # *Parsea excel nuevo cambiando la lista de contenidos*
 
         self.indexEmision = 0
+        self._cargaProx() # Maneja correctamente los atributos de prox y act
 
 
     def _tick(self):
