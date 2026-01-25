@@ -207,7 +207,7 @@ class Scheduler:
         self.microProx = inputLibre
 
     def _precargaMusica(self,path):
-        print("precargo musica")
+        print("Llamo precarga musica")
         vMix = self.vMix
         if self.musicaProx is not None:
             print("[ERROR]: Error de precarga de musica. (pre)")
@@ -222,6 +222,7 @@ class Scheduler:
         vMix.listAddInput(inputLibre, path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
 
         self.musicaProx = inputLibre
+        print("ACTUALIZO MUSICAPROX")
     
     def __randomMusica(self):
         """
@@ -237,8 +238,10 @@ class Scheduler:
         if not musicas:
             print("[ERROR]: No hay archivos en la carpeta de música.")
             return None
-            
-        return str(random.choice(musicas))
+
+        elegida = str(random.choice(musicas)) 
+        print("La musica elegida fue " + elegida)
+        return elegida
 
 
     def _cargaProx(self):
@@ -329,7 +332,7 @@ class Scheduler:
 
     def _goLiveMusica(self):
         vMix = self.vMix
-
+        print("Llamo goLiveMusica")
         if self.musicaProx is None:
             print("[ERROR]: Error de precarga de música. (post)")
             return
@@ -340,6 +343,7 @@ class Scheduler:
 
         vMix.setAudio_on(self.musicaProx)
         vMix.restartInput_number(self.musicaProx)
+        time.sleep(0.05)
         vMix.playInput_number(self.musicaProx)
 
         self.musicaAct = self.musicaProx
@@ -377,7 +381,7 @@ class Scheduler:
             return
         
         if not self.camaraLive:
-            vMix.cutDirect_key(NumsInput.CAMARA_ACT)
+            vMix.cutDirect_key(NumsInput.CAMARA_ACT) # Si no habia una camara de fondo la pone.
             self.camaraLive = True
 
         vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
