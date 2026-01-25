@@ -206,10 +206,10 @@ class Scheduler:
 
         self.microProx = inputLibre
 
-    def _precargaMusica(self,cont):
+    def _precargaMusica(self,path):
         vMix = self.vMix
-        print("Llamo precarga musica")
         if self.musicaProx is not None:
+            print("[ERROR]: Error de precarga de musica. (pre)")
             return
 
         if self.musicaAct == NumsInput.MUSICA_A:
@@ -218,18 +218,25 @@ class Scheduler:
             inputLibre = NumsInput.MUSICA_A
 
         vMix.listClear(inputLibre)
-        vMix.listAddInput(inputLibre, cont.path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
+        vMix.listAddInput(inputLibre, path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
 
         self.musicaProx = inputLibre
     
-    def __randomMusica():
+    def __randomMusica(self):
         """
         Elige un archivo al azar de la carpeta de música
         """
-        musicas = [item for item in Rutas.MUSICA.iterdir() if item.is_file()]
+        musicaRuta = Path(Rutas.MUSICA) 
+        
+        if not musicaRuta.exists():
+            print(f"[ERROR]: La ruta {Rutas.MUSICA} no existe.")
+            return None
+        musicas = [item for item in musicaRuta.iterdir() if item.is_file()]
         
         if not musicas:
+            print("[ERROR]: No hay archivos en la carpeta de música.")
             return None
+            
         return str(random.choice(musicas))
 
 
@@ -241,9 +248,10 @@ class Scheduler:
         buscando_video = self.videoProx is None
         buscando_placa = self.placaProx is None
         buscando_micro = self.microProx is None
+        buscando_musica = self.musicaProx is None
 
         for cont in self.contenidos[self.indexEmision:]:
-            if not buscando_video and not buscando_placa and not buscando_micro:
+            if not buscando_video and not buscando_placa and not buscando_micro and not buscando_musica:
                 return
             
             if not cont.path_valido():
@@ -265,8 +273,12 @@ class Scheduler:
                     if buscando_micro:
                         self._precargaMicro(cont)
                         buscando_micro = False
+
                 case TipoContenido.MUSICA:
-                    self._precargaMusica(self.__randomMusica())
+                    if buscando_musica:
+                        self._precargaMusica(self.__randomMusica()) # _precargaMusica a diferencia de las otras funciones espera un path, no un cont
+                        buscando_musica = False
+      
                 case _: # Default
                     print("[ERROR]: Tipo de cointenido desconocido.")
                     pass
@@ -279,9 +291,7 @@ class Scheduler:
 
     def _goLive(self,contAct):
         """
-        Este método tiene la lógica para verificar que tipo de input se tiene que cambiar (1 a 6), llama a un metodo para cambiar correctamente
-
-        OJO XQ EL FLUJO DE TODA ESTA FUNCION DEPENDE DE QUE ESTÉ CORRECTAMENTE CARGADO EL PROX. HAY QUE HACER HACER ALGO PARA RESOLVER CUANDO NO ES ASÍ.
+        Este método tiene la lógica para mandar el tipo de contenido que corresponda al aire.
         """
         print("Hora actual: " + str(datetime.now().time()))
         if contAct == None:
@@ -299,10 +309,11 @@ class Scheduler:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
-                self._goLivePlaca() # Cuando es placa swappea el input del overlay 1.
+                self._goLivePlaca()
             case TipoContenido.MUSICA:
                 self._goLiveMusica()
             case TipoContenido.IMAGENCAM:
+                self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER TAMBIEN
             case TipoContenido.FOTOBMP:
                 self._goLiveMicro()
@@ -315,7 +326,7 @@ class Scheduler:
         vMix = self.vMix
 
         if self.musicaProx is None:
-            print("[ERROR]: Error de precarga de música.")
+            print("[ERROR]: Error de precarga de música. (post)")
             return
 
         if self.musicaAct is not None:
