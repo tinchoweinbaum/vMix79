@@ -258,8 +258,8 @@ class Scheduler:
             if not buscando_video and not buscando_placa and not buscando_micro and not buscando_musica:
                 return
             
-            if not cont.path_valido():
-                #print(cont.nombre + " No tiene un path valido.")
+            if not cont.path_valido() and cont.path not in ["CAMARA", "MUSICA"]:
+                # print(cont.nombre + " No tiene un path valido.")
                 continue
 
             match cont.tipo:
@@ -280,9 +280,9 @@ class Scheduler:
 
                 case TipoContenido.MUSICA:
                     if buscando_musica:
-                        musica = self.__randomMusica()
-                        if musica is not None:
-                            self._precargaMusica(musica) # _precargaMusica a diferencia de las otras funciones espera un path, no un cont
+                        musicaPath = self.__randomMusica()
+                        if musicaPath is not None:
+                            self._precargaMusica(musicaPath) # _precargaMusica a diferencia de las otras funciones espera un path, no un cont
                             buscando_musica = False
                         else:
                             print("No se pudo elegir una musica aleatoria.")
