@@ -17,9 +17,9 @@ import random
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
-# TO DO: Música. Es nada más seleccionar un archivo random en una carpeta.
 # TO DO: A veces cuando se arranca en mitad de una tanda de anuncios no salen bien. Sale 2 veces el mismo o se saltea uno.
 # TO DO: Cuando se arranca en mitad de un reporte local en vez de la cámara manda el mapa de fondo. ???
+# TO DO: Cuando se arranca en mitad de un reporte local, hay que encontrar una manera prolija de poner cámara y música.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -244,6 +244,7 @@ class Scheduler:
         Clean slate para cuando se llame a goLiveMusica.
         De esta manera se puede usar musicaAct == None como forma de checkear si está sonando música actualmente.
         """
+        print("llamo stop musica")
         vMix = self.vMix
 
         if self.musicaAct is not None: # Si estaba sonando música.
@@ -301,7 +302,7 @@ class Scheduler:
                             print("No se pudo elegir una musica aleatoria.")
       
                 case _: # Default
-                    print("[ERROR]: Tipo de cointenido desconocido.")
+                    print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}")
                     pass
 
     def playBlip(self):
@@ -401,6 +402,9 @@ class Scheduler:
         if not self.camaraLive:
             vMix.cutDirect_key(NumsInput.CAMARA_ACT) # Si no habia una camara de fondo la pone.
             self.camaraLive = True
+
+        if self.musicaAct is None: # SOLUCION ATADA CON ALAMBRE!!!!! REHACER CON LA CAMARA
+            self._goLiveMusica()
 
         vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
         self.playBlip()
