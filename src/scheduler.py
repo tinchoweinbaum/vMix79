@@ -238,6 +238,23 @@ class Scheduler:
             return None
 
         return str(random.choice(musicas)) 
+    
+    def _stopMusica(self):
+        """
+        Clean slate para cuando se llame a goLiveMusica.
+        De esta manera se puede usar musicaAct == None como forma de checkear si está sonando música actualmente.
+        """
+        vMix = self.vMix
+
+        if self.musicaAct is not None: # Si estaba sonando música.
+            vMix.pauseInput_number(self.musicaAct)
+            vMix.listClear(self.musicaAct)
+        self.musicaAct = None
+
+        if self.musicaProx is not None:
+            vMix.listClear(self.musicaProx)
+        self.musicaProx = None
+
 
 
     def _cargaProx(self):
@@ -308,7 +325,10 @@ class Scheduler:
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                self._goLiveVideo()
+                if contAct.nombre not in ["mapas"]: # Si se necesita que otro video tenga música, se agrega a la lista.
+                    self._goLiveVideo(musica = True)
+                else:
+                    self._goLiveVideo()
             case TipoContenido.CAMARA:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
@@ -345,10 +365,13 @@ class Scheduler:
         self.musicaProx = None
 
 
-    def _goLiveVideo(self):
+    def _goLiveVideo(self, musica = False):
         # Toggle de inputs de video.
         vMix = self.vMix
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
+        
+        if not musica:
+            self._stopMusica()
 
         if self.videoProx is None:
             print("[ERROR]: Error de precarga de video. (post)")

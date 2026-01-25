@@ -352,6 +352,10 @@ class VmixApi:
     def playInput_number(self, inputNum):
         self.__makeRequest("Play", {"Input": inputNum})
 
+    def pauseInput_number(self,inputNum):
+        self.__makeRequest("Pause", {"Input": inputNum})
+
+
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
         print(f"Host: {self.host}")
