@@ -118,7 +118,7 @@ class Scheduler:
         print("Se transmitió todo el playlist de hoy. Reiniciando...")
         
         ahora = datetime.now()
-        manana = datetime.combine(ahora.date() + timedelta(days=1), dt(0, 0, 1))
+        manana = datetime.combine(ahora.date() + timedelta(days=1), dt(0, 0, 0))
         
         pause.until(manana) # Espera hasta las 00:00:01
 
