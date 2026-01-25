@@ -12,6 +12,7 @@ from typing import List
 from utilities import Contenido # Clase de contenido (fila del excel)
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
 from pathlib import Path
+import pause
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
@@ -60,7 +61,7 @@ class Scheduler:
         self.running = False
         self.todo_precargado = False
 
-    def _buscaHora(self):
+    def _buscaIndex(self):
         """
         Deja indexEmision en el valor que apunte al contenido de la hora actual.
         """
@@ -79,7 +80,7 @@ class Scheduler:
             except IndexError:
                     self.indexEmision = len(self.contenidos)
                     return
-
+    
     def start(self,blipPath):
         self.running = True
         print("Scheduler iniciado")
@@ -99,7 +100,7 @@ class Scheduler:
 
         self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
 
-        self._buscaHora() # Asigna valor correcto actual a indexEmision
+        self._buscaIndex() # Asigna valor correcto actual a indexEmision
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         self._goLive(self.contenidos[self.indexEmision]) # Manda al aire el contenido correspondiente a la hora de ejecución.
@@ -113,18 +114,27 @@ class Scheduler:
     def stop(self):
         self.running = False
 
+    def __restart(self):
+        print("Se transmitió todo el playlist de hoy. Reiniciando...")
+        
+        ahora = datetime.now()
+        manana = datetime.combine(ahora.date() + timedelta(days=1), dt(0, 0, 1))
+        
+        pause.until(manana) # Espera hasta las 00:00:01
+
+        # *Parsea excel nuevo cambiando la lista de contenidos*
+
+        self.indexEmision = 0
+
+
     def _tick(self):
         """
         _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
         si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
         """
 
-        if self.indexEmision >= len(self.contenidos): # Si recorrió todos los contenidos del día, stop.
-            print("Se transmitió todo el playlist. Reiniciando.")
-            BASE_DIR = Path(__file__).resolve().parent
-            blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
-            self.start(blipPath)
-            # self.stop()
+        if self.indexEmision >= len(self.contenidos): # Si recorrió todos los contenidos del día.
+            self.__restart()
             return
         
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
