@@ -245,6 +245,8 @@ class Scheduler:
         De esta manera se puede usar musicaAct == None como forma de checkear si está sonando música actualmente.
         """
         print("llamo stop musica")
+        print(f"MUSICA PROX: {self.musicaProx}")
+        print(f"MUSICA ACT: {self.musicaAct}")
         vMix = self.vMix
 
         if self.musicaAct is not None: # Si estaba sonando música.
@@ -448,7 +450,10 @@ class Scheduler:
         vMix.listClear(NumsInput.PLACA_B)
 
         vMix.listClear(NumsInput.VIDEO_A)
-        vMix.listClear(NumsInput.VIDEO_B)    
+        vMix.listClear(NumsInput.VIDEO_B)
+
+        vMix.listClear(NumsInput.MUSICA_A)
+        vMix.listClear(NumsInput.MUSICA_B)    
 
         vMix.listClear(NumsInput.BLIP)
 
