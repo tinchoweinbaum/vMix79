@@ -244,9 +244,9 @@ class Scheduler:
         Clean slate para cuando se llame a goLiveMusica.
         De esta manera se puede usar musicaAct == None como forma de checkear si está sonando música actualmente.
         """
-        print("llamo stop musica")
-        print(f"MUSICA PROX: {self.musicaProx}")
-        print(f"MUSICA ACT: {self.musicaAct}")
+        # print("llamo stop musica")
+        # print(f"MUSICA PROX: {self.musicaProx}")
+        # print(f"MUSICA ACT: {self.musicaAct}")
         vMix = self.vMix
 
         if self.musicaAct is not None: # Si estaba sonando música.
@@ -313,7 +313,7 @@ class Scheduler:
     def playBlip(self):
         vMix = self.vMix
 
-        vMix.setAudio_on(NumsInput.BLIP) # Algorítimicamente es lo mismo preguntar si está apagado el sonido que prenderlo todas las veces
+        vMix.setAudio_on(NumsInput.BLIP)
         vMix.playInput_number(NumsInput.BLIP)
 
     def _goLive(self,contAct):
@@ -408,8 +408,8 @@ class Scheduler:
             vMix.cutDirect_key(NumsInput.CAMARA_ACT) # Si no habia una camara de fondo la pone.
             self.camaraLive = True
 
-        if self.musicaAct is None: # SOLUCION ATADA CON ALAMBRE!!!!! REHACER CON LA CAMARA
-            self._goLiveMusica()
+        # if self.musicaAct is None: # Esto hace que swapee de musica, porque en el excel viene placa y después música.
+        #     self._goLiveMusica()
 
         vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
         self.playBlip()
