@@ -19,6 +19,8 @@ import random
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
 # TO DO: Cuando se arranca en mitad de un reporte local, hay que encontrar una manera prolija de poner cámara y música.
 # TO DO: La musica se carga ineficientemente. Cada vez que se reproduce un video se carga de nuevo la musica.
+# TO DO: A veces al arrancar los videos disparan música.
+# TO DO: Mal manejo de musicaAct y musicaProx junton con finTemaAct. Hay veces que se carga en el input incorrecto la musica y no sale musica al aire.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
