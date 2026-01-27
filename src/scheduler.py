@@ -149,13 +149,15 @@ class Scheduler:
             return
         
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
-        horaAct = datetime.now().time()
+        
+        ahora = datetime.now()
+        horaAct = ahora.time()
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self.indexEmision += 1
             self._goLive(contAct)
 
-        if self.finTemaAct is not None and horaAct >= self.finTemaAct: # Si está sonando música y corresponde cambiarla:
+        if self.finTemaAct is not None and ahora >= self.finTemaAct: # Si está sonando música y corresponde cambiarla:
                 self._goLiveMusica()
     
     def _precargaVideo(self,cont):
