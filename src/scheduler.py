@@ -377,11 +377,12 @@ class Scheduler:
         self.musicaAct = self.musicaProx
         self.musicaProx = None
 
-        duracionTemaAct = vMix.getLength(self.musicaAct) # milisegundos
+        # musicaAct es != None SIEMPRE en este fragmento de codigo
+        duracionTemaAct = vMix.getLength(self.musicaAct) # Devuelve milisegundos
 
         if duracionTemaAct > 0:
             ahora = datetime.now()
-            self.finTemaAct = ahora + duracionTemaAct
+            self.finTemaAct = ahora + timedelta(milliseconds=duracionTemaAct)
             print(f"[INFO]: Tema nuevo al aire. Terminará a las: {self.finTemaActual.time()}")
         else:
             self.finTemaActual = None

@@ -346,6 +346,30 @@ class VmixApi:
         
         return int(overlay.text)
     
+    def getLength(self, inputNum):
+        """
+        Usa el estado XML interno para obtener la duración de un input.
+        """
+        root = self.__getState()
+        
+        if root is None:
+            return None
+
+        try:
+            input_tag = root.find(f".//input[@number='{inputNum}']")
+            
+            if input_tag is not None:
+                duracion_str = input_tag.get('duration')
+                
+                if duracion_str:
+                    return int(duracion_str)
+                    
+        except Exception as e:
+            print(f"[ERROR]: Falló el parseo de duración para el input {inputNum}: {e}")
+        
+        return None
+
+    
     def restartInput_number(self, inputNum):
         self.__makeRequest("Restart", {"Input": inputNum})
 
