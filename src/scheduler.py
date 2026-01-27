@@ -17,9 +17,8 @@ import random
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
-# TO DO: A veces cuando se arranca en mitad de una tanda de anuncios no salen bien. Sale 2 veces el mismo o se saltea uno.
-# TO DO: Cuando se arranca en mitad de un reporte local en vez de la cámara manda el mapa de fondo. ???
 # TO DO: Cuando se arranca en mitad de un reporte local, hay que encontrar una manera prolija de poner cámara y música.
+# TO DO: La musica se carga ineficientemente. Cada vez que se reproduce un video se carga de nuevo la musica.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
