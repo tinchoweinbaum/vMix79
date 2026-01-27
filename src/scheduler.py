@@ -113,7 +113,7 @@ class Scheduler:
         self._buscaIndex() # Asigna valor correcto actual a indexEmision
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
-        self._goLive(self.contenidos[self.indexEmision]) # Manda al aire el contenido correspondiente a la hora de ejecución.
+        self._goLive(self.contenidos[self.indexEmision], False) # Manda al aire el contenido correspondiente a la hora de ejecución.
         self.indexEmision += 1
 
         while self.running:
@@ -316,9 +316,10 @@ class Scheduler:
         vMix.setAudio_on(NumsInput.BLIP)
         vMix.playInput_number(NumsInput.BLIP)
 
-    def _goLive(self,contAct):
+    def _goLive(self,contAct, cargaProx = True):
         """
         Este método tiene la lógica para mandar el tipo de contenido que corresponda al aire.
+        Tiene un parámetro que funciona como flag para determinar si hay que precargar el proximo contenido o no. Se usa nada más en el primer llamado del arranque.
         """
         print("Hora actual: " + str(datetime.now().time()))
         if contAct == None:
@@ -350,7 +351,8 @@ class Scheduler:
             case _:
                 print(f"[ERROR]: Tipo de contenido desconocido: {tipo}")
 
-        self._cargaProx() # Después de mandar al aire precarga el prox.
+        if cargaProx:
+            self._cargaProx() # Después de mandar al aire precarga el prox.
 
     def _goLiveMusica(self):
         vMix = self.vMix
@@ -375,7 +377,7 @@ class Scheduler:
         # Toggle de inputs de video.
         vMix = self.vMix
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
-        
+
         if not musica:
             self._stopMusica()
 
