@@ -151,9 +151,8 @@ class Scheduler:
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
         horaAct = datetime.now().time()
 
-        if self.musicaAct is not None: # Si hay musica sonando
-            
-            duracionTemaAct = self.getTiempoTema() # Devuelve en ms
+        # if self.musicaAct is not None: # Si hay musica sonando
+        #    duracionTemaAct = self.getTiempoTema() # Devuelve en ms
 
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
@@ -263,7 +262,7 @@ class Scheduler:
             vMix.listClear(self.musicaProx)
         self.musicaProx = None
 
-
+        self.finTemaAct = None
 
     def _cargaProx(self):
         """
@@ -379,7 +378,7 @@ class Scheduler:
 
         # musicaAct es != None SIEMPRE en este fragmento de codigo
         duracionTemaAct = vMix.getLength(self.musicaAct) # Devuelve milisegundos
-
+        print(f"El tema actual dura {duracionTemaAct}ms")
         if duracionTemaAct > 0:
             ahora = datetime.now()
             self.finTemaAct = ahora + timedelta(milliseconds=duracionTemaAct)
