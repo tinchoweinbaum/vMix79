@@ -383,9 +383,9 @@ class Scheduler:
         if duracionTemaAct > 0:
             ahora = datetime.now()
             self.finTemaAct = ahora + timedelta(milliseconds=duracionTemaAct)
-            print(f"[INFO]: Tema nuevo al aire. Terminará a las: {self.finTemaActual.time()}")
+            print(f"[INFO]: Tema nuevo al aire. Terminará a las: {self.finTemaAct.time()}")
         else:
-            self.finTemaActual = None
+            self.finTemaAct = None
             print("[ERROR]: No se pudo obtener la duración del tema.")
 
 
