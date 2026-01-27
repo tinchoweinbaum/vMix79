@@ -64,6 +64,7 @@ class Scheduler:
 
         self.musicaAct = None
         self.musicaProx = None
+        self.finTemaAct = None
 
         self.camaraLive = False
 
@@ -149,6 +150,11 @@ class Scheduler:
         
         contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
         horaAct = datetime.now().time()
+
+        if self.musicaAct is not None: # Si hay musica sonando
+            
+            duracionTemaAct = self.getTiempoTema() # Devuelve en ms
+
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self.indexEmision += 1
@@ -370,6 +376,16 @@ class Scheduler:
 
         self.musicaAct = self.musicaProx
         self.musicaProx = None
+
+        duracionTemaAct = vMix.getLength(self.musicaAct) # milisegundos
+
+        if duracionTemaAct > 0:
+            ahora = datetime.now()
+            self.finTemaAct = ahora + duracionTemaAct
+            print(f"[INFO]: Tema nuevo al aire. Terminará a las: {self.finTemaActual.time()}")
+        else:
+            self.finTemaActual = None
+            print("[ERROR]: No se pudo obtener la duración del tema.")
 
 
     def _goLiveVideo(self, musica = False):
