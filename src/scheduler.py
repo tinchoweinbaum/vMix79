@@ -354,7 +354,8 @@ class Scheduler:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER TAMBIEN
             case TipoContenido.FOTOBMP:
-                self._goLiveMicro()
+                if contAct.nombre in ["79 Partidas"]:
+                    self._goLiveMicro(blip = True)
             case _:
                 print(f"[ERROR]: Tipo de contenido desconocido: {tipo}")
 
@@ -441,7 +442,7 @@ class Scheduler:
         self.placaProx = None
 
 
-    def _goLiveMicro(self):
+    def _goLiveMicro(self, blip = False):
         # Toggle de inputs de micro (.bmp).
         vMix = self.vMix
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
@@ -451,6 +452,8 @@ class Scheduler:
             return
 
         vMix.setOutput_number(self.microProx) # Swapeo
+        if blip: # Si corresponde sonar blip
+            self.playBlip()
 
         self.camaraLive = False # Ya no sale al aire cámara
 
