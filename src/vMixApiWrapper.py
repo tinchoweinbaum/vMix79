@@ -368,7 +368,6 @@ class VmixApi:
             print(f"[ERROR]: Falló el parseo de duración para el input {inputNum}: {e}")
         
         return None
-
     
     def restartInput_number(self, inputNum):
         self.__makeRequest("Restart", {"Input": inputNum})
@@ -379,6 +378,8 @@ class VmixApi:
     def pauseInput_number(self,inputNum):
         self.__makeRequest("Pause", {"Input": inputNum})
 
+    def openPreset(self, presetPath):
+        self.__makeRequest("OpenPreset", {"Value": presetPath})
 
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
