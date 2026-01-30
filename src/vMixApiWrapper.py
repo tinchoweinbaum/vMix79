@@ -379,7 +379,31 @@ class VmixApi:
         self.__makeRequest("Pause", {"Input": inputNum})
 
     def openPreset(self, presetPath):
-        self.__makeRequest("OpenPreset", {"Value": presetPath})
+        self.__makeRequest("OpenPreset", {"Value": f'"{presetPath}"'})
+
+    def awaitPresetCargado(self, timeout = 200):
+        """
+        Función "Pseudoasíncrona". Devuelve True una vez cargó el preset o False si no lo pudo cargar después del timeout
+        """
+        print("Esperando a que vMix abra el preset...")
+        # Primero damos un margen para que vMix empiece la carga
+        time.sleep(2) 
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            self._send_raw("XML")
+            time.sleep(0.5)
+            
+            with self._lock:
+                if self.inputs and self._xml_root is not None:
+                    print("\n[OK] Preset cargado y funcional.")
+                    return True
+            
+            print(".", end="", flush=True)
+            time.sleep(1)
+            
+        print("\n[ERROR] Timeout esperando el preset.")
+        return False
 
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
@@ -417,3 +441,4 @@ class VmixApi:
 if __name__ == "__main__":
     vMix = VmixApi()
     print_xml_bonito(vMix._xml_root)
+    vMix.openPreset(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\vMix79\resources\vmix_resources\presetC79.vmix")
