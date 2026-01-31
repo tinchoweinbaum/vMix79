@@ -339,10 +339,8 @@ class Scheduler:
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                if contAct.nombre in ["mapas"]: # Si se necesita que otro video tenga música, se agrega a la lista.
-                    self._goLiveVideo(musica = True)
-                else:
-                    self._goLiveVideo()
+                musicaBool = contAct.nombre in ["mapas"]
+                self._goLiveVideo(musica = musicaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
@@ -354,8 +352,8 @@ class Scheduler:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER TAMBIEN
             case TipoContenido.FOTOBMP:
-                if contAct.nombre in ["79 Partidas"]: # Cualquier otro micro que lleve blip se agrega a la lista del if statement.
-                    self._goLiveMicro(blip = True)
+                blipBool = contAct.nombre in ["79 partidas"]
+                self._goLiveMicro(blip = blipBool)
             case _:
                 print(f"[ERROR]: Tipo de contenido desconocido: {tipo}")
 
