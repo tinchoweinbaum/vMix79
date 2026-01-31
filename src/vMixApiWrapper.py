@@ -58,6 +58,7 @@ class VmixApi:
         Metodo que se encarga de crear la conexion TCP de la api.
         """
         try:
+            # print("hola llame a conncect tcp")
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Objeto de la clase socket, usando IPv4 y TCP (sock_stream)
             self._sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # Desactiva optimizaciones de ancho de banda para reducir latencia
             self._sock.connect((self.host, self.port))
@@ -92,11 +93,12 @@ class VmixApi:
     def _tcp_listener(self):
         """Loop de lectura en hilo secundario."""
         while self._running:
+            print("hola")
             try:
                 data = self._sock.recv(8192)
                 if not data:
                     break
-                
+                print("Buffer actual: " + str(self._buffer))
                 self._buffer += data.decode('utf-8', errors='ignore')
                 
                 while '\r\n' in self._buffer:
@@ -440,7 +442,4 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    print_xml_bonito(vMix._xml_root)
-    #vMix.openPreset(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\vMix79\resources\vmix_resources\presetC79.vmix")
-    print("hola")
-    vMix.listAddInput(2,r"D:\MEME.bmp")
+    vMix.setOutput_number(2)
