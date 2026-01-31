@@ -77,14 +77,14 @@ class VmixApi:
             time.sleep(0.2)
             
         except Exception as e:
-            print(f"ERROR CRÍTICO: No se pudo conectar a vMix por TCP ({self.host}:{self.port}): {e}")
+            print(f"[ERROR]: No se pudo conectar a vMix por TCP ({self.host}:{self.port}): {e}")
 
     def _send_raw(self, text):
         """Envío crudo de strings a la api de vMix con el formato especifico que se pide en la documentación: terminadas en CRLF."""
         if self._sock and self._running:
             try:
                 msg = text + "\r\n" # Arma el string con formato correcto
-                #print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
+                print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
                 self._sock.sendall(msg.encode('utf-8')) # Lo envía
             except socket.error:
                 self._running = False
@@ -101,7 +101,7 @@ class VmixApi:
                 
                 while '\r\n' in self._buffer:
                     line, self._buffer = self._buffer.split('\r\n', 1)
-                    #print(f"VMIX RESPONDE: {line}")
+                    print(f"VMIX RESPONDE: {line}")
                     self._parse_tcp_line(line)
             except:
                 self._running = False
@@ -441,4 +441,6 @@ class VmixApi:
 if __name__ == "__main__":
     vMix = VmixApi()
     print_xml_bonito(vMix._xml_root)
-    vMix.openPreset(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\vMix79\resources\vmix_resources\presetC79.vmix")
+    #vMix.openPreset(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\vMix79\resources\vmix_resources\presetC79.vmix")
+    print("hola")
+    vMix.listAddInput(2,r"D:\MEME.bmp")
