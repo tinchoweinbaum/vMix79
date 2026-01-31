@@ -85,7 +85,7 @@ class VmixApi:
         if self._sock and self._running:
             try:
                 msg = text + "\r\n" # Arma el string con formato correcto
-                print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
+                # print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
                 self._sock.sendall(msg.encode('utf-8')) # Lo envía
             except socket.error:
                 self._running = False
@@ -93,17 +93,17 @@ class VmixApi:
     def _tcp_listener(self):
         """Loop de lectura en hilo secundario."""
         while self._running:
-            print("hola")
+            # print("hola")
             try:
                 data = self._sock.recv(8192)
                 if not data:
                     break
-                print("Buffer actual: " + str(self._buffer))
+                # print("Buffer actual: " + str(self._buffer))
                 self._buffer += data.decode('utf-8', errors='ignore')
                 
                 while '\r\n' in self._buffer:
                     line, self._buffer = self._buffer.split('\r\n', 1)
-                    print(f"VMIX RESPONDE: {line}")
+                    # print(f"VMIX RESPONDE: {line}")
                     self._parse_tcp_line(line)
             except:
                 self._running = False
@@ -381,7 +381,7 @@ class VmixApi:
         self.__makeRequest("Pause", {"Input": inputNum})
 
     def openPreset(self, presetPath):
-        self.__makeRequest("OpenPreset", {"Value": f'"{presetPath}"'})
+        self.__makeRequest("OpenPreset", {"Value": presetPath})
 
     def awaitPresetCargado(self, timeout = 200):
         """
@@ -442,4 +442,6 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    vMix.setOutput_number(2)
+    # vMix.listAddInput(1,r"D:\MEME.bmp")
+    vMix.openPreset(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\vMix79\resources\vmix_resources\presetC79.vmix")
+    
