@@ -93,6 +93,15 @@ class Scheduler:
                     self.indexEmision = len(self.contenidos)
                     return
     
+    def _startAudio(self):
+        vMix = self.vMix
+
+        vMix.setAudio_on(NumsInput.VIDEO_A)
+        vMix.setAudio_on(NumsInput.VIDEO_B)
+
+        vMix.setAudio_on(NumsInput.MUSICA_A)
+        vMix.setAudio_on(NumsInput.MUSICA_B)
+
     def start(self,blipPath):
         self.running = True
         print("Scheduler iniciado")
@@ -114,6 +123,8 @@ class Scheduler:
 
         self._buscaIndex() # Asigna valor correcto actual a indexEmision
         self._cargaProx() # Precarga los inputs prox para el primer tick
+
+        self._startAudio()
 
         self._goLive(self.contenidos[self.indexEmision], False) # Manda al aire el contenido correspondiente a la hora de ejecución.
         self.indexEmision += 1
