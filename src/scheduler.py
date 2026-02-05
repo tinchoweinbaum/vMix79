@@ -5,7 +5,7 @@ Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums es
 """
 
 import time
-import excelParser as excParser #Parser del excel
+# import excelParser as excParser #Parser del excel
 from enum import IntEnum, Enum
 from datetime import datetime, time as dt, timedelta
 from typing import List
@@ -21,6 +21,7 @@ import random
 # TO DO: La musica se carga ineficientemente. Cada vez que se reproduce un video se carga de nuevo la musica.
 # TO DO: A veces al arrancar los videos disparan música.
 # TO DO: Mal manejo de musicaAct y musicaProx junton con finTemaAct. Hay veces que se carga en el input incorrecto la musica y no sale musica al aire.
+# TO DO: Reimplementar la obtención de datos por medio de la DB, no por excel.
 
 class TipoContenido(IntEnum):
     VIDEO = 1

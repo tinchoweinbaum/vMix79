@@ -17,6 +17,7 @@ def Canal79(vMix, schedulerPath, presetPath):
     Función que abre el preset y arranca el Canal 79. Necesita que vMix ya esté abierto.
     """
     VmixApi().openPreset(presetPath)
+    
     if VmixApi().awaitPresetCargado(timeout = 100):
         print("Iniciando scheduler...")
         subprocess.run(["python",f"{schedulerPath}"])
