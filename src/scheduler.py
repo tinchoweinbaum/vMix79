@@ -3,14 +3,13 @@ Archivo principal del proyecto, se encarga de organizar la transmisión y de man
 Usa las clases de excelParser y vMixApiWrapper (TCP) para hacer esto.
 Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
 """
-
+from utilities import Contenido # Clase de contenido (fila del excel)
+from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
+from database import DB
 import time
-# import excelParser as excParser #Parser del excel
 from enum import IntEnum, Enum
 from datetime import datetime, time as dt, timedelta
 from typing import List
-from utilities import Contenido # Clase de contenido (fila del excel)
-from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
 from pathlib import Path
 import pause
 import random

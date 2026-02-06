@@ -4,6 +4,7 @@ IMPORTANTE: Para que funcione tiene que estar corriendo el servicio de FirebirdD
 """
 import fdb
 from pathlib import Path
+from utilities import Contenido
 
 class Database:
     def __init__(self, path, user = "SYSDBA", password = "masterkey"):
@@ -31,6 +32,7 @@ class Database:
         try:
             if self.conn is None:
                 self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.
+                print("[INFO]: Conexión con la DB establecida" if self.conn is not None else "[ERROR]: No se pudo conectar con la DB")
             else:
                 return False
         except Exception as e:
@@ -40,6 +42,10 @@ class Database:
         return True
     
     def getBloque_num(self, fecha, nroBloque):
+        """
+        Devuelve un bloque de 5 minutos de programación, representado por una lista
+        de objetos de la clase Contenido.
+        """
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida a la Database para pedir un bloque.")
             return
@@ -53,13 +59,29 @@ class Database:
                 ORDER BY HORA"""
         
         cursor.execute(query, (fecha, nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
-        resultado = cursor.fetchall()
+        queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
+        
+        listaCont = []
+        for fila in queryRes:
+            hora, path, nombre, tipo = fila # fila es una tupla -> hacemos unpacking de esta manera que python lo permite, gracias python.
+            listaCont.append(Contenido(id_playlist = None, 
+                                       fecha = fecha, 
+                                       hora = hora, bloque = 
+                                       nroBloque, tipo = tipo, 
+                                       id_mult = None, dura = None,
+                                       nombre = nombre, path = path, 
+                                       orden = None, es_publi = None)) # Creo objeto contenido
 
-        return resultado
+        return listaCont
     
 if __name__ == "__main__":
-    DB = Database(path = r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\CANAL79_DB.FDB")
-    print("[INFO]: Conexión con la DB establecida" if DB.conn is not None else "[ERROR]: No se pudo conectar con la DB")
+    pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
+    DB = Database(path = pathDB)
     filas = DB.getBloque_num("03.03.2025",1)
-    print(filas)
+    for cont in filas:
+        print("FECHA: " + cont.fecha)
+        print("HORA " + str(cont.hora))
+        print("NOMBRE: " + cont.nombre)
+        print("PATH: " + cont.path)
+        print("\n")
