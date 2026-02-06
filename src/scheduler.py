@@ -1,11 +1,11 @@
 """
 Archivo principal del proyecto, se encarga de organizar la transmisión y de mandar al aire el contenido que corresponda a la hora que corresponda.
-Usa las clases de excelParser y vMixApiWrapper (TCP) para hacer esto.
+Usa las clases de Database y vMixApiWrapper (TCP) para hacer esto.
 Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
 """
-from utilities import Contenido # Clase de contenido (fila del excel)
-from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix
-from database import DB
+from utilities import Contenido # Clase que representa los Contenidos de la programación.
+from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix.
+from database import Database # Clase wrapper de la Database.
 import time
 from enum import IntEnum, Enum
 from datetime import datetime, time as dt, timedelta
@@ -16,7 +16,7 @@ import random
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
-# TO DO: Cuando se arranca en mitad de un reporte local, hay que encontrar una manera prolija de poner cámara y música.
+# TO DO: Cuando se arranca en mitad de un reporte local, hay que encontrar una manera prolija de poner cámara y música. Esto se puede ver con el bloque de la DB si empieza por reporte.
 # TO DO: La musica se carga ineficientemente. Cada vez que se reproduce un video se carga de nuevo la musica.
 # TO DO: A veces al arrancar los videos disparan música.
 # TO DO: Mal manejo de musicaAct y musicaProx junton con finTemaAct. Hay veces que se carga en el input incorrecto la musica y no sale musica al aire.
@@ -490,18 +490,3 @@ class Scheduler:
         vMix.listClear(NumsInput.BLIP)
 
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
-
-        
-if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parent
-    blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
-    pathExcel = BASE_DIR / "playlist.xlsx"
-
-    if pathExcel.exists:
-        programacion = excParser.crea_lista(pathExcel) # Lista de objetos de clase Contenido con la programacion del dia
-        vMix = VmixApi() # Objeto API de vMix
-        schMain = Scheduler(programacion,vMix)
-        schMain.start(blipPath)
-    else:
-        print("[ERROR]: No se encontró el playlist.xlsx")
-        time.sleep(5)
