@@ -50,10 +50,13 @@ class Rutas(str, Enum):
 
 
 class Scheduler:
-    def __init__(self,contenidos: List[Contenido] = None, vMix: VmixApi = None):
-        self.contenidos = contenidos # Lista de objetos de la clase Contenido
-        self.vMix = vMix # Objeto de la api de vMix
-        self.indexEmision = 0 # El index de contenidos indica cuál es el próximo contenido a emitir. "Puntero"
+    def __init__(self, vMix: VmixApi, database: Database):
+        self.bloqueAire = None # Lista de objetos de la clase Contenido representando el bloque actual
+        self.bloqueProx = None 
+        self.indexBloque = 0 # Puntero al contenido del bloque actual en emisión.
+
+        self.vMix = vMix # Objeto de la api de vMix.
+        self.database = database # Objeto de la clase Database para hacer queries.
 
         self.videoAct = None
         self.videoProx = None
@@ -71,27 +74,33 @@ class Scheduler:
         self.camaraLive = False
 
         self.running = False
-        self.todo_precargado = False
 
-    def _buscaIndex(self):
+    def _buscaBloque(self):
         """
-        Deja indexEmision en el valor que apunte al contenido de la hora actual.
+        Carga el bloque actual según la hora y pone el indexBloque en el valor correspondiente.
+        Recibe como parámetro el objeto database que ya tiene la conexión con la db abierta.
         """
-        horaAct = datetime.now().time() 
-        
-        # Recorro la lista con enumerate xq devuelve dos valores: Index y valor.
-        if horaAct >= self.contenidos[-1].hora:
-            self.indexEmision = len(self.contenidos) - 1 
-            return
-        
-        for i, cont in enumerate(self.contenidos):
-            try:
-                if  horaAct >= cont.hora and horaAct < self.contenidos[i + 1].hora:
-                    self.indexEmision = i 
-                    return
-            except IndexError:
-                    self.indexEmision = len(self.contenidos)
-                    return
+        #Calculo bloque:
+        database = self.database
+        duraBloque = 5 # DURACIÓN DE LOS BLOQUES. SI CAMBIAN, SE CAMBIA ESTA VARIABLE. NO HAY #define COMO EN C.
+
+        horaAct = datetime.now().time()
+        fechaAct = datetime.now().date()
+        minutoAct = horaAct.hour * 60 +  horaAct.minute
+
+        nroBloque = minutoAct // duraBloque
+        self.bloqueAire = database.getBloque_num(fechaAct, nroBloque) # Devuelve el bloque actual en una lista.
+
+        # Calculo index:
+
+        self.indexBloque = 0
+        for cont in self.bloqueAire:
+            if horaAct > cont.hora:
+                self.indexBloque += 1
+            else:
+                break
+
+        print(f"Bloque de arranque: {nroBloque}")
     
     def _startAudio(self):
         vMix = self.vMix
@@ -103,6 +112,12 @@ class Scheduler:
         vMix.setAudio_on(NumsInput.MUSICA_B)
 
     def start(self,blipPath):
+
+        if self.bloqueAire is None:
+            print("Bloque de arranque vacío.")
+            self.stop()
+            return
+
         self.running = True
         print("Scheduler iniciado")
 
@@ -121,13 +136,13 @@ class Scheduler:
 
         self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
 
-        self._buscaIndex() # Asigna valor correcto actual a indexEmision
+        self._buscaBloque() # Asigna valor correcto actual a.indexBloque
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         self._startAudio()
 
-        self._goLive(self.contenidos[self.indexEmision], False) # Manda al aire el contenido correspondiente a la hora de ejecución.
-        self.indexEmision += 1
+        self._goLive(self.bloqueAire[self.indexBloque], False) # Manda al aire el contenido correspondiente a la hora de ejecución.
+        self.indexBloque += 1
 
         while self.running:
             self._tick()
@@ -147,7 +162,7 @@ class Scheduler:
 
         # *Parsea excel nuevo cambiando la lista de contenidos*
 
-        self.indexEmision = 0
+        self.indexBloque = 0
         self._cargaProx() # Maneja correctamente los atributos de prox y act
 
 
@@ -157,17 +172,17 @@ class Scheduler:
         si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
         """
 
-        if self.indexEmision >= len(self.contenidos): # Si recorrió todos los contenidos del día.
+        if self.indexBloque >= len(self.bloqueAire): # Esto es antiguo. No hace falta más porque ahora nada más pide bloques.
             self.__restart()
             return
         
-        contAct = self.contenidos[self.indexEmision] # Objeto del contenido actual
+        contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
         
         ahora = datetime.now()
         horaAct = ahora.time()
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
-            self.indexEmision += 1
+            self.indexBloque += 1
             self._goLive(contAct)
 
         if self.finTemaAct is not None and ahora >= self.finTemaAct: # Si está sonando música y corresponde cambiarla:
@@ -288,7 +303,7 @@ class Scheduler:
         buscando_micro = self.microProx is None
         buscando_musica = self.musicaProx is None
 
-        for cont in self.contenidos[self.indexEmision:]:
+        for cont in self.bloqueAire[self.indexBloque:]:
             if not buscando_video and not buscando_placa and not buscando_micro and not buscando_musica:
                 return
             
@@ -490,3 +505,14 @@ class Scheduler:
         vMix.listClear(NumsInput.BLIP)
 
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
+
+if __name__ == "__main__":
+    BASE_DIR = Path(__file__).resolve().parent
+    blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
+    dbPath = r"C:\Canal79\DB\CANAL79_DB.FDB"
+
+    database = Database(dbPath)
+    vMix = VmixApi()
+    schMain = Scheduler(vMix,database)
+
+    schMain.start(blipPath)
