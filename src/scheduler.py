@@ -47,9 +47,14 @@ class OverlaySlots(IntEnum):
 class Rutas(str, Enum):
     MUSICA = r"C:\SERVERLOC_RES\MusicaAire"
 
+class Bloque(IntEnum):
+    DURACION = 5 # Duración en minutos.
+    CANT_MAX = 288 # Cantidad de bloques = Minutos en un dia // 5
+
 
 class Scheduler:
     def __init__(self, vMix: VmixApi, database: Database):
+        self.nroBloqueAire = 1
         self.bloqueAire: List[Contenido] = [] # Lista de objetos de la clase Contenido representando el bloque actual
         self.bloqueProx: List[Contenido] = [] 
         self.indexBloque = 0 # Puntero al contenido del bloque actual en emisión.
@@ -82,14 +87,14 @@ class Scheduler:
         #Calculo bloque:
 
         database = self.database
-        duraBloque = 5 # DURACIÓN DE LOS BLOQUES. SI CAMBIAN, SE CAMBIA ESTA VARIABLE. NO HAY #define COMO EN C.
 
         horaAct = datetime.now().time()
         fechaAct = datetime.now().date()
         minutoAct = horaAct.hour * 60 +  horaAct.minute
 
-        nroBloque = minutoAct // duraBloque + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0
+        nroBloque = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0.
         self.bloqueAire = database.getBloque_num(fechaAct, nroBloque) # Devuelve el bloque actual en una lista.
+        self.nroBloqueAire = nroBloque
 
         # Calculo index:
 
@@ -143,40 +148,41 @@ class Scheduler:
 
         self._startAudio()
 
-        self._goLive(self.bloqueAire[self.indexBloque], False) # Manda al aire el contenido correspondiente a la hora de ejecución.
+        self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
 
         while self.running:
             self._tick()
             time.sleep(0.2)
         
-    
+    def _cargaProxBloque(self):
+        """
+        Este método se llama cuando hay que precargar el próximo bloque, o sea cuando se mandó al aire el último contenido del bloque anterior.
+        """
+
+        horaAct = datetime.now().time()
+        fechaAct = datetime.now().date()
+
+        minutoAct = horaAct.hour * 60 +  horaAct.minute
+
+        nroBloqueAct = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0
+        nroBloqueProx = nroBloqueAct + 1 # Sumo 1 otra vez porque quiero el PRÓXIMO BLOQUE.
+
+        if nroBloqueProx > Bloque.CANT_MAX: # Si está al aire el último bloque voy al primer bloque de mañana
+            fechaAct = fechaAct + timedelta(days = 1)
+            nroBloqueProx = 1
+
+        self.bloqueProx = self.database.getBloque_num(fechaAct,nroBloqueProx) # Precarga el bloque próximo al actual. Por eso +1.
+
     def stop(self):
         self.running = False
-
-    def __restart(self):
-        print("Se transmitió todo el playlist de hoy. Reiniciando...")
-        
-        ahora = datetime.now()
-        manana = datetime.combine(ahora.date() + timedelta(days=1), dt(0, 0, 0))
-        
-        pause.until(manana) # Espera hasta las 00:00:01
-
-        # *Parsea excel nuevo cambiando la lista de contenidos*
-
-        self.indexBloque = 0
-        self._cargaProx() # Maneja correctamente los atributos de prox y act
-
 
     def _tick(self):
         """
         _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
-        si hay que hacerlo, depende totalmente de que la lógica de cargar prox sea totalmente correcta y NUNCA falle.
+        si hay que hacerlo.
+        Se encarga de cambiar la musica también.
         """
-
-        if self.indexBloque >= len(self.bloqueAire): # Esto es antiguo. No hace falta más porque ahora nada más pide bloques.
-            self.__restart()
-            return
         
         contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
         
@@ -185,6 +191,10 @@ class Scheduler:
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
             self.indexBloque += 1
+
+            if self.indexBloque == len(self.bloqueAire): # No se precarga lo antes posible el bloque porque se quiere tener headroom para hacer cambios en un bloque antes de que salga al aire.
+                self._cargaProxBloque()
+    
             self._goLive(contAct)
 
         if self.finTemaAct is not None and ahora >= self.finTemaAct: # Si está sonando música y corresponde cambiarla:
@@ -297,7 +307,7 @@ class Scheduler:
 
     def _cargaProx(self):
         """
-        Busca en la lista de contenidos el PRÓXIMO de cada tipo para precargar.
+        Recorre el bloque actual al aire para precargar en los inputs correspondientes.
         """
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
@@ -387,6 +397,9 @@ class Scheduler:
 
         if cargaProx:
             self._cargaProx() # Después de mandar al aire precarga el prox.
+
+        if self.indexBloque == len(self.bloqueAire): # Si mandé al aire el último contenido del bloque actual
+            self.bloqueAire = self.bloqueProx
 
     def _goLiveMusica(self):
         vMix = self.vMix
