@@ -400,7 +400,8 @@ class Scheduler:
 
         if self.indexBloque == len(self.bloqueAire): # Si mandé al aire el último contenido del bloque actual
             self.bloqueAire = self.bloqueProx
-
+            self.indexBloque = 0
+    
     def _goLiveMusica(self):
         vMix = self.vMix
         if self.musicaProx is None:
