@@ -17,9 +17,8 @@ import random
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
 # TO DO: Cuando se arranca en mitad de un reporte local, hay que encontrar una manera prolija de poner cámara y música. Esto se puede ver con el bloque de la DB si empieza por reporte.
-# TO DO: La musica se carga ineficientemente. Cada vez que se reproduce un video se carga de nuevo la musica.
-# TO DO: A veces al arrancar los videos disparan música.
 # TO DO: Mal manejo de musicaAct y musicaProx junton con finTemaAct. Hay veces que se carga en el input incorrecto la musica y no sale musica al aire.
+# TO DO: Mal manejo de indexBloque, out of range al cambiar de bloque.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -79,6 +78,32 @@ class Scheduler:
 
         self.running = False
 
+    def _tick(self):
+        """
+        _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
+        si hay que hacerlo.
+        Se encarga de cambiar la musica también.
+        """
+
+        if self.indexBloque >= len(self.bloqueAire):
+            self._swapBloque()
+            return # No hace falta el return, lo pongo por prolijidad.
+        
+        contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
+        
+        ahora = datetime.now()
+        horaAct = ahora.time()
+
+        if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
+            self.indexBloque += 1
+            self._goLive(contAct)
+            
+            if self.indexBloque == len(self.bloqueAire): # Si mandé el último al aire precargo el próximo bloque en self.bloqueProx
+                self._cargaProxBloque()
+
+        if self.finTemaAct is not None and ahora >= self.finTemaAct: # Si está sonando música y corresponde cambiarla:
+                self._goLiveMusica()
+    
     def _buscaBloque(self):
         """
         Carga el bloque actual según la hora y pone el indexBloque en el valor correspondiente.
@@ -100,7 +125,7 @@ class Scheduler:
 
         self.indexBloque = 0
         for cont in self.bloqueAire:
-            if horaAct > cont.hora:
+            if horaAct >= cont.hora:
                 self.indexBloque += 1
             else:
                 break
@@ -169,7 +194,7 @@ class Scheduler:
         nroBloqueProx = nroBloqueAct + 1 # Sumo 1 otra vez porque quiero el PRÓXIMO BLOQUE.
 
         if nroBloqueProx > Bloque.CANT_MAX: # Si está al aire el último bloque voy al primer bloque de mañana
-            fechaAct = fechaAct + timedelta(days = 1)
+            fechaAct = fechaAct + timedelta(days = 1) # Dudo mucho de la lógica de cambio de día
             nroBloqueProx = 1
 
         self.bloqueProx = self.database.getBloque_num(fechaAct,nroBloqueProx) # Precarga el bloque próximo al actual. Por eso +1.
@@ -177,28 +202,6 @@ class Scheduler:
     def stop(self):
         self.running = False
 
-    def _tick(self):
-        """
-        _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
-        si hay que hacerlo.
-        Se encarga de cambiar la musica también.
-        """
-        
-        contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
-        
-        ahora = datetime.now()
-        horaAct = ahora.time()
-
-        if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado.
-            self.indexBloque += 1
-
-            if self.indexBloque == len(self.bloqueAire): # No se precarga lo antes posible el bloque porque se quiere tener headroom para hacer cambios en un bloque antes de que salga al aire.
-                self._cargaProxBloque()
-    
-            self._goLive(contAct)
-
-        if self.finTemaAct is not None and ahora >= self.finTemaAct: # Si está sonando música y corresponde cambiarla:
-                self._goLiveMusica()
     
     def _precargaVideo(self,cont):
         vMix = self.vMix
@@ -266,6 +269,19 @@ class Scheduler:
         vMix.listAddInput(inputLibre, path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
 
         self.musicaProx = inputLibre
+
+    def _swapBloque(self):
+        if not self.bloqueProx:
+            print("[ERROR]: Error en la precarga del próximo bloque.")
+            return
+        
+        print("cambio de bloque aviso nomass")
+
+        self.bloqueAire = self.bloqueProx
+        self.indexBloque = 0
+        self.bloqueProx = []
+
+        self._cargaProx()
     
     def __randomMusica(self):
         """
@@ -397,11 +413,6 @@ class Scheduler:
 
         if cargaProx:
             self._cargaProx() # Después de mandar al aire precarga el prox.
-
-        if self.indexBloque == len(self.bloqueAire): # Si mandé al aire el último contenido del bloque actual
-            self.bloqueAire = self.bloqueProx
-            print("Cargo bloque nuevo")
-            self.indexBloque = 0
     
     def _goLiveMusica(self):
         vMix = self.vMix
@@ -526,7 +537,7 @@ class Scheduler:
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
-    dbPath = r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA.FDB"
+    dbPath = r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\CANAL79_DB.FDB"
 
     database = Database(dbPath)
     vMix = VmixApi()
