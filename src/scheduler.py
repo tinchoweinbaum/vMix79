@@ -400,6 +400,7 @@ class Scheduler:
 
         if self.indexBloque == len(self.bloqueAire): # Si mandé al aire el último contenido del bloque actual
             self.bloqueAire = self.bloqueProx
+            print("Cargo bloque nuevo")
             self.indexBloque = 0
     
     def _goLiveMusica(self):
@@ -525,7 +526,7 @@ class Scheduler:
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
-    dbPath = r"C:\Canal79\DB\CANAL79_DB.FDB"
+    dbPath = r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA.FDB"
 
     database = Database(dbPath)
     vMix = VmixApi()
