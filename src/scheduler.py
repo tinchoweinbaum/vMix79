@@ -123,9 +123,9 @@ class Scheduler:
         # Calculo index:
 
         self.indexBloque = 0
-        for cont in self.bloqueAire:
+        for i, cont in enumerate(self.bloqueAire):
             if horaAct >= cont.hora:
-                self.indexBloque += 1
+                self.indexBloque = i # Index del contenido que debería estar al aire.
             else:
                 break
 
