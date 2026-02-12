@@ -168,7 +168,6 @@ class Scheduler:
         self._startAudio()
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
-        self.indexBloque += 1
 
         if self.indexBloque >= len(self.bloqueAire): # Si arranqué en el último elemento del bloque precargo el próximo bloque.
             self._cargaProxBloque()
