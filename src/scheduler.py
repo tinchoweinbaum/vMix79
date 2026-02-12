@@ -78,6 +78,45 @@ class Scheduler:
 
         self.running = False
 
+    def start(self,blipPath):
+
+        self.running = True
+        print("Scheduler iniciado")
+
+        self.videoAct = None
+        self.videoProx = None
+
+        self.placaAct = None # Modelo act/prox para videos/placas/micros. Act = al aire. Prox = Por salir
+        self.placaProx = None # xAct y xProx son números de input en vMix: VIDEO_A o VIDEO_B por ejemplo
+
+        self.microAct = None
+        self.microProx = None
+
+        self.camaraLive = False
+
+        self.__clearAll()
+
+        self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
+
+        self._buscaBloque() # Asigna valor correcto actual a self.indexBloque
+        self._cargaProx() # Precarga los inputs prox para el primer tick
+
+        if not self.bloqueAire:
+            print("Bloque de arranque vacío.")
+            self.stop()
+            return
+
+        self._startAudio()
+
+        self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
+
+        if self.indexBloque >= len(self.bloqueAire): # Si arranqué en el último elemento del bloque precargo el próximo bloque.
+            self._cargaProxBloque()
+
+        while self.running:
+            self._tick()
+            time.sleep(0.2)
+
     def _tick(self):
         """
         _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
@@ -114,8 +153,8 @@ class Scheduler:
         fechaAct = datetime.now().date()
         minutoAct = horaAct.hour * 60 +  horaAct.minute
 
-        nroBloque = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0.
-        self.bloqueAire = database.getBloque_num(fechaAct, nroBloque) # Devuelve el bloque actual en una lista.
+        self.nroBloqueAire = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0.
+        self.bloqueAire = database.getBloque_num(fechaAct, self.nroBloqueAire) # Devuelve el bloque actual en una lista.
 
         # Calculo index:
 
@@ -126,7 +165,7 @@ class Scheduler:
             else:
                 break
 
-        print(f"Bloque de arranque: {nroBloque}")
+        print(f"Bloque de arranque: {self.nroBloqueAire}")
     
     def _startAudio(self):
         vMix = self.vMix
@@ -137,44 +176,7 @@ class Scheduler:
         vMix.setAudio_on(NumsInput.MUSICA_A)
         vMix.setAudio_on(NumsInput.MUSICA_B)
 
-    def start(self,blipPath):
 
-        self.running = True
-        print("Scheduler iniciado")
-
-        self.videoAct = None
-        self.videoProx = None
-
-        self.placaAct = None # Modelo act/prox para videos/placas/micros. Act = al aire. Prox = Por salir
-        self.placaProx = None # xAct y xProx son números de input en vMix: VIDEO_A o VIDEO_B por ejemplo
-
-        self.microAct = None
-        self.microProx = None
-
-        self.camaraLive = False
-
-        self.__clearAll()
-
-        self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
-
-        self._buscaBloque() # Asigna valor correcto actual a.indexBloque
-        self._cargaProx() # Precarga los inputs prox para el primer tick
-
-        if not self.bloqueAire:
-            print("Bloque de arranque vacío.")
-            self.stop()
-            return
-
-        self._startAudio()
-
-        self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
-
-        if self.indexBloque >= len(self.bloqueAire): # Si arranqué en el último elemento del bloque precargo el próximo bloque.
-            self._cargaProxBloque()
-
-        while self.running:
-            self._tick()
-            time.sleep(0.2)
         
     def _cargaProxBloque(self):
         """
