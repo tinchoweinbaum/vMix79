@@ -16,9 +16,8 @@ import random
 
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
-# TO DO: Cuando se arranca en mitad de un reporte local, hay que encontrar una manera prolija de poner cámara y música. Esto se puede ver con el bloque de la DB si empieza por reporte.
-# TO DO: Mal manejo de musicaAct y musicaProx junton con finTemaAct. Hay veces que se carga en el input incorrecto la musica y no sale musica al aire.
-# TO DO: Mal manejo de indexBloque, out of range al cambiar de bloque.
+# TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
+# TO DO: Index out of range al arrancar en el último elemento de un bloque.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -164,8 +163,6 @@ class Scheduler:
         self._buscaBloque() # Asigna valor correcto actual a.indexBloque
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
-        # print("El bloqueAire tiene " + str(len(self.bloqueAire)) + "  elementos y el index a esta hora es " + str(self.indexBloque))
-
         if not self.bloqueAire:
             print("Bloque de arranque vacío.")
             self.stop()
@@ -175,6 +172,9 @@ class Scheduler:
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
+
+        if self.indexBloque >= len(self.bloqueAire): # Si arranqué en el último elemento del bloque precargo el próximo bloque.
+            self._cargaProxBloque()
 
         while self.running:
             self._tick()
