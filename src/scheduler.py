@@ -14,11 +14,10 @@ from pathlib import Path
 import pause
 import random
 
-# TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
-# TO DO: Cuando se termina un dia en vez de loopear se vuelve loco y empieza a iterar infinitamente por el primer bloque de mañana.
 # TO DO: Cuando arranca manda mal SIEMPRE el segundo contenido. Especialmente videos.
+# TO DO: Cámaras.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
