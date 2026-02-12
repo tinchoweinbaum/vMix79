@@ -268,7 +268,7 @@ class Scheduler:
         if not self.bloqueProx:
             print("[ERROR]: Error en la precarga del próximo bloque.")
             return
-    
+        print("llamo swap bloque")
         self.bloqueAire = self.bloqueProx
         self.indexBloque = 0
         self.bloqueProx = [] # Como self.bloqueProx = Null
@@ -537,11 +537,7 @@ class Scheduler:
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
-    # Definís las dos rutas posibles
-    ruta_dev = Path(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\CANAL79_DB.FDB")
-    ruta_prod = Path(r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA.FDB")
-
-    dbPath = ruta_dev if ruta_dev.exists() else ruta_prod
+    dbPath = r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA.FDB"
 
     database = Database(dbPath)
     vMix = VmixApi()
