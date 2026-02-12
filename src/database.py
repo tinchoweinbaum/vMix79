@@ -83,7 +83,7 @@ class Database:
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database(path = pathDB)
-    filas = DB.getBloque_num("03.03.2025",1)
+    filas = DB.getBloque_num("12.02.2026",1)
     for cont in filas:
         print("FECHA: " + cont.fecha)
         print("HORA " + str(cont.hora))

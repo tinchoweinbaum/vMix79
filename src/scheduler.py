@@ -17,7 +17,8 @@ import random
 # TO DO: Placa transparente (camara desnuda) cuando no hay placa.
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
-# TO DO: Index out of range al arrancar en el último elemento de un bloque.
+# TO DO: Cuando se termina un dia en vez de loopear se vuelve loco y empieza a iterar infinitamente por el primer bloque de mañana.
+# TO DO: Cuando arranca manda mal SIEMPRE el segundo contenido. Especialmente videos.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -60,10 +61,10 @@ class Scheduler:
         self.vMix = vMix # Objeto de la api de vMix.
         self.database = database # Objeto de la clase Database para hacer queries.
 
-        self.videoAct = None
-        self.videoProx = None
+        self.videoAct = None # Los atributos de act y prox sirven para tener en memoria la respuesta a "¿Dónde tengo que mandar el próximo video?"
+        self.videoProx = None # Así no hay que preguntarle a vMix que consume muchos más recursos
 
-        self.placaAct = None # Estos 3 atributos están para no depender de las respuestas de vMix que tardan en llegar.
+        self.placaAct = None
         self.placaProx = None
 
         self.microAct = None
@@ -118,7 +119,6 @@ class Scheduler:
 
         nroBloque = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0.
         self.bloqueAire = database.getBloque_num(fechaAct, nroBloque) # Devuelve el bloque actual en una lista.
-        self.nroBloqueAire = nroBloque
 
         # Calculo index:
 
@@ -274,12 +274,13 @@ class Scheduler:
         if not self.bloqueProx:
             print("[ERROR]: Error en la precarga del próximo bloque.")
             return
-        
-        print("cambio de bloque aviso nomass")
-
+    
         self.bloqueAire = self.bloqueProx
         self.indexBloque = 0
         self.bloqueProx = []
+        self.nroBloqueAire += 1
+
+        print(f"[INFO]: Bloque {self.nroBloqueAire} cargado. Ya no se puede modificar.")
 
         self._cargaProx()
     
