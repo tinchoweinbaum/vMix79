@@ -325,6 +325,7 @@ class Scheduler:
         """
         Recorre el bloque actual al aire para precargar en los inputs correspondientes.
         """
+        print("Llamo cargaprox")
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
         buscando_placa = self.placaProx is None
