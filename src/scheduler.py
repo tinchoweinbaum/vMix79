@@ -98,11 +98,8 @@ class Scheduler:
             self.indexBloque += 1
             self._goLive(contAct)
             
-            if self.indexBloque == len(self.bloqueAire): # Si mandé el último al aire precargo el próximo bloque en self.bloqueProx
+            if self.indexBloque == len(self.bloqueAire): # Si mandé el último contenido del bloque al aire precargo el próximo bloque en self.bloqueProx
                 self._cargaProxBloque()
-
-        if self.finTemaAct is not None and ahora >= self.finTemaAct: # Si está sonando música y corresponde cambiarla:
-                self._goLiveMusica()
     
     def _buscaBloque(self):
         """
@@ -185,16 +182,12 @@ class Scheduler:
         Este método se llama cuando hay que precargar el próximo bloque, o sea cuando se mandó al aire el último contenido del bloque anterior.
         """
 
-        horaAct = datetime.now().time()
         fechaAct = datetime.now().date()
 
-        minutoAct = horaAct.hour * 60 +  horaAct.minute
-
-        nroBloqueAct = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0
-        nroBloqueProx = nroBloqueAct + 1 # Sumo 1 otra vez porque quiero el PRÓXIMO BLOQUE.
+        nroBloqueProx = self.nroBloqueAire + 1 # Sumo 1 otra vez porque quiero el PRÓXIMO BLOQUE.
 
         if nroBloqueProx > Bloque.CANT_MAX: # Si está al aire el último bloque voy al primer bloque de mañana
-            fechaAct = fechaAct + timedelta(days = 1) # Dudo mucho de la lógica de cambio de día
+            fechaAct = fechaAct + timedelta(days = 1) # Dudo mucho de la lógica de cambio de día. Race condition para llamar antes de las 00
             nroBloqueProx = 1
 
         self.bloqueProx = self.database.getBloque_num(fechaAct,nroBloqueProx) # Precarga el bloque próximo al actual. Por eso +1.
@@ -277,8 +270,14 @@ class Scheduler:
     
         self.bloqueAire = self.bloqueProx
         self.indexBloque = 0
-        self.bloqueProx = []
-        self.nroBloqueAire += 1
+        self.bloqueProx = [] # Como self.bloqueProx = Null
+
+        if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
+            manana = datetime.now() + timedelta(days=1)
+            proxDia = datetime.combine(manana.date(), dt(0,0,0))
+            pause.untiL(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
+            # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
+            self.nroBloqueAire = 1
 
         print(f"[INFO]: Bloque {self.nroBloqueAire} cargado. Ya no se puede modificar.")
 
