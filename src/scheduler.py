@@ -191,6 +191,7 @@ class Scheduler:
             nroBloqueProx = 1
 
         self.bloqueProx = self.database.getBloque_num(fechaAct,nroBloqueProx) # Precarga el bloque próximo al actual. Por eso +1.
+        print(f"[INFO]: Bloque {nroBloqueProx} cargado. Ya no se puede modificar.")
 
     def stop(self):
         self.running = False
@@ -275,11 +276,9 @@ class Scheduler:
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             manana = datetime.now() + timedelta(days=1)
             proxDia = datetime.combine(manana.date(), dt(0,0,0))
-            pause.untiL(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
+            pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
             # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
             self.nroBloqueAire = 1
-
-        print(f"[INFO]: Bloque {self.nroBloqueAire} cargado. Ya no se puede modificar.")
 
         self._cargaProx()
     
