@@ -410,7 +410,7 @@ class Scheduler:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER TAMBIEN
             case TipoContenido.FOTOBMP:
-                blipBool = contAct.nombre in ["79 partidas"]
+                blipBool = contAct.nombre in ["79 partidas","79 Partidas"]
                 self._goLiveMicro(blip = blipBool)
             case _:
                 print(f"[ERROR]: Tipo de contenido desconocido: {tipo}\n")
