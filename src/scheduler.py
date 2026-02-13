@@ -42,8 +42,9 @@ class NumsInput(IntEnum):
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
 
-class Rutas(str, Enum):
-    MUSICA = r"C:\SERVERLOC_RES\MusicaAire"
+class MUSICA(str, Enum):
+    RUTA = r"C:\SERVERLOC_RES\MusicaAire"
+    DURACION_FADE = 5
 
 class Bloque(IntEnum):
     DURACION = 5 # Duración en minutos.
@@ -108,6 +109,12 @@ class Scheduler:
         self._startAudio()
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
+        self.indexBloque += 1
+
+        if self.indexBloque < len(self.bloqueAire): # Al disparar el primer contenido manualmente, hay que volver a recargar los inputs para el próximo tick.
+            self._cargaProx()
+        elif self.indexBloque >= len(self.bloqueAire):
+            self._cargaProxBloque()
 
         time.sleep(1)
 
@@ -290,10 +297,10 @@ class Scheduler:
         """
         Elige un archivo al azar de la carpeta de música
         """
-        musicaRuta = Path(Rutas.MUSICA) 
+        musicaRuta = Path(MUSICA.Ruta) 
         
         if not musicaRuta.exists():
-            print(f"[ERROR]: La ruta {Rutas.MUSICA} no existe.\n")
+            print(f"[ERROR]: La ruta {MUSICA.Ruta} no existe.\n")
             return None
         musicas = [item for item in musicaRuta.iterdir() if item.is_file()]
         
