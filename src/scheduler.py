@@ -18,6 +18,7 @@ import random
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
 # TO DO: Cuando arranca manda mal SIEMPRE el segundo contenido. Especialmente videos.
 # TO DO: Cámaras.
+# TO DO: Después de mandar al aire un par de bloques, se pone a loopear uno infinitamente.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -278,7 +279,10 @@ class Scheduler:
             proxDia = datetime.combine(manana.date(), dt(0,0,0))
             pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
             # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
+
             self.nroBloqueAire = 1
+        else:
+            self.nroBloqueAire += 1
 
         self._cargaProx()
     
