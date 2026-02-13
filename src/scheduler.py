@@ -16,8 +16,8 @@ import random
 
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
-# TO DO: Cuando arranca manda mal SIEMPRE el segundo contenido. Especialmente videos.
 # TO DO: Cámaras.
+# TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
