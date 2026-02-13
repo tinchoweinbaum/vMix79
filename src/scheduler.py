@@ -269,7 +269,7 @@ class Scheduler:
         if not self.bloqueProx:
             print("[ERROR]: Error en la precarga del próximo bloque.")
             return
-        print("llamo swap bloque")
+        
         self.bloqueAire = self.bloqueProx
         self.indexBloque = 0
         self.bloqueProx = [] # Como self.bloqueProx = Null
@@ -328,7 +328,6 @@ class Scheduler:
         """
         Recorre el bloque actual al aire para precargar en los inputs correspondientes.
         """
-        print("Llamo cargaprox")
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
         buscando_placa = self.placaProx is None
