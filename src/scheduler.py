@@ -18,7 +18,6 @@ import random
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
 # TO DO: Cuando arranca manda mal SIEMPRE el segundo contenido. Especialmente videos.
 # TO DO: Cámaras.
-# TO DO: Después de mandar al aire un par de bloques, se pone a loopear uno infinitamente.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -109,6 +108,8 @@ class Scheduler:
         self._startAudio()
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
+
+        time.sleep(1)
 
         if self.indexBloque >= len(self.bloqueAire): # Si arranqué en el último elemento del bloque precargo el próximo bloque.
             self._cargaProxBloque()
