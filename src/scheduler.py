@@ -80,7 +80,7 @@ class Scheduler:
     def start(self,blipPath):
 
         self.running = True
-        print("Scheduler iniciado")
+        print("Scheduler iniciado\n")
 
         self.videoAct = None
         self.videoProx = None
@@ -101,7 +101,7 @@ class Scheduler:
         self._cargaProx() # Precarga los inputs prox para el primer tick
 
         if not self.bloqueAire:
-            print("Bloque de arranque vacío.")
+            print("Bloque de arranque vacío.\n")
             self.stop()
             return
 
@@ -144,7 +144,6 @@ class Scheduler:
     def _buscaBloque(self):
         """
         Carga el bloque actual según la hora y pone el indexBloque en el valor correspondiente.
-        Recibe como parámetro el objeto database que ya tiene la conexión con la db abierta.
         """
         #Calculo bloque:
 
@@ -166,7 +165,7 @@ class Scheduler:
             else:
                 break
 
-        print(f"Bloque de arranque: {self.nroBloqueAire}")
+        print(f"Bloque de arranque: {self.nroBloqueAire}\n")
     
     def _startAudio(self):
         vMix = self.vMix
@@ -193,7 +192,7 @@ class Scheduler:
             nroBloqueProx = 1
 
         self.bloqueProx = self.database.getBloque_num(fechaAct,nroBloqueProx) # Precarga el bloque próximo al actual. Por eso +1.
-        print(f"[INFO]: Bloque {nroBloqueProx} cargado. Ya no se puede modificar.")
+        print(f"[INFO]: Bloque {nroBloqueProx} cargado. Ya no se puede modificar.\n")
 
     def stop(self):
         self.running = False
@@ -203,7 +202,7 @@ class Scheduler:
         vMix = self.vMix
         # print("Llamo precarga video.")
         if self.videoProx is not None: # Si no hace falta precargar:
-            print("[ERROR]: Error de precarga de video. (pre)")
+            print("[ERROR]: Error de precarga de video. (pre)\n")
             print(cont.path)
             return
         
@@ -221,7 +220,7 @@ class Scheduler:
         vMix = self.vMix
         # print("Llamo precarga placa.")
         if self.placaProx is not None:
-            print("[ERROR]: Mala inicializacion de placa.")
+            print("[ERROR]: Mala inicializacion de placa.\n")
             return
 
         if self.placaAct == NumsInput.PLACA_A:
@@ -253,7 +252,7 @@ class Scheduler:
     def _precargaMusica(self,path):
         vMix = self.vMix
         if self.musicaProx is not None:
-            print("[ERROR]: Error de precarga de musica. (pre)")
+            print("[ERROR]: Error de precarga de musica. (pre)\n")
             return
 
         if self.musicaAct == NumsInput.MUSICA_A:
@@ -268,7 +267,7 @@ class Scheduler:
 
     def _swapBloque(self):
         if not self.bloqueProx:
-            print("[ERROR]: Error en la precarga del próximo bloque.")
+            print("[ERROR]: Error en la precarga del próximo bloque.\n")
             return
         
         self.bloqueAire = self.bloqueProx
@@ -294,12 +293,12 @@ class Scheduler:
         musicaRuta = Path(Rutas.MUSICA) 
         
         if not musicaRuta.exists():
-            print(f"[ERROR]: La ruta {Rutas.MUSICA} no existe.")
+            print(f"[ERROR]: La ruta {Rutas.MUSICA} no existe.\n")
             return None
         musicas = [item for item in musicaRuta.iterdir() if item.is_file()]
         
         if not musicas:
-            print("[ERROR]: No hay archivos en la carpeta de música.")
+            print("[ERROR]: No hay archivos en la carpeta de música.\n")
             return None
 
         return str(random.choice(musicas)) 
@@ -366,13 +365,13 @@ class Scheduler:
                             self._precargaMusica(musicaPath) # _precargaMusica a diferencia de las otras funciones espera un path, no un cont
                             buscando_musica = False
                         else:
-                            print("No se pudo elegir una musica aleatoria.")
+                            print("No se pudo elegir una musica aleatoria.\n")
                 
                 case TipoContenido.CAMARA:
                     pass
       
                 case _: # Default
-                    print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}")
+                    print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
                     pass
 
     def playBlip(self):
@@ -386,12 +385,12 @@ class Scheduler:
         Este método tiene la lógica para mandar el tipo de contenido que corresponda al aire.
         Tiene un parámetro que funciona como flag para determinar si hay que precargar el proximo contenido o no. Se usa nada más en el primer llamado del arranque.
         """
-        print("Hora actual: " + str(datetime.now().time()))
+        print("Hora actual: " + str(datetime.now().time()) + "\n")
         if contAct == None:
-            print("[ERROR]: Contenido inexistente")
+            print("[ERROR]: Contenido inexistente\n")
 
         if not contAct.path_valido() and contAct.path not in ["CAMARA", "MUSICA","IMAGENCAM"]:
-            print("[ERROR]: No se encontró " + contAct.path + ", la imagen va a quedar congelada.")
+            print("[ERROR]: No se encontró " + contAct.path + ", la imagen va a quedar congelada.\n")
             return
 
         tipo = contAct.tipo
@@ -413,7 +412,7 @@ class Scheduler:
                 blipBool = contAct.nombre in ["79 partidas"]
                 self._goLiveMicro(blip = blipBool)
             case _:
-                print(f"[ERROR]: Tipo de contenido desconocido: {tipo}")
+                print(f"[ERROR]: Tipo de contenido desconocido: {tipo}\n")
 
         if cargaProx:
             self._cargaProx() # Después de mandar al aire precarga el prox.
@@ -421,7 +420,7 @@ class Scheduler:
     def _goLiveMusica(self):
         vMix = self.vMix
         if self.musicaProx is None:
-            print("[ERROR]: Error de precarga de música. (post)")
+            print("[ERROR]: Error de precarga de música. (post)\n")
             return
 
         if self.musicaAct is not None:
@@ -438,14 +437,14 @@ class Scheduler:
 
         # musicaAct es != None SIEMPRE en este fragmento de codigo
         duracionTemaAct = vMix.getLength(self.musicaAct) # Devuelve milisegundos
-        print(f"El tema actual dura {duracionTemaAct}ms")
+        print(f"El tema actual dura {duracionTemaAct}ms\n")
         if duracionTemaAct > 0:
             ahora = datetime.now()
             self.finTemaAct = ahora + timedelta(milliseconds=duracionTemaAct)
-            print(f"[INFO]: Tema nuevo al aire. Terminará a las: {self.finTemaAct.time()}")
+            print(f"[INFO]: Tema nuevo al aire. Terminará a las: {self.finTemaAct.time()}\n")
         else:
             self.finTemaAct = None
-            print("[ERROR]: No se pudo obtener la duración del tema.")
+            print("[ERROR]: No se pudo obtener la duración del tema.\n")
 
 
     def _goLiveVideo(self, musica = False):
@@ -457,7 +456,7 @@ class Scheduler:
             self._stopMusica()
 
         if self.videoProx is None:
-            print("[ERROR]: Error de precarga de video. (post)")
+            print("[ERROR]: Error de precarga de video. (post)\n")
             return
 
         vMix.setOutput_number(self.videoProx) # Manda al aire
@@ -478,7 +477,7 @@ class Scheduler:
         vMix = self.vMix
 
         if self.placaProx is None:
-            print("[ERROR]: Error de precarga de placa.")
+            print("[ERROR]: Error de precarga de placa.\n")
             return
         
         if not self.camaraLive:
@@ -504,7 +503,7 @@ class Scheduler:
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
         if self.microProx is None:
-            print("[ERROR]: Error de precarga de micro.")
+            print("[ERROR]: Error de precarga de micro.\n")
             return
 
         vMix.setOutput_number(self.microProx) # Swapeo
