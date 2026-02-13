@@ -42,7 +42,7 @@ class NumsInput(IntEnum):
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
 
-class MUSICA(str, Enum):
+class Musica(str, Enum):
     RUTA = r"C:\SERVERLOC_RES\MusicaAire"
     DURACION_FADE = 5
 
@@ -297,10 +297,10 @@ class Scheduler:
         """
         Elige un archivo al azar de la carpeta de música
         """
-        musicaRuta = Path(MUSICA.Ruta) 
+        musicaRuta = Path(Musica.RUTA) 
         
         if not musicaRuta.exists():
-            print(f"[ERROR]: La ruta {MUSICA.Ruta} no existe.\n")
+            print(f"[ERROR]: La ruta {Musica.RUTA} no existe.\n")
             return None
         musicas = [item for item in musicaRuta.iterdir() if item.is_file()]
         
