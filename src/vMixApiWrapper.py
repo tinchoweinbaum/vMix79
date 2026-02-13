@@ -58,6 +58,7 @@ class VmixApi:
         Metodo que se encarga de crear la conexion TCP de la api.
         """
         try:
+            # print("hola llame a conncect tcp")
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Objeto de la clase socket, usando IPv4 y TCP (sock_stream)
             self._sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)  # Desactiva optimizaciones de ancho de banda para reducir latencia
             self._sock.connect((self.host, self.port))
@@ -77,14 +78,14 @@ class VmixApi:
             time.sleep(0.2)
             
         except Exception as e:
-            print(f"ERROR CRÍTICO: No se pudo conectar a vMix por TCP ({self.host}:{self.port}): {e}")
+            print(f"[ERROR]: No se pudo conectar a vMix por TCP ({self.host}:{self.port}): {e}")
 
     def _send_raw(self, text):
         """Envío crudo de strings a la api de vMix con el formato especifico que se pide en la documentación: terminadas en CRLF."""
         if self._sock and self._running:
             try:
                 msg = text + "\r\n" # Arma el string con formato correcto
-                #print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
+                # print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
                 self._sock.sendall(msg.encode('utf-8')) # Lo envía
             except socket.error:
                 self._running = False
@@ -92,16 +93,17 @@ class VmixApi:
     def _tcp_listener(self):
         """Loop de lectura en hilo secundario."""
         while self._running:
+            # print("hola")
             try:
                 data = self._sock.recv(8192)
                 if not data:
                     break
-                
+                # print("Buffer actual: " + str(self._buffer))
                 self._buffer += data.decode('utf-8', errors='ignore')
                 
                 while '\r\n' in self._buffer:
                     line, self._buffer = self._buffer.split('\r\n', 1)
-                    #print(f"VMIX RESPONDE: {line}")
+                    # print(f"VMIX RESPONDE: {line}")
                     self._parse_tcp_line(line)
             except:
                 self._running = False
@@ -220,6 +222,9 @@ class VmixApi:
     
     def setAudio_on(self,inputNum):
         self.__makeRequest("AudioOn", extraParams = {"Input": inputNum})
+
+    def setAudio_off(self,inputNum):
+        self.__makeRequest("AudioOff", extraParams = {"Input": inputNum})
 
     def setOutput_number(self,inputNum):
         function = "ActiveInput"
@@ -343,11 +348,64 @@ class VmixApi:
         
         return int(overlay.text)
     
+    def getLength(self, inputNum):
+        """
+        Usa el estado XML interno para obtener la duración de un input.
+        """
+        root = self.__getState()
+        
+        if root is None:
+            return None
+
+        try:
+            input_tag = root.find(f".//input[@number='{inputNum}']")
+            
+            if input_tag is not None:
+                duracion_str = input_tag.get('duration')
+                
+                if duracion_str:
+                    return int(duracion_str)
+                    
+        except Exception as e:
+            print(f"[ERROR]: Falló el parseo de duración para el input {inputNum}: {e}")
+        
+        return None
+    
     def restartInput_number(self, inputNum):
         self.__makeRequest("Restart", {"Input": inputNum})
 
     def playInput_number(self, inputNum):
         self.__makeRequest("Play", {"Input": inputNum})
+
+    def pauseInput_number(self,inputNum):
+        self.__makeRequest("Pause", {"Input": inputNum})
+
+    def openPreset(self, presetPath):
+        self.__makeRequest("OpenPreset", {"Value": presetPath})
+
+    def awaitPresetCargado(self, timeout = 200):
+        """
+        Función "Pseudoasíncrona". Devuelve True una vez cargó el preset o False si no lo pudo cargar después del timeout
+        """
+        print("Esperando a que vMix abra el preset...")
+        # Primero damos un margen para que vMix empiece la carga
+        time.sleep(2) 
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            self._send_raw("XML")
+            time.sleep(0.5)
+            
+            with self._lock:
+                if self.inputs and self._xml_root is not None:
+                    print("\n[OK] Preset cargado y funcional.")
+                    return True
+            
+            print(".", end="", flush=True)
+            time.sleep(1)
+            
+        print("\n[ERROR] Timeout esperando el preset.")
+        return False
 
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
@@ -384,4 +442,6 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    print_xml_bonito(vMix._xml_root)
+    # vMix.listAddInput(1,r"D:\MEME.bmp")
+    vMix.openPreset(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\vMix79\resources\vmix_resources\presetC79.vmix")
+    

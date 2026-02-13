@@ -1,6 +1,6 @@
 """
-Este módulo se va a encargar de parsear el excel de todos los días, o sea, recibe el excel diario y genera las estructuras
-de datos que el scheduler necesita para sacar el contenido al aire
+Este archivo está deprecado, porque se cambio la lectura del excel por queries a la DB para
+conseguir la información de la programación.
 
 df contiene al excel playlist.xlsx
 
