@@ -118,34 +118,28 @@ class Scheduler:
 
         time.sleep(1)
 
-        if self.indexBloque >= len(self.bloqueAire): # Si arranqué en el último elemento del bloque precargo el próximo bloque.
-            self._cargaProxBloque()
-
         while self.running:
             self._tick()
             time.sleep(0.2)
 
     def _tick(self):
         """
-        _tick es el cerebro del programa, cada medio segundo checkea si hay que mandar un contenido nuevo al aire y lo manda
+        _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
         si hay que hacerlo.
-        Se encarga de cambiar la musica también.
         """
 
         if self.indexBloque >= len(self.bloqueAire):
             self._swapBloque()
-            return # No hace falta el return, lo pongo por prolijidad.
+            return
         
         contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
-        
-        ahora = datetime.now()
-        horaAct = ahora.time()
+        horaAct = datetime.now().time()
 
         if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
             self.indexBloque += 1
             self._goLive(contAct)
             
-            if self.indexBloque == len(self.bloqueAire): # Si mandé el último contenido del bloque al aire precargo el próximo bloque en self.bloqueProx
+            if self.indexBloque >= len(self.bloqueAire): # Si mandé el último contenido del bloque al aire precargo el próximo bloque en self.bloqueProx
                 self._cargaProxBloque()
     
     def _buscaBloque(self):
@@ -461,6 +455,9 @@ class Scheduler:
 
         if not musica:
             self._stopMusica()
+
+        if self.videoAct is not None:
+            vMix.listClear(self.videoAct)
 
         if self.videoProx is None:
             print("[ERROR]: Error de precarga de video. (post)\n")
