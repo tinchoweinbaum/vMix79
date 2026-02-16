@@ -407,6 +407,12 @@ class VmixApi:
         print("\n[ERROR] Timeout esperando el preset.")
         return False
 
+    def selectIndex(self,inputNum,index):
+        """
+        Cuando se llama a esta función sobre un title GT, vMix cambia la página del title. Se usa para cambiar entre las placas del reporte.
+        """
+        self.__makeRequest("SelectIndex", {"Input": inputNum, "Value": index})
+
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
         print(f"Host: {self.host}")
@@ -442,6 +448,4 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    # vMix.listAddInput(1,r"D:\MEME.bmp")
-    vMix.openPreset(r"C:\Users\marti\OneDrive\Desktop\proyectosXD\vMix79\vMix79\resources\vmix_resources\presetC79.vmix")
     
