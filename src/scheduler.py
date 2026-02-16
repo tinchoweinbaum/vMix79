@@ -31,15 +31,14 @@ class TipoContenido(IntEnum):
 
 class NumsInput(IntEnum):
     CAMARA_ACT = 1
-    PLACA_A = 2
-    MUSICA_A = 3
-    VIDEO_A = 4
-    MICRO_A = 5
-    PLACA_B = 6
-    MUSICA_B = 7
-    VIDEO_B = 8
-    MICRO_B = 9
-    BLIP = 10
+    MUSICA_A = 2
+    VIDEO_A = 3
+    MICRO_A = 4
+    MUSICA_B = 5
+    VIDEO_B = 6
+    MICRO_B = 7
+    BLIP = 8
+    PLACAS = 9
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
