@@ -413,6 +413,9 @@ class VmixApi:
         """
         self.__makeRequest("SelectIndex", {"Input": inputNum, "Value": index})
 
+    def setText(self, inputNum, valor, campo):
+        self.__makeRequest("SetText", {"Input": inputNum, "Value": valor, "SelectedName": campo})
+
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
         print(f"Host: {self.host}")
@@ -448,4 +451,5 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
+    vMix.setText(1,"humedad.text","hola")
     

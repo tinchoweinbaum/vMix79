@@ -10,7 +10,7 @@ class PlacasManager:
         self.path_json = path_json
         self.vMix = vMix
     
-    def cargarPlaca(self,nombrePlaca,inputNum):
+    def cargaPlaca(self,nombrePlaca,inputNum):
         try:
             with open(self.path_json, 'r', encoding = 'utf-8') as arch:
                 datos = json.load(arch) # Baja el json entero a un diccionario.
@@ -19,7 +19,11 @@ class PlacasManager:
                     print(f"[ERROR]: No se encontró la placa {nombrePlaca}")
                     return
                 
-                
+                placaAct = datos[nombrePlaca] # placaAct ahora tiene el "subdiccionario" de la placa que se llamó
+                # indexPag = placaAct["index"] # Con este valor se llama a selectIndex
+                campos = placaAct["campos"]
+                for campo, valor in campos.items():
+                    self.vMix.setText(inputNum, valor, campo)
 
         except FileNotFoundError:
             print(f"[ERROR]: No se encontró el archivo {self.path_json}")
