@@ -542,7 +542,7 @@ class Scheduler:
 
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
-    blipPath = BASE_DIR.parent / "resources" / "BLIP.WAV"
+    blipPath = BASE_DIR.parent / "resources" / "vmix_resources" / "BLIP.WAV"
     dbPath = r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA.FDB"
 
     database = Database(dbPath)
