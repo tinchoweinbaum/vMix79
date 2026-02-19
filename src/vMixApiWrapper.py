@@ -127,9 +127,11 @@ class VmixApi:
                 with self._lock:
                     self._xml_root = root
                 self.__setState(root)
-            except:
+            except ET.ParseError:
                 print("No se pudo parsear el XML de vMix.")
                 pass
+            except Exception as e:
+                print(f"[ERROR]: Error al leer el XML de vMix, {e}")
 
     def cut(self):
         self.__makeRequest("Cut")
