@@ -48,6 +48,7 @@ class Placas(IntEnum):
     SALIDA_SOL = 14
     FASES_LUNARES = 15
     MAREAS = 16
+    NOTI_AGUANTE = 17
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
@@ -489,6 +490,9 @@ class Scheduler:
 
             case "Mareas":
                 vMix.setOverlay_on(Placas.MAREAS,OverlaySlots.SLOT_PLACA)
+            
+            case "Noti Aguante":
+                vMix.setOverlay_on(Placas.NOTI_AGUANTE,OverlaySlots.SLOT_PLACA)
             
             case _:
                 print(f"[ERROR]: No se encontró la placa {contAct.nombre}.")
