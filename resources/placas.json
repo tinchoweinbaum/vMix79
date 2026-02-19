@@ -1,16 +1,12 @@
-{
-    "tiempoactual":{
+[
+    {   
+        "id": "tiempoactual",    
         "index": 1,
-        "campos":{
-            "desc": "Algo nublado.",
-            "temp": "28°3",
-            "viento": "Sur 12 Km/h",
-            "termica": "26°2",
-            "presion": "1023",
-            "humedad": "72%"
-        }
-    },
-
-    "tiempoactual1":{
+        "desc": "Algo nublado.",
+        "temp": "28°3",
+        "viento": "Sur 12 Km/h",
+        "termica": "26°2",
+        "presion": "1023",
+        "humedad": "72%"
     }
-}
+]
