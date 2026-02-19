@@ -18,8 +18,8 @@ import random
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
 # TO DO: Cámaras.
 # TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo.
-# TO DO: Hacer las placas con GT designer. Usar la función de páginas y tener un solo input de placa con una página por placa.
 # TO DO: Pasar a usar ID's de inputs en vez de números. Hacer esto antes de las placas.
+# TO DO: Bug de XML en el wrapper, hace que la musica crashee el programa y que printee infinitamente el mismo error.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
