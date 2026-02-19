@@ -85,7 +85,7 @@ class VmixApi:
         if self._sock and self._running:
             try:
                 msg = text + "\r\n" # Arma el string con formato correcto
-                print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
+                # print(f"ENVIANDO: {msg.strip()}") # Ver exactamente qué sale
                 self._sock.sendall(msg.encode('utf-8')) # Lo envía
             except socket.error:
                 self._running = False
@@ -103,7 +103,7 @@ class VmixApi:
                 
                 while '\r\n' in self._buffer:
                     line, self._buffer = self._buffer.split('\r\n', 1)
-                    print(f"VMIX RESPONDE: {line}")
+                    # print(f"VMIX RESPONDE: {line}")
                     self._parse_tcp_line(line)
             except:
                 self._running = False
