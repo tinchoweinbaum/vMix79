@@ -38,7 +38,16 @@ class NumsInput(IntEnum):
     VIDEO_B = 6
     MICRO_B = 7
     BLIP = 8
-    PLACAS = 9
+
+class Placas(IntEnum):
+    ACTUAL_DATOS = 9
+    ACTUAL_DETALLE = 10
+    EXTENDIDO_MANANA = 11
+    EXTENDIDO_TARDE = 12
+    EXTENDIDO_2DIAS = 13
+    SALIDA_SOL = 14
+    FASES_LUNARES = 15
+    MAREAS = 16
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
@@ -57,9 +66,6 @@ class Scheduler:
         self.bloqueAire: List[Contenido] = [] # Lista de objetos de la clase Contenido representando el bloque actual
         self.bloqueProx: List[Contenido] = [] 
         self.indexBloque = 0 # Puntero al contenido del bloque actual en emisión.
-
-        self.vMix = vMix # Objeto de la api de vMix.
-        self.database = database # Objeto de la clase Database para hacer queries.
 
         self.videoAct = None # Los atributos de act y prox sirven para tener en memoria la respuesta a "¿Dónde tengo que mandar el próximo video?"
         self.videoProx = None # Así no hay que preguntarle a vMix que consume muchos más recursos
@@ -85,9 +91,6 @@ class Scheduler:
 
         self.videoAct = None
         self.videoProx = None
-
-        self.placaAct = None # Modelo act/prox para videos/placas/micros. Act = al aire. Prox = Por salir
-        self.placaProx = None # xAct y xProx son números de input en vMix: VIDEO_A o VIDEO_B por ejemplo
 
         self.microAct = None
         self.microProx = None
@@ -216,23 +219,6 @@ class Scheduler:
 
         self.videoProx = inputLibre
 
-    def _precargaPlaca(self,cont):
-        vMix = self.vMix
-        # print("Llamo precarga placa.")
-        if self.placaProx is not None:
-            print("[ERROR]: Mala inicializacion de placa.\n")
-            return
-
-        if self.placaAct == NumsInput.PLACA_A:
-            inputLibre = NumsInput.PLACA_B
-        else:
-            inputLibre = NumsInput.PLACA_A
-
-        vMix.listClear(inputLibre)
-        vMix.listAddInput(inputLibre, cont.path)
-
-        self.placaProx = inputLibre
-
     def _precargaMicro(self, cont):
         vMix = self.vMix
         # print("Llamo precarga micro.")
@@ -330,12 +316,11 @@ class Scheduler:
         """
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
-        buscando_placa = self.placaProx is None
         buscando_micro = self.microProx is None
         buscando_musica = self.musicaProx is None
 
         for cont in self.bloqueAire[self.indexBloque:]:
-            if not buscando_video and not buscando_placa and not buscando_micro and not buscando_musica:
+            if not buscando_video and not buscando_micro and not buscando_musica:
                 return
             
             if not cont.path_valido() and cont.path not in ["CAMARA", "MUSICA"]:
@@ -349,9 +334,7 @@ class Scheduler:
                         buscando_video = False # Actualizo las flags cuando encuentro
                 
                 case TipoContenido.PLACA:
-                    if buscando_placa:
-                        self._precargaPlaca(cont)
-                        buscando_placa = False
+                    continue
                 
                 case TipoContenido.FOTOBMP:
                     if buscando_micro:
@@ -402,7 +385,7 @@ class Scheduler:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
             case TipoContenido.PLACA:
-                self._goLivePlaca()
+                self._goLivePlaca(contAct)
             case TipoContenido.MUSICA:
                 self._goLiveMusica()
             case TipoContenido.IMAGENCAM:
@@ -475,29 +458,41 @@ class Scheduler:
         self.videoAct = self.videoProx
         self.videoProx = None
 
-    def _goLivePlaca(self):
-        # Toggle de inputs de placa.
+    def _goLivePlaca(self,contAct):
+        """
+        Toggle de inputs de placa, adaptado para las placas en GT cada una en un input distinto.
+        """
         vMix = self.vMix
-
-        if self.placaProx is None:
-            print("[ERROR]: Error de precarga de placa.\n")
-            return
-        
-        if not self.camaraLive:
-            vMix.cutDirect_key(NumsInput.CAMARA_ACT) # Si no habia una camara de fondo la pone.
-            self.camaraLive = True
-
-        # if self.musicaAct is None: # Esto hace que swapee de musica, porque en el excel viene placa y después música.
-        #     self._goLiveMusica()
-
-        vMix.setOverlay_on(self.placaProx, OverlaySlots.SLOT_PLACA)
         self.playBlip()
 
-        if self.placaAct is not None:
-            vMix.listClear(self.placaAct)
+        match contAct.nombre:
+            case "Actual Datos":
+                vMix.setOverlay_on(Placas.ACTUAL_DATOS,OverlaySlots.SLOT_PLACA)
 
-        self.placaAct = self.placaProx
-        self.placaProx = None
+            case "Actual Detalle":
+                vMix.setOverlay_on(Placas.ACTUAL_DETALLE,OverlaySlots.SLOT_PLACA)
+
+            case "Extendido Manana":
+                vMix.setOverlay_on(Placas.EXTENDIDO_MANANA,OverlaySlots.SLOT_PLACA)
+
+            case "Extendido Tarde":
+                vMix.setOverlay_on(Placas.EXTENDIDO_TARDE,OverlaySlots.SLOT_PLACA)
+
+            case "Extendido 2 Dias":
+                vMix.setOverlay_on(Placas.EXTENDIDO_2DIAS,OverlaySlots.SLOT_PLACA)
+
+            case "Salida de Sol":
+                vMix.setOverlay_on(Placas.SALIDA_SOL,OverlaySlots.SLOT_PLACA)
+
+            case "Fases Lunares":
+                vMix.setOverlay_on(Placas.FASES_LUNARES,OverlaySlots.SLOT_PLACA)
+
+            case "Mareas":
+                vMix.setOverlay_on(Placas.MAREAS,OverlaySlots.SLOT_PLACA)
+            
+            case _:
+                print(f"[ERROR]: No se encontró la placa {contAct.nombre}.")
+                return
 
 
     def _goLiveMicro(self, blip = False):
@@ -526,9 +521,6 @@ class Scheduler:
 
         vMix.listClear(NumsInput.MICRO_A)
         vMix.listClear(NumsInput.MICRO_B)
-
-        vMix.listClear(NumsInput.PLACA_A)
-        vMix.listClear(NumsInput.PLACA_B)
 
         vMix.listClear(NumsInput.VIDEO_A)
         vMix.listClear(NumsInput.VIDEO_B)
