@@ -67,6 +67,8 @@ class Scheduler:
         self.bloqueProx: List[Contenido] = [] 
         self.indexBloque = 0 # Puntero al contenido del bloque actual en emisión.
 
+        self.vMix = vMix # Objeto de la api de vMix
+
         self.videoAct = None # Los atributos de act y prox sirven para tener en memoria la respuesta a "¿Dónde tengo que mandar el próximo video?"
         self.videoProx = None # Así no hay que preguntarle a vMix que consume muchos más recursos
 
