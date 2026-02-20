@@ -127,8 +127,8 @@ class VmixApi:
                 with self._lock:
                     self._xml_root = root
                 self.__setState(root)
-            except ET.ParseError:
-                print("No se pudo parsear el XML de vMix.")
+            except ET.ParseError as e:
+                print(f"No se pudo parsear el XML de vMix, {e}")
                 pass
             except Exception as e:
                 print(f"[ERROR]: Error al leer el XML de vMix, {e}")
@@ -450,4 +450,4 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    vMix.listAddInput(2,r"D:\MEME.bmp")
+    vMix.cut()
