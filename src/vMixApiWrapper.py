@@ -95,7 +95,7 @@ class VmixApi:
         while self._running:
             # print("hola")
             try:
-                data = self._sock.recv(8192)
+                data = self._sock.recv(102400)
                 if not data:
                     break
                 # print("Buffer actual: " + str(self._buffer))
