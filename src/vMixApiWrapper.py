@@ -91,47 +91,65 @@ class VmixApi:
                 self._running = False
 
     def _tcp_listener(self):
-        """Loop de lectura en hilo secundario."""
-        while self._running:
-            # print("hola")
-            try:
-                data = self._sock.recv(102400)
-                if not data:
+            """Loop de lectura en hilo secundario."""
+            while self._running:
+                try:
+                    data = self._sock.recv(102400) # Buffer más grande (100kb)
+                    if not data:
+                        break
+                    
+                    self._buffer += data.decode('utf-8', errors='ignore')
+                    
+                    while '\r\n' in self._buffer:
+                        # Buscamos si hay un XML empezado en el buffer
+                        if "<vmix>" in self._buffer:
+                            # Si está el inicio pero NO el final, salimos del while para seguir recibiendo datos
+                            if "</vmix>" not in self._buffer:
+                                break
+                            
+                            # Si están ambos, extraemos el XML completo
+                            start_idx = self._buffer.find("<vmix>")
+                            end_idx = self._buffer.find("</vmix>") + 7
+                            xml_line = self._buffer[start_idx:end_idx]
+                            
+                            # Limpiamos el buffer hasta después del cierre del XML
+                            self._buffer = self._buffer[end_idx:].lstrip('\r\n')
+                            self._parse_tcp_line(xml_line)
+                        else:
+                            # Procesamiento normal para TALLY u otras respuestas cortas
+                            line, self._buffer = self._buffer.split('\r\n', 1)
+                            if line.strip():
+                                self._parse_tcp_line(line)
+                except Exception as e:
+                    print(f"Error en listener: {e}")
+                    self._running = False
                     break
-                # print("Buffer actual: " + str(self._buffer))
-                self._buffer += data.decode('utf-8', errors='ignore')
-                
-                while '\r\n' in self._buffer:
-                    line, self._buffer = self._buffer.split('\r\n', 1)
-                    # print(f"VMIX RESPONDE: {line}")
-                    self._parse_tcp_line(line)
-            except:
-                self._running = False
-                break
 
     def _parse_tcp_line(self, line):
-        # Manejo de Tally (Cambios de Live/Preview)
+        # Manejo de Tally
         if line.startswith("TALLY OK"):
-            tally_str = line.split(" ")[2]
-            with self._lock:
-                for i, char in enumerate(tally_str):
-                    if char == '1': self.live = i + 1
-                    elif char == '2': self.preview = i + 1
+            try:
+                tally_str = line.split(" ")[2]
+                with self._lock:
+                    for i, char in enumerate(tally_str):
+                        if char == '1': self.live = i + 1
+                        elif char == '2': self.preview = i + 1
+            except: pass
             return
 
-        # Manejo de XML (Estado Completo)
+        # Manejo de XML (Ahora 'line' viene garantizada completa)
         if "<vmix>" in line:
             try:
-                start, end = line.find("<vmix>"), line.find("</vmix>") + 7
-                root = ET.fromstring(line[start:end])
+                # ET.fromstring es muy sensible, nos aseguramos que empiece en <vmix>
+                root = ET.fromstring(line)
                 with self._lock:
                     self._xml_root = root
                 self.__setState(root)
             except ET.ParseError as e:
-                print(f"No se pudo parsear el XML de vMix, {e}")
-                pass
+                # Si esto sale ahora, es porque vMix mandó algo MUY raro
+                print(f"Error de parseo en línea: {line[:50]}... {e}")
             except Exception as e:
-                print(f"[ERROR]: Error al leer el XML de vMix, {e}")
+                print(f"[ERROR]: Error al procesar estado, {e}")
 
     def cut(self):
         self.__makeRequest("Cut")
