@@ -19,7 +19,7 @@ import random
 # TO DO: Cámaras.
 # TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo.
 # TO DO: Pasar a usar ID's de inputs en vez de números. Hacer esto antes de las placas.
-# TO DO: Bug de XML en el wrapper, hace que la musica crashee el programa y que printee infinitamente el mismo error.
+# TO DO: No se carga el blip y los inputs no empiezan con el sonido activado. Algo no está andando bien en _start
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -540,6 +540,7 @@ if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     blipPath = BASE_DIR.parent / "resources" / "vmix_resources" / "BLIP.WAV"
     dbPath = r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA.FDB"
+    print(blipPath)
 
     database = Database(dbPath)
     vMix = VmixApi()
