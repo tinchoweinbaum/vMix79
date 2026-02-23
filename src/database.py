@@ -6,6 +6,10 @@ Las fechas las devuelve en formato datetime.datetime
 import fdb
 from pathlib import Path
 from utilities import Contenido
+from pathlib import Path
+from datetime import date, datetime
+import json
+import os
 
 class Database:
     def __init__(self, path, user = "SYSDBA", password = "masterkey"):
@@ -139,15 +143,34 @@ class Database:
         return self._formatoDict(dictPlacas)
     
     def _actualizaJson(self, dictPlacas: dict):
-        """
-        Actualiza atómicamente el json, crea un json temp y después reemplaza al original con el temp, no es para llamarlo desde afuera de la clase. Método "privado".
-        Recibe el diccionario de diccionarios de getDatos_placas y lo vuelca en el json básicamente.
-        """
-        pass
+            """
+            Recibe un diccionario de diccionarios (dictPlacas).
+            Itera sobre él, creando o sobreescribiendo archivos .json 
+            de forma atómica en ../resources/json_placas/
+            """
+            base_dir = Path(__file__).resolve().parent.parent
+            ruta_carpeta = base_dir / "resources" / "json_placas"
+            ruta_carpeta.mkdir(parents=True, exist_ok=True) # Si no existe la carpeta la crea
+
+            for nombre_archivo, contenido in dictPlacas.items(): # Itera por el diccionario dumpeando el contenido de cada diccionario en un .json
+                ruta_final = ruta_carpeta / f"{nombre_archivo}.json"
+                ruta_temp = ruta_final.with_suffix(".tmp")
+
+                try:
+                    with open(ruta_temp, 'w', encoding='utf-8') as f:
+                        json.dump([contenido], f, indent=4, ensure_ascii=False, default=self.__formatoFecha)
+
+                    os.replace(ruta_temp, ruta_final)
+                    
+                except Exception as e:
+                    print(f"[ERROR]: No se pudo actualizar {nombre_archivo}.json: {e}")
 
     def _formatoDict(self,dictPlacas: dict):
+        """
+        Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson.
+        """
         dictFormato = {
-            "PLACA_TIEMPO_ACTUAL": {
+            "actualdatos": {
                 "temp": dictPlacas.get('TEMP_ACTUAL'),
                 "humedad": dictPlacas.get('HUMEDAD'),
                 "presion": dictPlacas.get('PRESION'),
@@ -156,12 +179,12 @@ class Database:
                 "desc": dictPlacas.get('DESCRIPCION'),
                 "logo": dictPlacas.get('PATH_ISOLOGO')
             },
-            "PLACA_TIEMPO_DETALLE": {
+            "actualdetalle": {
                 "detalle": dictPlacas.get('DETALLE'),
                 "max": dictPlacas.get('ACT_MAX'),
                 "min": dictPlacas.get('ACT_MIN')
             },
-            "PLACA_EXTENDIDO_MANANA": {
+            "extendidomanana": {
                 "dia": dictPlacas.get('EM_DIA'),
                 "min": dictPlacas.get('EM_TEMP_MIN'),
                 "max": dictPlacas.get('EM_TEMP_MAX'),
@@ -170,7 +193,7 @@ class Database:
                 "logo_min": dictPlacas.get('EM_LOGO_MIN'),
                 "logo_max": dictPlacas.get('EM_LOGO_MAX')
             },
-            "PLACA_EXTENDIDO_PROXIMOS": {
+            "extendido2dias": {
                 "ex1_dia": dictPlacas.get('EX1_DIA'),
                 "ex1_min": dictPlacas.get('EX1_MIN'),
                 "ex1_max": dictPlacas.get('EX1_MAX'),
@@ -180,19 +203,19 @@ class Database:
                 "ex2_max": dictPlacas.get('EX2_MAX'),
                 "ex2_logo": dictPlacas.get('EX2_LOGO')
             },
-            "DATOS_AUXILIARES": {
+            "aux": {
                 "actualizacion": dictPlacas.get('ACTUALIZACION'),
                 "uv": dictPlacas.get('INDICEUV'),
                 "ciudad": dictPlacas.get('CIUDAD'),
                 "hora_clima": dictPlacas.get('HORA_CLIMA')
             },
-            "PLACA_SALIDA_SOL":{
+            "salidadesol":{
                 "idsol": dictPlacas.get('IDSOL'),  
                 "fechasol": dictPlacas.get('FECHA'),
                 "salida": dictPlacas.get('SALIDA'),  
                 "puesta": dictPlacas.get('PUESTA')    
             },
-            "PLACA_MAREAS_DETALLE": {
+            "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
                 "hora1": dictPlacas.get('HORA1'),
                 "marea1": dictPlacas.get('MAREA1'),
@@ -205,9 +228,14 @@ class Database:
             },
         }
         return dictFormato
+
+    def __formatoFecha(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.strftime("%d.%m.%Y")
+        raise TypeError(f"Tipo {type(obj)} no es serializable")
     
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database(path = pathDB)
     diccionariopolis = DB.getDatos_placas("12.02.2026")
-    print(diccionariopolis)
+    DB._actualizaJson(diccionariopolis)

@@ -19,7 +19,8 @@ import random
 # TO DO: Cámaras.
 # TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo.
 # TO DO: Pasar a usar ID's de inputs en vez de números. Hacer esto antes de las placas.
-# TO DO: No se carga el blip y los inputs no empiezan con el sonido activado. Algo no está andando bien en _start
+# TO DO: No se carga el blip y los inputs no empiezan con el sonido activado. Algo no está andando bien en _start.
+# TO DO: Ver como y cuando llamar a database._actualizaJson() para actualizar los json que tienen los datos para las placas.
 
 class TipoContenido(IntEnum):
     VIDEO = 1

@@ -1,7 +1,11 @@
 [
-    {   
-        "id": "tiempoactual",    
-        "index": 2,
-        "prueba": "pruebópolis de manual"
+    {
+        "temp": "11º5",
+        "humedad": "99 %",
+        "presion": "1019.2",
+        "termica": "11.5",
+        "viento": "Este 17 km/h",
+        "desc": "Cubierto con llovizna",
+        "logo": "SMN\\71.png"
     }
 ]

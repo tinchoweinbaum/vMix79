@@ -1,12 +1,11 @@
 [
-    {   
-        "id": "tiempoactual",    
-        "index": 1,
-        "desc": "Algo nublado.",
-        "temp": "28°3",
-        "viento": "Sur 12 Km/h",
-        "termica": "26°2",
-        "presion": "1023",
-        "humedad": "72%"
+    {
+        "dia": "Martes",
+        "min": "11º",
+        "max": "19º",
+        "desc_min": "Parcialmente nublado. Vientos leves del sudoeste.",
+        "desc_max": "Parcialmente nublado. Vientos leves a moderados del                  sector sur.",
+        "logo_min": "4.png",
+        "logo_max": "parcmnub.png"
     }
 ]
