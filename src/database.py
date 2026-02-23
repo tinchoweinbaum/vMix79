@@ -1,6 +1,7 @@
 """
 Wrapper de la conexión a la DB de firebird para el proyecto.
 IMPORTANTE: Para que funcione tiene que estar corriendo el servicio de FirebirdDB en windows. También tiene que tener fbclient.dll de 64 bits en la carpeta resources del proyecto.
+Las fechas las devuelve en formato datetime.datetime
 """
 import fdb
 from pathlib import Path
@@ -32,7 +33,7 @@ class Database:
         try:
             if self.conn is None:
                 self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.
-                print("[INFO]: Conexión con la DB establecida" if self.conn is not None else "[ERROR]: No se pudo conectar con la DB")
+                print("[INFO]: Conexión con la DB establecida\n" if self.conn is not None else "[ERROR]: No se pudo conectar con la DB\n")
             else:
                 return False
         except Exception as e:
@@ -45,6 +46,8 @@ class Database:
         """
         Devuelve un bloque de 5 minutos de programación, representado por una lista
         de objetos de la clase Contenido.
+
+        IMPORTANTE: LA FECHA ESTÁ HARDCODEADA PARA QUE FUNCIONE. ACTUALIZAR AL TERMINAR EL SOFTWARE PARA QUE USE LA VARIABLE FECHA
         """
 
         # Query:
@@ -78,15 +81,133 @@ class Database:
                                        nombre = nombre, path = path, 
                                        orden = None, es_publi = None)) # Creo objeto de la clase Contenido
 
+        cursor.close()
         return listaCont
+    
+    def getDatos_placas(self, fecha):
+        """
+        Devuelve un diccionario de diccionarios que contiene los datos de las placas.
+        La fecha se usa para las placas de sol y mareas que la necesitan en la query.
+        """
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida a la Database para pedir datos de placas.")
+            return
+        
+        self.conn.begin() # Arranca la conxión y crea cursor para managearla
+        cursor: fdb.Cursor = self.conn.cursor()
+
+        # --- Pido placas 1 ---
+
+        query = "SELECT * FROM CLIMA"
+        cursor.execute(query) # Ejecuta la query y busca el resultado del buffer.
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:
+            columnas = [col[0] for col in cursor.description] # Creo una lista de nombres
+            dictPlacas = dict(zip(columnas, queryRes)) # Crea diccionario para devoler
+        else:
+            print("[ERROR]: No se encontraron datos para cargar las placas.\nSELECT * FROM CLIMA no devolvió nada.")
+
+        # --- Pido placa sol ---
+
+        query = "SELECT * FROM SOL WHERE (FECHA = CAST(? AS DATE))"
+        cursor.execute(query, (fecha,))
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:        
+            columnas = [col[0] for col in cursor.description]
+            dictSol = dict(zip(columnas,queryRes))
+            dictPlacas.update(dictSol) # Concateno diccionarios
+        else:
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Salida Sol. SELECT * FROM SOL con la fecha {fecha} no devolvió nada.")
+
+        # --- Pido placa mareas ---
+
+        query = "SELECT * FROM MAREAS WHERE (FECHA = CAST(? AS DATE))"
+        cursor.execute(query, (fecha,))
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:        
+            columnas = [col[0] for col in cursor.description]
+            dictMareas = dict(zip(columnas, queryRes))
+            dictPlacas.update(dictMareas)
+        else:
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.")
+
+        #dictPlacas no tiene formato correcto. Es 1 diccionario gigante con todos los campos de todas las placas.
+        cursor.close()
+        return self._formatoDict(dictPlacas)
+    
+    def _actualizaJson(self, dictPlacas: dict):
+        """
+        Actualiza atómicamente el json, crea un json temp y después reemplaza al original con el temp, no es para llamarlo desde afuera de la clase. Método "privado".
+        Recibe el diccionario de diccionarios de getDatos_placas y lo vuelca en el json básicamente.
+        """
+        pass
+
+    def _formatoDict(self,dictPlacas: dict):
+        dictFormato = {
+            "PLACA_TIEMPO_ACTUAL": {
+                "temp": dictPlacas.get('TEMP_ACTUAL'),
+                "humedad": dictPlacas.get('HUMEDAD'),
+                "presion": dictPlacas.get('PRESION'),
+                "termica": dictPlacas.get('TERMICA'),
+                "viento": dictPlacas.get('VIENTO'),
+                "desc": dictPlacas.get('DESCRIPCION'),
+                "logo": dictPlacas.get('PATH_ISOLOGO')
+            },
+            "PLACA_TIEMPO_DETALLE": {
+                "detalle": dictPlacas.get('DETALLE'),
+                "max": dictPlacas.get('ACT_MAX'),
+                "min": dictPlacas.get('ACT_MIN')
+            },
+            "PLACA_EXTENDIDO_MANANA": {
+                "dia": dictPlacas.get('EM_DIA'),
+                "min": dictPlacas.get('EM_TEMP_MIN'),
+                "max": dictPlacas.get('EM_TEMP_MAX'),
+                "desc_min": dictPlacas.get('EM_DESCRIP_MIN'),
+                "desc_max": dictPlacas.get('EM_DESCRIP_MAX'),
+                "logo_min": dictPlacas.get('EM_LOGO_MIN'),
+                "logo_max": dictPlacas.get('EM_LOGO_MAX')
+            },
+            "PLACA_EXTENDIDO_PROXIMOS": {
+                "ex1_dia": dictPlacas.get('EX1_DIA'),
+                "ex1_min": dictPlacas.get('EX1_MIN'),
+                "ex1_max": dictPlacas.get('EX1_MAX'),
+                "ex1_logo": dictPlacas.get('EX1_LOGO'),
+                "ex2_dia": dictPlacas.get('EX2_DIA'),
+                "ex2_min": dictPlacas.get('EX2_MIN'),
+                "ex2_max": dictPlacas.get('EX2_MAX'),
+                "ex2_logo": dictPlacas.get('EX2_LOGO')
+            },
+            "DATOS_AUXILIARES": {
+                "actualizacion": dictPlacas.get('ACTUALIZACION'),
+                "uv": dictPlacas.get('INDICEUV'),
+                "ciudad": dictPlacas.get('CIUDAD'),
+                "hora_clima": dictPlacas.get('HORA_CLIMA')
+            },
+            "PLACA_SALIDA_SOL":{
+                "idsol": dictPlacas.get('IDSOL'),  
+                "fechasol": dictPlacas.get('FECHA'),
+                "salida": dictPlacas.get('SALIDA'),  
+                "puesta": dictPlacas.get('PUESTA')    
+            },
+            "PLACA_MAREAS_DETALLE": {
+                "fecha": dictPlacas.get('FECHA'),
+                "hora1": dictPlacas.get('HORA1'),
+                "marea1": dictPlacas.get('MAREA1'),
+                "hora2": dictPlacas.get('HORA2'),
+                "marea2": dictPlacas.get('MAREA2'),
+                "hora3": dictPlacas.get('HORA3'),
+                "marea3": dictPlacas.get('MAREA3'),
+                "hora4": dictPlacas.get('HORA4'),
+                "marea4": dictPlacas.get('MAREA4')
+            },
+        }
+        return dictFormato
     
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database(path = pathDB)
-    filas = DB.getBloque_num("12.02.2026",1)
-    for cont in filas:
-        print("FECHA: " + cont.fecha)
-        print("HORA " + str(cont.hora))
-        print("NOMBRE: " + cont.nombre)
-        print("PATH: " + cont.path)
-        print("\n")
+    diccionariopolis = DB.getDatos_placas("12.02.2026")
+    print(diccionariopolis)
