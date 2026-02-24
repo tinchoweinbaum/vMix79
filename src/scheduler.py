@@ -523,7 +523,7 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def actualizaPlaca(self):
+    def actualizaPlacas(self):
         try:
             database = self.database
             fecha = datetime.now().date()
