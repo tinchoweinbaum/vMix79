@@ -380,8 +380,9 @@ class Scheduler:
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                musicaBool = contAct.nombre in ["mapas"]
-                if datetime.now().time().minute % 10 == 0: # Si mando un video al aire y es el minuto 0, actalizo
+                musicaBool = contAct.nombre in ["mapas", "MAPAS"]
+                horaAct = datetime.now().time()
+                if horaAct.minute % 10 == 0 and horaAct.second < 10:
                     self.actualizaPlacas()
                 self._goLiveVideo(musica = musicaBool)
             case TipoContenido.CAMARA:

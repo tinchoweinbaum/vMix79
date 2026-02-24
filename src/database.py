@@ -94,7 +94,7 @@ class Database:
         La fecha se usa para las placas de sol y mareas que la necesitan en la query.
         """
         if self.conn is None:
-            print("[ERROR]: No se encontró una conexión válida a la Database para pedir datos de placas.")
+            print("[ERROR]: No se encontró una conexión válida a la Database para pedir datos de placas.\n")
             return
         
         self.conn.begin() # Arranca la conxión y crea cursor para managearla
@@ -110,7 +110,7 @@ class Database:
             columnas = [col[0] for col in cursor.description] # Creo una lista de nombres
             dictPlacas = dict(zip(columnas, queryRes)) # Crea diccionario para devoler
         else:
-            print("[ERROR]: No se encontraron datos para cargar las placas.\nSELECT * FROM CLIMA no devolvió nada.")
+            print("[ERROR]: No se encontraron datos para cargar las placas. SELECT * FROM CLIMA no devolvió nada.\n")
 
         # --- Pido placa sol ---
 
@@ -123,7 +123,7 @@ class Database:
             dictSol = dict(zip(columnas,queryRes))
             dictPlacas.update(dictSol) # Concateno diccionarios
         else:
-            print(f"[ERROR]: No se encontraron datos para cargar la placa Salida Sol. SELECT * FROM SOL con la fecha {fecha} no devolvió nada.")
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Salida Sol. SELECT * FROM SOL con la fecha {fecha} no devolvió nada.\n")
 
         # --- Pido placa mareas ---
 
@@ -136,7 +136,7 @@ class Database:
             dictMareas = dict(zip(columnas, queryRes))
             dictPlacas.update(dictMareas)
         else:
-            print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.")
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.\n")
 
         #dictPlacas no tiene formato correcto. Es 1 diccionario gigante con todos los campos de todas las placas.
         cursor.close()
