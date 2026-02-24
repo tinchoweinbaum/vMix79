@@ -382,6 +382,8 @@ class Scheduler:
         match tipo:
             case TipoContenido.VIDEO:
                 musicaBool = contAct.nombre in ["mapas"]
+                if contAct.nombre in ["PRESENTA TRUCHA.mp4", "PRESENTA TRUCHA"]:
+                    self.actualizaPlacas()
                 self._goLiveVideo(musica = musicaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
@@ -446,7 +448,7 @@ class Scheduler:
         if self.videoProx is None:
             print("[ERROR]: Error de precarga de video. (post)\n")
             return
-
+        
         vMix.setOutput_number(self.videoProx) # Manda al aire
         vMix.restartInput_number(self.videoProx)
         time.sleep(0.05) # Reinicia, espera y manda play
@@ -520,6 +522,21 @@ class Scheduler:
 
         self.microAct = self.microProx
         self.microProx = None
+
+    def actualizaPlaca(self):
+        try:
+            database = self.database
+            fecha = datetime.now().date()
+            
+            datos = database.getDatos_placas(fecha)
+            if datos:
+                database._actualizaJson(datos)
+                print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Placas actualizadas correctamente.")
+            else:
+                print("[INFO]: No se encontraron datos para actualizar las placas. Se mantienen los datos anteriores.")
+                
+        except Exception as e:
+            print(f"[ERROR]: Error al actualizar las placas: {e}")
 
     def __clearAll(self):
         vMix = self.vMix

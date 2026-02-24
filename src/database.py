@@ -237,5 +237,3 @@ class Database:
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database(path = pathDB)
-    diccionariopolis = DB.getDatos_placas("12.02.2026")
-    DB._actualizaJson(diccionariopolis)
