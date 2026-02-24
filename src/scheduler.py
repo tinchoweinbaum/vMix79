@@ -14,13 +14,12 @@ from pathlib import Path
 import pause
 import random
 
-# TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático.
+# TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático. Agregar botón de "Actualizar placas".
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
 # TO DO: Cámaras.
 # TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo.
 # TO DO: Pasar a usar ID's de inputs en vez de números. Hacer esto antes de las placas.
 # TO DO: No se carga el blip y los inputs no empiezan con el sonido activado. Algo no está andando bien en _start.
-# TO DO: Ver como y cuando llamar a database._actualizaJson() para actualizar los json que tienen los datos para las placas.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -382,7 +381,7 @@ class Scheduler:
         match tipo:
             case TipoContenido.VIDEO:
                 musicaBool = contAct.nombre in ["mapas"]
-                if contAct.nombre in ["PRESENTA TRUCHA.mp4", "PRESENTA TRUCHA"]:
+                if datetime.now().time().minute % 10 == 0: # Si mando un video al aire y es el minuto 0, actalizo
                     self.actualizaPlacas()
                 self._goLiveVideo(musica = musicaBool)
             case TipoContenido.CAMARA:
