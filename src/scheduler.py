@@ -50,6 +50,7 @@ class Placas(IntEnum):
     FASES_LUNARES = 15
     MAREAS = 16
     NOTI_AGUANTE = 17
+    NOTICIAS = 18
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
@@ -383,10 +384,11 @@ class Scheduler:
         match tipo:
             case TipoContenido.VIDEO:
                 musicaBool = contAct.nombre in ["mapas", "MAPAS"]
+                placaBool = contAct.nombre in ["mapas", "MAPAS"]
                 horaAct = datetime.now().time()
-                if horaAct.minute % 10 == 0 and horaAct.second < 10:
+                if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza el json de las placas
                     self.actualizaPlacas()
-                self._goLiveVideo(musica = musicaBool)
+                self._goLiveVideo(musica = musicaBool, placa = placaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
@@ -436,10 +438,14 @@ class Scheduler:
             print("[ERROR]: No se pudo obtener la duración del tema.\n")
 
 
-    def _goLiveVideo(self, musica = False):
+    def _goLiveVideo(self, musica = False, noticias = False):
         # Toggle de inputs de video.
         vMix = self.vMix
+
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
+
+        if not noticias:
+            vMix.setOverlay_off(OverlaySlots.SLOT_NOTICIAS)
 
         if not musica:
             self._stopMusica()
@@ -473,7 +479,7 @@ class Scheduler:
 
         match contAct.nombre:
             case "Actual Datos":
-                vMix.setOverlay_on(Placas.ACTUAL_DATOS,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.NOTICIAS,OverlaySlots.SLOT_NOTICIAS)
 
             case "Actual Detalle":
                 vMix.setOverlay_on(Placas.ACTUAL_DETALLE,OverlaySlots.SLOT_PLACA)
@@ -502,6 +508,8 @@ class Scheduler:
             case _:
                 print(f"[ERROR]: No se encontró la placa {contAct.nombre}.")
                 return
+            
+        vMix.setOverlay_on(Placas.NOTICIAS,OverlaySlots.SLOT_NOTICIAS) # Después de mandar al aire las placas mando al aire las noticias.
 
 
     def _goLiveMicro(self, blip = False):
