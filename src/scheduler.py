@@ -53,6 +53,7 @@ class Placas(IntEnum):
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
+    SLOT_NOTICIAS = 2
 
 class Musica(str, Enum):
     RUTA = r"C:\SERVERLOC_RES\MusicaAire"
