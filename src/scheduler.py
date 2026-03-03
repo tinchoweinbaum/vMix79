@@ -388,7 +388,7 @@ class Scheduler:
                 horaAct = datetime.now().time()
                 if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza el json de las placas
                     self.actualizaPlacas()
-                self._goLiveVideo(musica = musicaBool, placa = placaBool)
+                self._goLiveVideo(musica = musicaBool, noticias = placaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
                 self.vMix.cutDirect_number(1) # PLACEHOLDER
