@@ -269,6 +269,7 @@ class Scheduler:
             proxDia = datetime.combine(manana.date(), dt(0,0,0))
             pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
             # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
+            # Mucho ojo también con la race condition de que la linea pause.until(proxDia) no se ejecute despues de las 00:00 porque si no va a quedar colgado 1 dia entero.
 
             self.nroBloqueAire = 1
         else:
