@@ -480,7 +480,7 @@ class Scheduler:
 
         match contAct.nombre:
             case "Actual Datos":
-                vMix.setOverlay_on(Placas.NOTICIAS,OverlaySlots.SLOT_NOTICIAS)
+                vMix.setOverlay_on(Placas.ACTUAL_DATOS,OverlaySlots.SLOT_PLACA)
 
             case "Actual Detalle":
                 vMix.setOverlay_on(Placas.ACTUAL_DETALLE,OverlaySlots.SLOT_PLACA)
