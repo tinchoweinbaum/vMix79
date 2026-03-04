@@ -21,6 +21,7 @@ import random
 # TO DO: Pasar a usar ID's de inputs en vez de números. Hacer esto antes de las placas.
 # TO DO: No se carga el blip y los inputs no empiezan con el sonido activado. Algo no está andando bien en _start. PERO A VECES SÍ?? NO TENGO IDEA XQ
 # TO DO: Cambio de logos de clima en las placas que tienen foto.
+# TO DO: En las placas el las fuentes tiene que ser regular, vMix por algun motivo la hace bold.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
