@@ -93,6 +93,7 @@ class Scheduler:
 
         self.running = True
         print("Scheduler iniciado\n")
+        self.database.getDatos_placas()
 
         self.videoAct = None
         self.videoProx = None
@@ -111,8 +112,8 @@ class Scheduler:
 
         if not self.bloqueAire:
             print("Bloque de arranque vacío.\n")
-            #self.stop()
-            #return
+            self.stop()
+            return
 
         self._startAudio()
 

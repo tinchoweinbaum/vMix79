@@ -100,11 +100,14 @@ class Database:
         cursor.close()
         return listaCont
     
-    def getDatos_placas(self, fecha):
+    def getDatos_placas(self, fecha = None):
         """
         Devuelve un diccionario de diccionarios que contiene los datos de las placas.
         La fecha se usa para las placas de sol y mareas que la necesitan en la query.
         """
+        if fecha is None: # Valor por defecto para fecha
+            fecha = datetime.now().strftime('%d.%m.%Y')
+
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida a la Database para pedir datos de placas.\n")
             return
