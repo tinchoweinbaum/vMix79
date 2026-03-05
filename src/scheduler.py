@@ -159,7 +159,7 @@ class Scheduler:
         database = self.database
 
         ahora = datetime.now()
-        fechaAct = ahora.strftime('%m.%d.%Y') 
+        fechaAct = ahora.strftime('%d.%m.%Y') 
         horaAct = ahora.time()
         minutoAct = horaAct.hour * 60 +  horaAct.minute
         print(fechaAct)
