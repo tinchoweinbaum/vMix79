@@ -1,9 +1,9 @@
 import subprocess
 import psutil
-from pathlib import Path
-from vMixApiWrapper import VmixApi
 import time
 import socket
+from pathlib import Path
+from vMixApiWrapper import VmixApi
 
 def isVmixRunning():
     for proc in psutil.process_iter(['name']):

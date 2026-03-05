@@ -4,18 +4,27 @@ IMPORTANTE: Para que funcione tiene que estar corriendo el servicio de FirebirdD
 Las fechas las devuelve en formato datetime.datetime
 """
 import fdb
+import json
+import os
 from pathlib import Path
 from utilities import Contenido
 from pathlib import Path
 from datetime import date, datetime
-import json
-import os
+from dotenv import load_dotenv
 
 class Database:
-    def __init__(self, path, user = "SYSDBA", password = "masterkey"):
-        self.path = path
-        self.user = user
-        self.password = password
+    def __init__(self):
+        """
+        Inicia la conexión con la DB. Busca todos los datos que necesita en un archivo db.env, si no encuentra, lo crea.
+        """
+        BASE_DIR = Path(__file__).resolve().parent.parent
+        envPath = BASE_DIR / "config" / "db.env"
+        load_dotenv(str(envPath))
+
+        self.host = os.getenv("DB_HOST","localhost")
+        self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Canal79\DB\CANAL79_DB.FDB")}"
+        self.user = os.getenv("DB_USER","SYSDBA")
+        self.password = os.getenv("DB_PASS","masterkey")
         self.charset = "UTF8"
         self.conn = None # Este atributo es el que tiene la conexión como tal guardada en memoria.
 
@@ -236,4 +245,4 @@ class Database:
     
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
-    DB = Database(path = pathDB)
+    DB = Database()
