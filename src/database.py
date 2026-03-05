@@ -45,8 +45,7 @@ class Database:
 
         try:
             if self.conn is None:
-                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.
-                print("[ERROR]: No se pudo conectar con la DB\n")
+                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.                
             else:
                 return False
         except Exception as e:
@@ -96,6 +95,7 @@ class Database:
                                        id_mult = None, dura = None,
                                        nombre = nombre, path = path, 
                                        orden = None, es_publi = None)) # Creo objeto de la clase Contenido
+        print("LISTA CONT EN DATABASE.PY: " + str(listaCont))
 
         cursor.close()
         return listaCont

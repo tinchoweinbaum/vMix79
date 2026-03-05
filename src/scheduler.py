@@ -111,8 +111,8 @@ class Scheduler:
 
         if not self.bloqueAire:
             print("Bloque de arranque vacío.\n")
-            self.stop()
-            return
+            #self.stop()
+            #return
 
         self._startAudio()
 
