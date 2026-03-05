@@ -46,13 +46,14 @@ class Database:
         try:
             if self.conn is None:
                 self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.
-                print("[INFO]: Conexión con la DB establecida\n" if self.conn is not None else "[ERROR]: No se pudo conectar con la DB\n")
+                print("[ERROR]: No se pudo conectar con la DB\n")
             else:
                 return False
         except Exception as e:
             print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. {e}")
             return False
         
+        print("[INFO]: Conexión con la DB establecida.\n")
         return True
     
     def getBloque_num(self, fecha, nroBloque):
@@ -71,6 +72,8 @@ class Database:
         
         self.conn.begin()
         cursor: fdb.Cursor = self.conn.cursor()
+        print(f"DEBUG: Fecha es {type(fecha)} y Bloque es {type(nroBloque)}")
+        print(fecha)
 
         query = """SELECT HORA, PATH, NOMBRE, TIPOMULTIMEDIA 
                 FROM PLAYLISTCONFIMADO
