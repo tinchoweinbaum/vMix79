@@ -569,10 +569,8 @@ class Scheduler:
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     blipPath = BASE_DIR.parent / "resources" / "vmix_resources" / "BLIP.WAV"
-    dbPath = r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA.FDB"
-    print(blipPath)
 
-    database = Database(dbPath)
+    database = Database()
     vMix = VmixApi()
     schMain = Scheduler(vMix,database)
 
