@@ -157,11 +157,12 @@ class Scheduler:
         #Calculo bloque:
 
         database = self.database
-        
+
         ahora = datetime.now()
         fechaAct = ahora.strftime('%m.%d.%Y') 
         horaAct = ahora.time()
         minutoAct = horaAct.hour * 60 +  horaAct.minute
+        print(fechaAct)
 
         self.nroBloqueAire = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0.
         self.bloqueAire = database.getBloque_num(fechaAct, self.nroBloqueAire) # Devuelve el bloque actual en una lista.
