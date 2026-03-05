@@ -71,8 +71,6 @@ class Database:
         
         self.conn.begin()
         cursor: fdb.Cursor = self.conn.cursor()
-        print(f"DEBUG: Fecha es {type(fecha)} y Bloque es {type(nroBloque)}")
-        print(fecha)
 
         query = """SELECT HORA, PATH, NOMBRE, TIPOMULTIMEDIA 
                 FROM PLAYLISTCONFIMADO
@@ -95,7 +93,6 @@ class Database:
                                        id_mult = None, dura = None,
                                        nombre = nombre, path = path, 
                                        orden = None, es_publi = None)) # Creo objeto de la clase Contenido
-        print("LISTA CONT EN DATABASE.PY: " + str(listaCont))
 
         cursor.close()
         return listaCont
