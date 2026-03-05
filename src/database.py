@@ -79,7 +79,7 @@ class Database:
                 WHERE FECHA = CAST(? AS DATE) AND BLOQUE = CAST(? AS INTEGER)
                 ORDER BY HORA"""
         
-        cursor.execute(query, (fecha, nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
+        cursor.execute(query, (f"{fecha}", nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
         queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
         
@@ -126,6 +126,8 @@ class Database:
             dictPlacas = dict(zip(columnas, queryRes)) # Crea diccionario para devoler
         else:
             print("[ERROR]: No se encontraron datos para cargar las placas. SELECT * FROM CLIMA no devolvió nada.\n")
+
+        print("LA QUERY DE PLACAS DEVOLVIO " + str(queryRes))
 
         # --- Pido placa sol ---
 
