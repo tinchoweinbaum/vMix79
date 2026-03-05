@@ -93,7 +93,6 @@ class Scheduler:
 
         self.running = True
         print("Scheduler iniciado\n")
-        self.database.getDatos_placas()
 
         self.videoAct = None
         self.videoProx = None
@@ -116,6 +115,8 @@ class Scheduler:
             return
 
         self._startAudio()
+
+        self.actualizaPlacas()
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
