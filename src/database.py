@@ -245,7 +245,7 @@ class Database:
     def __formatoFecha(self, obj):
         if isinstance(obj, (datetime, date)):
             return obj.strftime("%d.%m.%Y")
-        elif isinstance(obj, (datetime.time)):
+        elif isinstance(obj, time):
             return obj.strftime("%H:%M")
         
         raise TypeError(f"Tipo {type(obj)} no es serializable")
