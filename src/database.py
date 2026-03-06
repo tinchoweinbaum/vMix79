@@ -133,7 +133,6 @@ class Database:
             columnas = [col[0] for col in cursor.description]
             dictSol = dict(zip(columnas,queryRes))
             dictPlacas.update(dictSol) # Concateno diccionarios
-            print("actualice salida sol iupi")
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Salida Sol. SELECT * FROM SOL con la fecha {fecha} no devolvió nada.\n")
 
@@ -147,12 +146,25 @@ class Database:
             columnas = [col[0] for col in cursor.description]
             dictMareas = dict(zip(columnas, queryRes))
             dictPlacas.update(dictMareas)
-            print("actualice placa mareas iupi")
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.\n")
 
         #dictPlacas no tiene formato correcto. Es 1 diccionario gigante con todos los campos de todas las placas.
         cursor.close()
+
+        # --- Pido placa luna ---
+
+        query = "SELECT * FROM LUNAS WHERE (FECHAHORA = CAST(? AS DATE))"
+        cursor.execute(query, (fecha,))
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:        
+            columnas = [col[0] for col in cursor.description]
+            dictLuna = dict(zip(columnas,queryRes))
+            dictPlacas.update(dictLuna) # Concateno diccionarios
+        else:
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Fases Lunares. SELECT * FROM LUNAS con la fecha {fecha} no devolvió nada.\n")
+
         return self._formatoDict(dictPlacas)
     
     def _actualizaJson(self, dictPlacas: dict):
@@ -239,6 +251,14 @@ class Database:
                 "marea3": dictPlacas.get('MAREA3'),
                 "hora4": dictPlacas.get('HORA4'),
                 "marea4": dictPlacas.get('MAREA4')
+            },
+            "lunas":{
+                "idluna": dictPlacas.get('IDLUNA'),
+                "fecha": dictPlacas.get('FECHAHORA'),
+                "tipoluna": dictPlacas.get('TIPOLUNA'),
+                "salida": dictPlacas.get('SALIDA'),
+                "puesta": dictPlacas.get('PUESTA'),
+                "tipo": dictPlacas.get('TIPO'),
             },
         }
         return dictFormato
