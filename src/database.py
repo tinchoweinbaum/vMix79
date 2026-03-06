@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from utilities import Contenido
 from pathlib import Path
-from datetime import date, datetime
+from datetime import date, datetime, time
 from dotenv import load_dotenv
 
 class Database:
@@ -21,7 +21,7 @@ class Database:
         envPath = BASE_DIR / "config" / "db.env"
         load_dotenv(str(envPath))
 
-        self.host = os.getenv("DB_HOST","localhost")
+        self.host = os.getenv("DB_HOST","localhost") # El segundo parámetro es el default, por si no existe el .env o no encuentra lo que busca.
         self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Canal79\DB\CANAL79_DB.FDB")}"
         self.user = os.getenv("DB_USER","SYSDBA")
         self.password = os.getenv("DB_PASS","masterkey")
@@ -59,8 +59,6 @@ class Database:
         """
         Devuelve un bloque de 5 minutos de programación, representado por una lista
         de objetos de la clase Contenido.
-
-        IMPORTANTE: LA FECHA ESTÁ HARDCODEADA PARA QUE FUNCIONE. ACTUALIZAR AL TERMINAR EL SOFTWARE PARA QUE USE LA VARIABLE FECHA
         """
 
         # Query:
@@ -134,6 +132,7 @@ class Database:
             columnas = [col[0] for col in cursor.description]
             dictSol = dict(zip(columnas,queryRes))
             dictPlacas.update(dictSol) # Concateno diccionarios
+            print("actualice salida sol iupi")
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Salida Sol. SELECT * FROM SOL con la fecha {fecha} no devolvió nada.\n")
 
@@ -147,6 +146,7 @@ class Database:
             columnas = [col[0] for col in cursor.description]
             dictMareas = dict(zip(columnas, queryRes))
             dictPlacas.update(dictMareas)
+            print("actualice placa mareas iupi")
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.\n")
 
@@ -170,7 +170,8 @@ class Database:
 
                 try:
                     with open(ruta_temp, 'w', encoding='utf-8') as f:
-                        json.dump([contenido], f, indent=4, ensure_ascii=False, default=self.__formatoFecha)
+                        # Convierte diccionario a texto con el formato correcto para el json
+                        json.dump([contenido], f, indent=4, ensure_ascii=False, default=self.__formatoFecha) # el default significa "a que tipo convierto si no sé a que tengo que convertir lo que me pasaron"
 
                     os.replace(ruta_temp, ruta_final)
                     
@@ -244,6 +245,9 @@ class Database:
     def __formatoFecha(self, obj):
         if isinstance(obj, (datetime, date)):
             return obj.strftime("%d.%m.%Y")
+        elif isinstance(obj, (datetime.time)):
+            return obj.strftime("%H:%M")
+        
         raise TypeError(f"Tipo {type(obj)} no es serializable")
     
 if __name__ == "__main__":
