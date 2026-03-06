@@ -11,6 +11,7 @@ from utilities import Contenido
 from pathlib import Path
 from datetime import date, datetime, time
 from dotenv import load_dotenv
+from decimal import Decimal
 
 class Database:
     def __init__(self):
@@ -243,13 +244,17 @@ class Database:
         return dictFormato
 
     def __formatoFecha(self, obj):
-        if isinstance(obj, (datetime, date)):
-            return obj.strftime("%d.%m.%Y")
-        elif isinstance(obj, time):
-            return obj.strftime("%H:%M")
+        match obj:
+            case datetime() | date():
+                return obj.strftime("%d.%m.%Y")
+            case time():
+                return obj.strftime("%H:%M")
+            case Decimal():
+                return float(obj)
+            case _:
+                raise TypeError(f"Tipo {type(obj)} no es serializable")
+            
         
-        raise TypeError(f"Tipo {type(obj)} no es serializable")
-    
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database()
