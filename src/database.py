@@ -164,7 +164,7 @@ class Database:
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Fases Lunares. SELECT * FROM LUNAS con la fecha {fecha} no devolvió nada.\n")
 
-        return self._formatoDict(dictPlacas), self._formatoDict(dictLuna) # Devuelvo otro diccionario para la placa de lunas porque comparte nombre en algunos campos con salida del sol
+        return self._formatoDict(dictPlacas,dictLuna) # Junta los dos diccionarios en 1 diccionario de diccionarios
     
     def _actualizaJson(self, dictPlacas: dict):
             """
@@ -192,7 +192,7 @@ class Database:
 
             
 
-    def _formatoDict(self,dictPlacas: dict, dictLuna):
+    def _formatoDict(self,dictPlacas: dict, dictLuna: dict):
         """
         Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson.
         """
@@ -265,6 +265,9 @@ class Database:
         return dictFormato
 
     def __formatoFecha(self, obj):
+        """
+        Método "privado" que se encarga de serializar los objetos de hora y dia y los numeros decimales para que el json los pueda guardar
+        """
         match obj:
             case datetime() | date():
                 return obj.strftime("%d.%m.%Y")
