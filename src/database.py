@@ -161,11 +161,10 @@ class Database:
         if queryRes is not None:        
             columnas = [col[0] for col in cursor.description]
             dictLuna = dict(zip(columnas,queryRes))
-            dictPlacas.update(dictLuna) # Concateno diccionarios
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Fases Lunares. SELECT * FROM LUNAS con la fecha {fecha} no devolvió nada.\n")
 
-        return self._formatoDict(dictPlacas)
+        return self._formatoDict(dictPlacas), self._formatoDict(dictLuna) # Devuelvo otro diccionario para la placa de lunas porque comparte nombre en algunos campos con salida del sol
     
     def _actualizaJson(self, dictPlacas: dict):
             """
@@ -191,7 +190,9 @@ class Database:
                 except Exception as e:
                     print(f"[ERROR]: No se pudo actualizar {nombre_archivo}.json: {e}")
 
-    def _formatoDict(self,dictPlacas: dict):
+            
+
+    def _formatoDict(self,dictPlacas: dict, dictLuna):
         """
         Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson.
         """
@@ -253,12 +254,12 @@ class Database:
                 "marea4": dictPlacas.get('MAREA4')
             },
             "lunas":{
-                "idluna": dictPlacas.get('IDLUNA'),
-                "fecha": dictPlacas.get('FECHAHORA'),
-                "tipoluna": dictPlacas.get('TIPOLUNA'),
-                "salida": dictPlacas.get('SALIDA'),
-                "puesta": dictPlacas.get('PUESTA'),
-                "tipo": dictPlacas.get('TIPO'),
+                "idluna": dictLuna.get('IDLUNA'),
+                "fecha": dictLuna.get('FECHAHORA'),
+                "tipoluna": dictLuna.get('TIPOLUNA'),
+                "salida": dictLuna.get('SALIDA'),
+                "puesta": dictLuna.get('PUESTA'),
+                "tipo": dictLuna.get('TIPO'),
             },
         }
         return dictFormato
