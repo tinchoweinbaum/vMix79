@@ -315,7 +315,7 @@ class Database:
         self.conn.commit()
 
         # Retornamos el diccionario que irá al JSON
-        return {"noticias": string_final}
+        return ({"noticias": {"mensaje": string_final}})
             
         
 if __name__ == "__main__":
