@@ -277,6 +277,45 @@ class Database:
                 return float(obj)
             case _:
                 raise TypeError(f"Tipo {type(obj)} no es serializable")
+
+    def get_Noticias(self):
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida para pedir las noticias RSS.")
+            return
+        
+        self.conn.begin() # Arranca la conxión y crea cursor para managearla
+        cursor: fdb.Cursor = self.conn.cursor()
+
+        query = "select TITULO, DETALLE from NOTICIASDETAIL WHERE (aire = 1) AND  (current_timestamp >= FECHAINICIO ) and (current_timestamp < FECHAfin)"
+        cursor.execute(query)
+        queryRes = cursor.fetchall() # Ejecuta query
+
+        if queryRes is None:
+            print("[INFO]: No se encontraron noticias para actualizar, 'SELECT * FROM NOTICIASDETAIL' devolvió None")
+            return
+        
+        noticias_texto = []
+        for fila in queryRes:
+                titulo, copete = fila
+                # Formateamos cada noticia: TITULO en mayúsculas y el copete al lado.
+                texto_noticia = f"{titulo.upper()}: {copete}"
+                noticias_texto.append(texto_noticia)
+
+            # Usamos el separador " /// " para unir todas las noticias.
+            # Agregamos espacios antes y después para que no quede todo pegado.
+        separador = " /// "
+        string_final = separador.join(noticias_texto)
+        
+        # Espacio de seguridad al final para que el loop de vMix no pegue 
+        # la última noticia con la primera sin aire.
+        if string_final:
+            string_final += "          " 
+
+        cursor.close()
+        self.conn.commit()
+
+        # Retornamos el diccionario que irá al JSON
+        return {"noticias": string_final}
             
         
 if __name__ == "__main__":

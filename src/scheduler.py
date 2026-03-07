@@ -554,6 +554,20 @@ class Scheduler:
         except Exception as e:
             print(f"[ERROR]: Error al actualizar las placas: {e}")
 
+    def actualizaNoticias(self):
+        try:
+            database = self.database
+
+            noticias = database.get_Noticias()
+            if noticias:
+                database._actualizaJson(noticias)
+                print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Noticias actualizadas correctamente.")
+            else:
+                print("[INFO]: No se encontraron datos para actualizar las noticias. Se mantienen las noticias anteriores.")
+
+        except Exception as e:
+            print(f"[ERROR]: Error al actualizar las noticias: {e}")
+
     def __clearAll(self):
         vMix = self.vMix
 
