@@ -559,7 +559,7 @@ class Scheduler:
 
             noticias = database.get_Noticias()
             if noticias:
-                database._actualizaJson(noticias)
+                database._actualizaJson({"noticias": noticias})
                 print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Noticias actualizadas correctamente.")
             else:
                 print("[INFO]: No se encontraron datos para actualizar las noticias. Se mantienen las noticias anteriores.")
