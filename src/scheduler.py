@@ -98,7 +98,8 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
-        self.camaraLive = False
+        self.vMix.cutDirect_number(NumsInput.CAMARA_ACT) # Arranca con la cámara.
+        self.camaraLive = True
 
         self.__clearAll()
 
