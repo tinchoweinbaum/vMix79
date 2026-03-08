@@ -208,7 +208,7 @@ class Database:
                 "termica": dictPlacas.get('TERMICA'),
                 "viento": dictPlacas.get('VIENTO'),
                 "desc": dictPlacas.get('DESCRIPCION'),
-                "logo": os.path.join(PathEnum.ICONOS, dictPlacas.get('PATH_ISOLOGO'))
+                "logo": os.path.join(PathEnum.ICONOS, dictPlacas.get('PATH_ISOLOGO')).replace("/", "\\")
             },
             "actualdetalle": {
                 "detalle": dictPlacas.get('DETALLE'),
@@ -221,18 +221,18 @@ class Database:
                 "max": dictPlacas.get('EM_TEMP_MAX'),
                 "desc_min": dictPlacas.get('EM_DESCRIP_MIN'),
                 "desc_max": dictPlacas.get('EM_DESCRIP_MAX'),
-                "logo_min": os.path.join(PathEnum.ICONOS, dictPlacas.get('EM_LOGO_MIN')),
-                "logo_max": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EM_LOGO_MAX'))
+                "logo_min": os.path.join(PathEnum.ICONOS, dictPlacas.get('EM_LOGO_MIN')).replace("/", "\\"),
+                "logo_max": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EM_LOGO_MAX')).replace("/", "\\")
             },
             "extendido2dias": {
                 "ex1_dia": dictPlacas.get('EX1_DIA'),
                 "ex1_min": dictPlacas.get('EX1_MIN'),
                 "ex1_max": dictPlacas.get('EX1_MAX'),
-                "ex1_logo": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EX1_LOGO')),
+                "ex1_logo": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EX1_LOGO')).replace("/", "\\"),
                 "ex2_dia": dictPlacas.get('EX2_DIA'),
                 "ex2_min": dictPlacas.get('EX2_MIN'),
                 "ex2_max": dictPlacas.get('EX2_MAX'),
-                "ex2_logo": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EX2_LOGO'))
+                "ex2_logo": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EX2_LOGO')).replace("/", "\\")
             },
             "aux": {
                 "actualizacion": dictPlacas.get('ACTUALIZACION'),
@@ -263,7 +263,7 @@ class Database:
                 "tipoluna": dictLuna.get('TIPOLUNA'),
                 "salida": dictLuna.get('SALIDA'),
                 "puesta": dictLuna.get('PUESTA'),
-                "tipo": os.path.join(PathEnum.ICONOS,  dictLuna.get('TIPO')), # Por algún motivo en la db el ícono de la luna se llama TIPO.
+                "tipo": os.path.join(PathEnum.ICONOS,  dictLuna.get('TIPO')).replace("/", "\\"), # Por algún motivo en la db el ícono de la luna se llama TIPO.
             },
         }
         return dictFormato
