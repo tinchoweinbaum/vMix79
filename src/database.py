@@ -6,6 +6,7 @@ Las fechas las devuelve en formato datetime.datetime
 import fdb
 import json
 import os
+import random
 from pathlib import Path
 from utilities import Contenido
 from pathlib import Path
@@ -297,25 +298,16 @@ class Database:
         noticias_texto = []
         for fila in queryRes:
                 titulo, copete = fila
-                # Formateamos cada noticia: TITULO en mayúsculas y el copete al lado.
-                texto_noticia = f"{titulo.upper()}: {copete}"
+                texto_noticia = f"{titulo}: {copete} /// "
                 noticias_texto.append(texto_noticia)
 
-            # Usamos el separador " /// " para unir todas las noticias.
-            # Agregamos espacios antes y después para que no quede todo pegado.
-        separador = " /// "
-        string_final = separador.join(noticias_texto)
-        
-        # Espacio de seguridad al final para que el loop de vMix no pegue 
-        # la última noticia con la primera sin aire.
-        if string_final:
-            string_final += "          " 
+        random.shuffle(noticias_texto) # Orden aleatorio de noticias cada vez que se actualizan.     
 
         cursor.close()
         self.conn.commit()
 
         # Retornamos el diccionario que irá al JSON
-        return ({"noticias": {"mensaje": string_final}})
+        return [{"mensaje": "".join(noticias_texto)}]
             
         
 if __name__ == "__main__":
