@@ -14,6 +14,9 @@ from datetime import date, datetime, time
 from dotenv import load_dotenv
 from decimal import Decimal
 
+class PathEnum():
+    ICONOS = r"C:\Canal79\Iconos\Clima"
+
 class Database:
     def __init__(self):
         """
@@ -205,7 +208,7 @@ class Database:
                 "termica": dictPlacas.get('TERMICA'),
                 "viento": dictPlacas.get('VIENTO'),
                 "desc": dictPlacas.get('DESCRIPCION'),
-                "logo": dictPlacas.get('PATH_ISOLOGO')
+                "logo": os.path.join(PathEnum.LOGOS,dictPlacas.get('PATH_ISOLOGO'))
             },
             "actualdetalle": {
                 "detalle": dictPlacas.get('DETALLE'),
@@ -218,18 +221,18 @@ class Database:
                 "max": dictPlacas.get('EM_TEMP_MAX'),
                 "desc_min": dictPlacas.get('EM_DESCRIP_MIN'),
                 "desc_max": dictPlacas.get('EM_DESCRIP_MAX'),
-                "logo_min": dictPlacas.get('EM_LOGO_MIN'),
-                "logo_max": dictPlacas.get('EM_LOGO_MAX')
+                "logo_min": os.path.join(PathEnum.LOGOS,dictPlacas.get('EM_LOGO_MIN')),
+                "logo_max": os.path.join(PathEnum.LOGOS, dictPlacas.get('EM_LOGO_MAX'))
             },
             "extendido2dias": {
                 "ex1_dia": dictPlacas.get('EX1_DIA'),
                 "ex1_min": dictPlacas.get('EX1_MIN'),
                 "ex1_max": dictPlacas.get('EX1_MAX'),
-                "ex1_logo": dictPlacas.get('EX1_LOGO'),
+                "ex1_logo": os.path.join(PathEnum.LOGOS, dictPlacas.get('EX1_LOGO')),
                 "ex2_dia": dictPlacas.get('EX2_DIA'),
                 "ex2_min": dictPlacas.get('EX2_MIN'),
                 "ex2_max": dictPlacas.get('EX2_MAX'),
-                "ex2_logo": dictPlacas.get('EX2_LOGO')
+                "ex2_logo": os.path.join(PathEnum.LOGOS, dictPlacas.get('EX2_LOGO'))
             },
             "aux": {
                 "actualizacion": dictPlacas.get('ACTUALIZACION'),
@@ -260,7 +263,7 @@ class Database:
                 "tipoluna": dictLuna.get('TIPOLUNA'),
                 "salida": dictLuna.get('SALIDA'),
                 "puesta": dictLuna.get('PUESTA'),
-                "tipo": dictLuna.get('TIPO'),
+                "tipo": os.path.join(PathEnum.LOGOS, dictLuna.get('TIPO')), # Por algún motivo en la db el ícono de la luna se llama TIPO.
             },
         }
         return dictFormato
