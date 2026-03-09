@@ -491,9 +491,9 @@ class Scheduler:
             case "Actual Detalle":
                 horaAct = datetime.now().time()
                 if horaAct.hour >= 6  and horaAct.hour < 12:
-                    vMix.setOverlay_on(Placas.ACTUAL_DETALLE, OverlaySlots.SLOT_PLACA)
-                else:
                     vMix.setOverlay_on(Placas.ACTUAL_DETALLE_CLIMA, OverlaySlots.SLOT_PLACA)
+                else:
+                    vMix.setOverlay_on(Placas.ACTUAL_DETALLE, OverlaySlots.SLOT_PLACA)
 
             case "Extendido Manana":
                     vMix.setOverlay_on(Placas.EXTENDIDO_MANANA, OverlaySlots.SLOT_PLACA)
