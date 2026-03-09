@@ -50,6 +50,7 @@ class Placas(IntEnum):
     MAREAS = 16
     NOTI_AGUANTE = 17
     NOTICIAS = 18
+    ACTUAL_DETALLE_CLIMA = 19
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
@@ -485,37 +486,41 @@ class Scheduler:
 
         match contAct.nombre:
             case "Actual Datos":
-                vMix.setOverlay_on(Placas.ACTUAL_DATOS,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.ACTUAL_DATOS, OverlaySlots.SLOT_PLACA)
 
             case "Actual Detalle":
-                vMix.setOverlay_on(Placas.ACTUAL_DETALLE,OverlaySlots.SLOT_PLACA)
+                horaAct = datetime.now().time()
+                if horaAct.hour >= 6  and horaAct.hour < 12:
+                    vMix.setOverlay_on(Placas.ACTUAL_DETALLE, OverlaySlots.SLOT_PLACA)
+                else:
+                    vMix.setOverlay_on(Placas.ACTUAL_DETALLE_CLIMA, OverlaySlots.SLOT_PLACA)
 
             case "Extendido Manana":
-                vMix.setOverlay_on(Placas.EXTENDIDO_MANANA,OverlaySlots.SLOT_PLACA)
+                    vMix.setOverlay_on(Placas.EXTENDIDO_MANANA, OverlaySlots.SLOT_PLACA)
 
             case "Extendido Tarde":
-                vMix.setOverlay_on(Placas.EXTENDIDO_TARDE,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.EXTENDIDO_TARDE, OverlaySlots.SLOT_PLACA)
 
             case "Extendido 2 Dias":
-                vMix.setOverlay_on(Placas.EXTENDIDO_2DIAS,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.EXTENDIDO_2DIAS, OverlaySlots.SLOT_PLACA)
 
             case "Salida de Sol":
-                vMix.setOverlay_on(Placas.SALIDA_SOL,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.SALIDA_SOL, OverlaySlots.SLOT_PLACA)
 
             case "Fases Lunares":
-                vMix.setOverlay_on(Placas.FASES_LUNARES,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.FASES_LUNARES, OverlaySlots.SLOT_PLACA)
 
             case "Mareas":
-                vMix.setOverlay_on(Placas.MAREAS,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.MAREAS, OverlaySlots.SLOT_PLACA)
             
             case "Noti Aguante":
-                vMix.setOverlay_on(Placas.NOTI_AGUANTE,OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(Placas.NOTI_AGUANTE, OverlaySlots.SLOT_PLACA)
             
             case _:
                 print(f"[ERROR]: No se encontró la placa {contAct.nombre}.")
                 return
             
-        vMix.setOverlay_on(Placas.NOTICIAS,OverlaySlots.SLOT_NOTICIAS) # Después de mandar al aire las placas mando al aire las noticias.
+        vMix.setOverlay_on(Placas.NOTICIAS, OverlaySlots.SLOT_NOTICIAS) # Después de mandar al aire las placas mando al aire las noticias.
 
 
     def _goLiveMicro(self, blip = False):
