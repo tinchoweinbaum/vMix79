@@ -8,7 +8,7 @@ import json
 import os
 import random
 from pathlib import Path
-from utilities import Contenido
+from utilities import Contenido, Camara
 from pathlib import Path
 from datetime import date, datetime, time
 from dotenv import load_dotenv
@@ -284,7 +284,7 @@ class Database:
 
     def get_Noticias(self):
         if self.conn is None:
-            print("[ERROR]: No se encontró una conexión válida para pedir las noticias RSS.")
+            print("[ERROR]: No se encontró una conexión válida con la base de datos para pedir las noticias RSS.")
             return
         
         self.conn.begin() # Arranca la conxión y crea cursor para managearla
@@ -311,8 +311,39 @@ class Database:
 
         # Retornamos el diccionario que irá al JSON
         return [{"mensaje": "".join(noticias_texto)}]
-            
+
+    def get_Camaras(self):
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida con la base de datos para pedir las cámaras.")
+            return None
+        
+        self.conn.begin()
+        cursor: fdb.Cursor = self.conn.cursor() # Arranca la conxión y crea cursor para managearla
+
+        query = """
+            SELECT * FROM CAMARAS
+            WHERE (ACTIVO = 1)
+            AND (
+                (HORA_DESDE = '00:00' AND HORA_HASTA = '00:00') OR
+                (HORA_DESDE < CAST(? AS TIME) AND HORA_HASTA > CAST(? AS TIME))
+            )
+            ORDER BY ORDEN ASC
+        """
+        # Ojo con esta query porque creo que devuelve mal, una camara viene a través de las 00:00 se rompe la condición booleana
+        horaAct = datetime.now().time()
+        cursor.execute(query,(horaAct, horaAct))
+        queryRes = cursor.fetchone()
+
+    
+        # Creamos la lista de objetos Camara usando desempaquetado de tupla
+        lista_camaras = [Camara(*fila) for fila in queryRes]
+        
+        cursor.close()
+        print(lista_camaras)
+        return lista_camaras
+
         
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database()
+    DB.get_Camaras()
