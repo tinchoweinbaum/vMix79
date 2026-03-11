@@ -1,16 +1,35 @@
 """
 Wrapper de la conexión a la DB de firebird para el proyecto.
 IMPORTANTE: Para que funcione tiene que estar corriendo el servicio de FirebirdDB en windows. También tiene que tener fbclient.dll de 64 bits en la carpeta resources del proyecto.
+Las fechas las devuelve en formato datetime.datetime
 """
 import fdb
+import json
+import os
+import random
 from pathlib import Path
-from utilities import Contenido
+from utilities import Contenido, Camara
+from pathlib import Path
+from datetime import date, datetime, time
+from dotenv import load_dotenv
+from decimal import Decimal
+
+class PathEnum():
+    ICONOS = r"C:\Canal79\Iconos\Clima"
 
 class Database:
-    def __init__(self, path, user = "SYSDBA", password = "masterkey"):
-        self.path = path
-        self.user = user
-        self.password = password
+    def __init__(self):
+        """
+        Inicia la conexión con la DB. Busca todos los datos que necesita en un archivo db.env, si no encuentra, lo crea.
+        """
+        BASE_DIR = Path(__file__).resolve().parent.parent
+        envPath = BASE_DIR / "config" / "db.env"
+        load_dotenv(str(envPath))
+
+        self.host = os.getenv("DB_HOST","localhost") # El segundo parámetro es el default, por si no existe el .env o no encuentra lo que busca.
+        self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Canal79\DB\CANAL79_DB.FDB")}"
+        self.user = os.getenv("DB_USER","SYSDBA")
+        self.password = os.getenv("DB_PASS","masterkey")
         self.charset = "UTF8"
         self.conn = None # Este atributo es el que tiene la conexión como tal guardada en memoria.
 
@@ -31,14 +50,14 @@ class Database:
 
         try:
             if self.conn is None:
-                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.
-                print("[INFO]: Conexión con la DB establecida" if self.conn is not None else "[ERROR]: No se pudo conectar con la DB")
+                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.                
             else:
                 return False
         except Exception as e:
             print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. {e}")
             return False
         
+        print("[INFO]: Conexión con la DB establecida.\n")
         return True
     
     def getBloque_num(self, fecha, nroBloque):
@@ -61,7 +80,7 @@ class Database:
                 WHERE FECHA = CAST(? AS DATE) AND BLOQUE = CAST(? AS INTEGER)
                 ORDER BY HORA"""
         
-        cursor.execute(query, ("12.02.2026", nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
+        cursor.execute(query, (f'{fecha}', nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
         queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
         
@@ -78,15 +97,253 @@ class Database:
                                        nombre = nombre, path = path, 
                                        orden = None, es_publi = None)) # Creo objeto de la clase Contenido
 
+        cursor.close()
         return listaCont
     
+    def getDatos_placas(self, fecha = None):
+        """
+        Devuelve un diccionario de diccionarios que contiene los datos de las placas.
+        La fecha se usa para las placas de sol y mareas que la necesitan en la query.
+        """
+        if fecha is None: # Valor por defecto para fecha
+            fecha = datetime.now().strftime('%d.%m.%Y')
+
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida a la Database para pedir datos de placas.\n")
+            return
+        
+        self.conn.begin() # Arranca la conxión y crea cursor para managearla
+        cursor: fdb.Cursor = self.conn.cursor()
+
+        # --- Pido placas 1 ---
+
+        query = "SELECT * FROM CLIMA"
+        cursor.execute(query) # Ejecuta la query y busca el resultado del buffer.
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:
+            columnas = [col[0] for col in cursor.description] # Creo una lista de nombres
+            dictPlacas = dict(zip(columnas, queryRes)) # Crea diccionario para devoler
+        else:
+            print("[ERROR]: No se encontraron datos para cargar las placas. SELECT * FROM CLIMA no devolvió nada.\n")
+
+        # --- Pido placa sol ---
+
+        query = "SELECT * FROM SOL WHERE (FECHA = CAST(? AS DATE))"
+        cursor.execute(query, (fecha,))
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:        
+            columnas = [col[0] for col in cursor.description]
+            dictSol = dict(zip(columnas,queryRes))
+            dictPlacas.update(dictSol) # Concateno diccionarios
+        else:
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Salida Sol. SELECT * FROM SOL con la fecha {fecha} no devolvió nada.\n")
+
+        # --- Pido placa mareas ---
+
+        query = "SELECT * FROM MAREAS WHERE (FECHA = CAST(? AS DATE))"
+        cursor.execute(query, (fecha,))
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:        
+            columnas = [col[0] for col in cursor.description]
+            dictMareas = dict(zip(columnas, queryRes))
+            dictPlacas.update(dictMareas)
+        else:
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.\n")
+
+        #dictPlacas no tiene formato correcto. Es 1 diccionario gigante con todos los campos de todas las placas.
+        cursor.close()
+
+        # --- Pido placa luna ---
+
+        query = "SELECT * FROM LUNAS WHERE (FECHAHORA = CAST(? AS DATE))"
+        cursor.execute(query, (fecha,))
+        queryRes = cursor.fetchone()
+
+        if queryRes is not None:        
+            columnas = [col[0] for col in cursor.description]
+            dictLuna = dict(zip(columnas,queryRes))
+        else:
+            print(f"[ERROR]: No se encontraron datos para cargar la placa Fases Lunares. SELECT * FROM LUNAS con la fecha {fecha} no devolvió nada.\n")
+
+        return self._formatoDict(dictPlacas,dictLuna) # Junta los dos diccionarios en 1 diccionario de diccionarios
+    
+    def _actualizaJson(self, dictPlacas: dict):
+            """
+            Recibe un diccionario de diccionarios (dictPlacas).
+            Itera sobre él, creando o sobreescribiendo archivos .json 
+            de forma atómica en ../resources/json_placas/
+            """
+            base_dir = Path(__file__).resolve().parent.parent
+            ruta_carpeta = base_dir / "resources" / "json_placas"
+            ruta_carpeta.mkdir(parents=True, exist_ok=True) # Si no existe la carpeta la crea
+
+            for nombre_archivo, contenido in dictPlacas.items(): # Itera por el diccionario dumpeando el contenido de cada diccionario en un .json
+                ruta_final = ruta_carpeta / f"{nombre_archivo}.json"
+                ruta_temp = ruta_final.with_suffix(".tmp")
+
+                try:
+                    with open(ruta_temp, 'w', encoding='utf-8') as f:
+                        # Convierte diccionario a texto con el formato correcto para el json
+                        json.dump([contenido], f, indent=4, ensure_ascii=False, default=self.__formatoFecha) # el default significa "a que tipo convierto si no sé a que tengo que convertir lo que me pasaron"
+
+                    os.replace(ruta_temp, ruta_final)
+                    
+                except Exception as e:
+                    print(f"[ERROR]: No se pudo actualizar {nombre_archivo}.json: {e}")
+
+            
+
+    def _formatoDict(self,dictPlacas: dict, dictLuna: dict):
+        """
+        Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson.
+        """
+        dictFormato = {
+            "actualdatos": {
+                "temp": dictPlacas.get('TEMP_ACTUAL'),
+                "humedad": dictPlacas.get('HUMEDAD'),
+                "presion": dictPlacas.get('PRESION'),
+                "termica": dictPlacas.get('TERMICA'),
+                "viento": dictPlacas.get('VIENTO'),
+                "desc": dictPlacas.get('DESCRIPCION'),
+                "logo": os.path.join(PathEnum.ICONOS, dictPlacas.get('PATH_ISOLOGO')).replace("/", "\\")
+            },
+            "actualdetalle": {
+                "detalle": dictPlacas.get('DETALLE'),
+                "max": dictPlacas.get('ACT_MAX'),
+                "min": dictPlacas.get('ACT_MIN')
+            },
+            "extendidomanana": {
+                "dia": dictPlacas.get('EM_DIA'),
+                "min": dictPlacas.get('EM_TEMP_MIN'),
+                "max": dictPlacas.get('EM_TEMP_MAX'),
+                "desc_min": dictPlacas.get('EM_DESCRIP_MIN'),
+                "desc_max": dictPlacas.get('EM_DESCRIP_MAX'),
+                "logo_min": os.path.join(PathEnum.ICONOS, dictPlacas.get('EM_LOGO_MIN')).replace("/", "\\"),
+                "logo_max": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EM_LOGO_MAX')).replace("/", "\\")
+            },
+            "extendido2dias": {
+                "ex1_dia": dictPlacas.get('EX1_DIA'),
+                "ex1_min": dictPlacas.get('EX1_MIN'),
+                "ex1_max": dictPlacas.get('EX1_MAX'),
+                "ex1_logo": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EX1_LOGO')).replace("/", "\\"),
+                "ex2_dia": dictPlacas.get('EX2_DIA'),
+                "ex2_min": dictPlacas.get('EX2_MIN'),
+                "ex2_max": dictPlacas.get('EX2_MAX'),
+                "ex2_logo": os.path.join(PathEnum.ICONOS,  dictPlacas.get('EX2_LOGO')).replace("/", "\\")
+            },
+            "aux": {
+                "actualizacion": dictPlacas.get('ACTUALIZACION'),
+                "uv": dictPlacas.get('INDICEUV'),
+                "ciudad": dictPlacas.get('CIUDAD'),
+                "hora_clima": dictPlacas.get('HORA_CLIMA')
+            },
+            "salidadesol":{
+                "idsol": dictPlacas.get('IDSOL'),  
+                "fechasol": dictPlacas.get('FECHA'),
+                "salida": dictPlacas.get('SALIDA'),  
+                "puesta": dictPlacas.get('PUESTA')    
+            },
+            "mareas": {
+                "fecha": dictPlacas.get('FECHA'),
+                "hora1": dictPlacas.get('HORA1'),
+                "marea1": dictPlacas.get('MAREA1'),
+                "hora2": dictPlacas.get('HORA2'),
+                "marea2": dictPlacas.get('MAREA2'),
+                "hora3": dictPlacas.get('HORA3'),
+                "marea3": dictPlacas.get('MAREA3'),
+                "hora4": dictPlacas.get('HORA4'),
+                "marea4": dictPlacas.get('MAREA4')
+            },
+            "lunas":{
+                "idluna": dictLuna.get('IDLUNA'),
+                "fecha": dictLuna.get('FECHAHORA'),
+                "tipoluna": dictLuna.get('TIPOLUNA'),
+                "salida": dictLuna.get('SALIDA'),
+                "puesta": dictLuna.get('PUESTA'),
+                "tipo": os.path.join(PathEnum.ICONOS,  dictLuna.get('TIPO')).replace("/", "\\"), # Por algún motivo en la db el ícono de la luna se llama TIPO.
+            },
+        }
+        return dictFormato
+
+    def __formatoFecha(self, obj):
+        """
+        Método "privado" que se encarga de serializar los objetos de hora y dia y los numeros decimales para que el json los pueda guardar
+        """
+        match obj:
+            case datetime() | date():
+                return obj.strftime("%d.%m.%Y")
+            case time():
+                return obj.strftime("%H:%M")
+            case Decimal():
+                return float(obj)
+            case _:
+                raise TypeError(f"Tipo {type(obj)} no es serializable")
+
+    def get_Noticias(self):
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida con la base de datos para pedir las noticias RSS.")
+            return
+        
+        self.conn.begin() # Arranca la conxión y crea cursor para managearla
+        cursor: fdb.Cursor = self.conn.cursor()
+
+        query = "select TITULO, DETALLE from NOTICIASDETAIL WHERE (aire = 1) AND  (current_timestamp >= FECHAINICIO ) and (current_timestamp < FECHAfin)"
+        cursor.execute(query)
+        queryRes = cursor.fetchall() # Ejecuta query
+
+        if queryRes is None:
+            print("[INFO]: No se encontraron noticias para actualizar, 'SELECT * FROM NOTICIASDETAIL' devolvió None")
+            return
+        
+        noticias_texto = []
+        for fila in queryRes:
+                titulo, copete = fila
+                texto_noticia = f"{titulo}: {copete} /// "
+                noticias_texto.append(texto_noticia)
+
+        random.shuffle(noticias_texto) # Orden aleatorio de noticias cada vez que se actualizan.     
+
+        cursor.close()
+        self.conn.commit()
+
+        # Retornamos el diccionario que irá al JSON
+        return [{"mensaje": "".join(noticias_texto)}]
+
+    def get_Camaras(self):
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida con la base de datos para pedir las cámaras.")
+            return None
+        
+        self.conn.begin()
+        cursor: fdb.Cursor = self.conn.cursor() # Arranca la conxión y crea cursor para managearla
+
+        query = """
+            SELECT * FROM CAMARAS
+            WHERE (ACTIVO = 1)
+            AND (
+                (HORA_DESDE = '00:00' AND HORA_HASTA = '00:00') OR
+                (HORA_DESDE < CAST(? AS TIME) AND HORA_HASTA > CAST(? AS TIME))
+            )
+            ORDER BY ORDEN ASC
+        """
+        # Ojo con esta query porque creo que devuelve mal, una camara viene a través de las 00:00 se rompe la condición booleana
+        horaAct = datetime.now().time()
+        cursor.execute(query,(horaAct, horaAct))
+        queryRes = cursor.fetchone()
+
+    
+        # Creamos la lista de objetos Camara usando desempaquetado de tupla
+        lista_camaras = [Camara(*fila) for fila in queryRes]
+        
+        cursor.close()
+        print(lista_camaras)
+        return lista_camaras
+
+        
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
-    DB = Database(path = pathDB)
-    filas = DB.getBloque_num("12.02.2026",1)
-    for cont in filas:
-        print("FECHA: " + cont.fecha)
-        print("HORA " + str(cont.hora))
-        print("NOMBRE: " + cont.nombre)
-        print("PATH: " + cont.path)
-        print("\n")
+    DB = Database()
+    DB.get_Camaras()
