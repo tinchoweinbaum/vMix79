@@ -3,24 +3,25 @@ Archivo principal del proyecto, se encarga de organizar la transmisión y de man
 Usa las clases de Database y vMixApiWrapper (TCP) para hacer esto.
 Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
 """
-from utilities import Contenido # Clase que representa los Contenidos de la programación.
+from utilities import Contenido, Camara # Clase que representa los Contenidos de la programación.
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix.
 from database import Database # Clase wrapper de la Database.
-import time
 from enum import IntEnum, Enum
 from datetime import datetime, time as dt, timedelta
 from typing import List
 from pathlib import Path
 import pause
 import random
+import time
 
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático. Agregar botón de "Actualizar placas".
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
-# TO DO: Cámaras.
+# TO DO: Implementación e iteración del bloque de cámaras, si no encuentra el bloque, o la lista es None, que defaultee a una.
 # TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo. El arranque anda como el orto.
-# TO DO: Pasar a usar ID's de inputs en vez de números. Hacer esto antes de las placas.
+# TO DO: Pasar a usar ID's de inputs en vez de números. Hacer esto antes de las cámaras.
 # TO DO: Cambio de logos de clima en las placas que tienen foto.
 # TO DO: Bloque default si no hay playlist.
+# TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -86,6 +87,9 @@ class Scheduler:
         self.finTemaAct = None
 
         self.camaraLive = False
+        self.indexBloqueCam = 0
+        self.horaProxCam = None
+        self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
 
         self.running = False
 
@@ -119,6 +123,7 @@ class Scheduler:
 
         self.actualizaPlacas()
         self.actualizaNoticias()
+        self.actualizaCamaras()
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
@@ -141,13 +146,17 @@ class Scheduler:
         """
 
         if self.indexBloque >= len(self.bloqueAire):
-            self._swapBloque()
+            self._swapBloque() # Ojo, loop infinito si el bloque no existe.
             return
         
         contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
-        horaAct = datetime.now().time()
+        horaAct = datetime.now()
 
-        if horaAct >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
+        if self.camaraLive: # Si hay cámara al aire y corresponde cambiar de cámara.
+            if horaAct >= self.horaProxCam:
+                self.proximaCamara()
+
+        if horaAct.time() >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
             self.indexBloque += 1
             self._goLive(contAct)
             
@@ -399,7 +408,7 @@ class Scheduler:
                 self._goLiveVideo(musica = musicaBool, noticias = placaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
-                self.vMix.cutDirect_number(1) # PLACEHOLDER
+                self._goLiveCamara()
             case TipoContenido.PLACA:
                 self._goLivePlaca(contAct)
             case TipoContenido.MUSICA:
@@ -545,6 +554,30 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
+    def _goLiveCamara(self):
+        self.camaraLive = True
+
+        if not self.bloqueCamaras:
+            print("[ERROR]: No se encontró un bloque de cámaras válido, se va a emitir la cámara default.") # Dar la opción de cambiar cámara default en la ui del navegador
+            return
+        
+        horaAct = datetime.now()
+        self.indexBloqueCam = 0
+        self.horaProxCam = horaAct + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Inicializo parámetros de las cámaras.
+
+    def proximaCamara(self):
+        vMix = self.vMix
+
+        self.indexBloqueCam += 1
+        if self.indexBloqueCam >= len(self.bloqueCamaras): # Aumento index de camaras y si me paso loopeo.
+            self.indexBloqueCam = 0
+        
+        # *cambio de input al aire para que salga la camara nueva por vMix*
+
+        horaAct = datetime.now()
+        self.horaProxCam = horaAct + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Calculo el momento de cambiar a la próxima cámara.
+        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam]} al aire, próxima cámara a las {self.horaProxCam}")
+
     def actualizaPlacas(self):
         try:
             database = self.database
@@ -573,6 +606,16 @@ class Scheduler:
 
         except Exception as e:
             print(f"[ERROR]: Error al actualizar las noticias: {e}")
+
+    def actualizaCamaras(self):
+        # Llamar a database.getCamaras() y ver como hago para usar ese bloque
+        DB = self.database
+
+        bloqueCamNew = DB.get_Camaras()
+        if bloqueCamNew:
+            self.bloqueCamaras = bloqueCamNew
+        # Si es Null NO asigno, me quedo con el anterior.
+        # Ya está contemplado el caso de que no exista el bloque en la función de la db.
 
     def __clearAll(self):
         vMix = self.vMix

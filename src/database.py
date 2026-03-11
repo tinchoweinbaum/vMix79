@@ -362,9 +362,6 @@ class Database:
                 controla_sol
             )
             listaCamaras.append(nueva_camara)
-
-        for camara in listaCamaras:
-            print(camara.nombre)
         return listaCamaras
 
 
