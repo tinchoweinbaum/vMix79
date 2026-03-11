@@ -334,13 +334,39 @@ class Database:
         cursor.execute(query,(horaAct, horaAct))
         queryRes = cursor.fetchone()
 
+        if not queryRes:
+            print("[ERROR]: No se pudo obtener el playlist de cámaras, o este no existe.")
+            return None
     
-        # Creamos la lista de objetos Camara usando desempaquetado de tupla
-        lista_camaras = [Camara(*fila) for fila in queryRes]
-        
-        cursor.close()
-        print(lista_camaras)
-        return lista_camaras
+        listaCamaras = []
+        for fila in queryRes:
+            # Unpacking de la tupla fila
+            id_camara, nombre, desc, es_default, dir_conexion, tiempo, orden, activo, escalar, mensaje, dir_verificada, hora_desde, hora_hasta, user, clave, controla_sol = fila   
+            # Llamado al constructor con todas las variables en orden
+            nueva_camara = Camara(
+                id_camara, 
+                nombre, 
+                desc, 
+                es_default, 
+                dir_conexion, 
+                tiempo, 
+                orden, 
+                activo, 
+                escalar, 
+                mensaje, 
+                dir_verificada, 
+                hora_desde, 
+                hora_hasta, 
+                user, 
+                clave, 
+                controla_sol
+            )
+            listaCamaras.append(nueva_camara)
+
+        print(listaCamaras)
+        return listaCamaras
+
+
 
         
 if __name__ == "__main__":
