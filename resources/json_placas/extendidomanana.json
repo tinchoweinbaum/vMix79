@@ -1,11 +1,11 @@
 [
     {
-        "dia": "Martes",
-        "min": "11º",
-        "max": "19º",
-        "desc_min": "Parcialmente nublado. Vientos leves del sudoeste.",
-        "desc_max": "Parcialmente nublado. Vientos leves a moderados del                  sector sur.",
-        "logo_min": "4.png",
-        "logo_max": "parcmnub.png"
+        "dia": "Jueves",
+        "min": "16º",
+        "max": "24º",
+        "desc_min": "Algo nublado. Vientos leves del sector norte, rotando al noreste.",
+        "desc_max": "Algo nublado. Vientos leves a moderados del noreste",
+        "logo_min": "C:\\Canal79\\Iconos\\Clima\\nubdismin.png",
+        "logo_max": "C:\\Canal79\\Iconos\\Clima\\nubdismin.png"
     }
 ]

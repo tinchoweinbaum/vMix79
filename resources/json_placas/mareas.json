@@ -1,13 +1,13 @@
 [
     {
-        "fecha": null,
-        "hora1": null,
-        "marea1": null,
-        "hora2": null,
-        "marea2": null,
-        "hora3": null,
-        "marea3": null,
-        "hora4": null,
-        "marea4": null
+        "fecha": "11.03.2026",
+        "hora1": "00:29",
+        "marea1": 1.38,
+        "hora2": "07:31",
+        "marea2": 0.58,
+        "hora3": "13:48",
+        "marea3": 1.08,
+        "hora4": "19:15",
+        "marea4": 0.73
     }
 ]
