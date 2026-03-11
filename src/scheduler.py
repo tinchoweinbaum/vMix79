@@ -564,6 +564,8 @@ class Scheduler:
         horaAct = datetime.now()
         self.indexBloqueCam = 0
         self.horaProxCam = horaAct + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Inicializo parámetros de las cámaras.
+        # *mando al aire la 1ra camara*
+        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam]} al aire, próxima cámara a las {self.horaProxCam}")
 
     def proximaCamara(self):
         vMix = self.vMix
