@@ -403,8 +403,11 @@ class Scheduler:
                 musicaBool = contAct.nombre in ["mapas", "MAPAS"]
                 placaBool = contAct.nombre in ["mapas", "MAPAS"]
                 horaAct = datetime.now().time()
-                if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza el json de las placas
+                if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza cámaras noticias y placas.
                     self.actualizaPlacas()
+                    self.actualizaCamaras()
+                    self.actualizaNoticias()
+                    
                 self._goLiveVideo(musica = musicaBool, noticias = placaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
