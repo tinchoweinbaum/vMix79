@@ -332,7 +332,7 @@ class Database:
         # Ojo con esta query porque creo que devuelve mal, una camara viene a través de las 00:00 se rompe la condición booleana
         horaAct = datetime.now().time()
         cursor.execute(query,(horaAct, horaAct))
-        queryRes = cursor.fetchone()
+        queryRes = cursor.fetchall()
 
         if not queryRes:
             print("[ERROR]: No se pudo obtener el playlist de cámaras, o este no existe.")
