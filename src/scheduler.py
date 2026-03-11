@@ -578,7 +578,7 @@ class Scheduler:
 
         horaAct = datetime.now()
         self.horaProxCam = horaAct + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Calculo el momento de cambiar a la próxima cámara.
-        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam]} al aire, próxima cámara a las {self.horaProxCam}")
+        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam].nombre} al aire, próxima cámara a las {self.horaProxCam}")
 
     def actualizaPlacas(self):
         try:
