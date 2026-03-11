@@ -363,7 +363,8 @@ class Database:
             )
             listaCamaras.append(nueva_camara)
 
-        print(listaCamaras)
+        for camara in listaCamaras:
+            print(camara.nombre)
         return listaCamaras
 
 
