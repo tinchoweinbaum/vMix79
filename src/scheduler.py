@@ -88,7 +88,7 @@ class Scheduler:
 
         self.camaraLive = False
         self.indexBloqueCam = 0
-        self.horaProxCam = None
+        self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
 
         self.running = False
@@ -143,6 +143,9 @@ class Scheduler:
         """
         _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
         si hay que hacerlo.
+        
+        La hora del contenido se compara con datetime.now().time()
+        La hora de las cámaras se compara con datetime.now()
         """
 
         if self.indexBloque >= len(self.bloqueAire):
