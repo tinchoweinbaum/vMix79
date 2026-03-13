@@ -271,7 +271,8 @@ class VmixApi:
             
         if extraParams:
             for k, v in extraParams.items():
-                params_list.append(f"{k}={v}")
+                val = v.value if hasattr(v, 'value') else v # Si v es parte de un enum, extrae el valor.
+                params_list.append(f"{k}={val}")
         
         # Concateno parámetros con & para TCP, espacios no.
         if params_list:
