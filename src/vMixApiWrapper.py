@@ -169,7 +169,7 @@ class VmixApi:
 
         input = self.inputs.get(inputKey) #Checkea que exista el input
         if not input:
-            print(f"No existe el input {inputKey}")
+            print(f"No existe el input con id{inputKey}")
             return
         
         inputNum = input["number"]

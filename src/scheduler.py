@@ -106,7 +106,7 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
-        self.vMix.cutDirect_number(IdInputs.CAMARA_ACT) # Arranca con la cámara.
+        self.vMix.cutDirect_key(IdInputs.CAMARA_ACT) # Arranca con la cámara.
         self.camaraLive = True
 
         self.__clearAll()
@@ -421,7 +421,7 @@ class Scheduler:
                 self._goLiveMusica()
             case TipoContenido.IMAGENCAM:
                 self.camaraLive = True
-                self.vMix.cutDirect_number(1) # PLACEHOLDER TAMBIEN
+                self.vMix.cutDirect_key(IdInputs.CAMARA_ACT) # PLACEHOLDER TAMBIEN
             case TipoContenido.FOTOBMP:
                 blipBool = contAct.nombre in ["79 partidas","79 Partidas"]
                 self._goLiveMicro(blip = blipBool)
