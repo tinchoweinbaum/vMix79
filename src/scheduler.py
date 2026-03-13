@@ -23,8 +23,8 @@ import time
 # TO DO: Bloque default si no hay playlist.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
 # TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
+# TO DO: archivo constants.py para todas las definiciones de mrd que tengo en este archivo enorme.
 
-from enum import Enum
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -549,6 +549,19 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
+    def _swapCamLive(self, camAct):
+        """Método interno para ejecutar el cambio físico en vMix."""
+        idCam = Camara._getCam_Id(camAct.id_camara)
+        nombreCam = Camara._getCam_Nombre(camAct.id_camara)
+
+        if idCam:
+            self.vMix.setOutput_number(idCam)
+            # Actualizamos el tiempo de la próxima
+            self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo)
+            print(f"[INFO]: {nombreCam} al aire, próxima cámara a las {self.horaProxCam.strftime('%H:%M:%S')}")
+        else:
+            print(f"[ERROR]: No se encontró el ID para {camAct.nombre} en el diccionario.")
+
     def _goLiveCamara(self):
         self.camaraLive = True
 
@@ -556,25 +569,20 @@ class Scheduler:
             print("[ERROR]: No se encontró un bloque de cámaras válido, se va a emitir la cámara default.") # Dar la opción de cambiar cámara default en la ui del navegador
             return
         
-        horaAct = datetime.now()
         self.indexBloqueCam = 0
-        self.horaProxCam = horaAct + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Inicializo parámetros de las cámaras.
-        # *mando al aire la 1ra camara*
-        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam].nombre} al aire, próxima cámara a las {self.horaProxCam}")
+        camAct = self.bloqueCamaras[self.indexBloqueCam]
+
+        self._swapCamLive(camAct)
 
     def proximaCamara(self):
-        vMix = self.vMix
 
         self.indexBloqueCam += 1
         if self.indexBloqueCam >= len(self.bloqueCamaras): # Aumento index de camaras y si me paso loopeo.
             self.indexBloqueCam = 0
         
-        # *cambio de input al aire para que salga la camara nueva por vMix*
-
-        horaAct = datetime.now()
-        self.horaProxCam = horaAct + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Calculo el momento de cambiar a la próxima cámara.
-        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam].nombre} al aire, próxima cámara a las {self.horaProxCam}")
-
+        camAct = self.bloqueCamaras[self.indexBloqueCam]
+        self._swapCamLive(camAct)
+        
     def actualizaPlacas(self):
         try:
             database = self.database
