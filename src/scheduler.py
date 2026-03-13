@@ -35,6 +35,7 @@ class TipoContenido(IntEnum):
     FOTOBMP = 6
 
 class IdInputs(str, Enum):
+    CAMARA_ACT = "35657cca-991d-49e3-b9a9-3ccf3b400b6b"
     MUSICA_A = "be7d700b-c30d-4a88-b4ad-9122dea69540"
     VIDEO_A = "ad2fc430-395b-4dc0-88c4-1b94ffa45aff"
     MICRO_A = "8495af6e-545f-49de-9501-77dd9c84fcd0"
