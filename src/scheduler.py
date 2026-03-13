@@ -87,7 +87,6 @@ class Scheduler:
 
         self.musicaAct = None
         self.musicaProx = None
-        self.finTemaAct = None
 
         self.camaraLive = False
         self.indexBloqueCam = 0
@@ -335,8 +334,6 @@ class Scheduler:
             vMix.listClear(self.musicaProx)
         self.musicaProx = None
 
-        self.finTemaAct = None
-
     def _cargaProx(self):
         """
         Recorre el bloque actual al aire para precargar en los inputs correspondientes.
@@ -451,17 +448,6 @@ class Scheduler:
 
         self.musicaAct = self.musicaProx
         self.musicaProx = None
-
-        # musicaAct es != None SIEMPRE en este fragmento de codigo
-        duracionTemaAct = vMix.getLength(self.musicaAct) # Devuelve milisegundos
-        print(f"El tema actual dura {duracionTemaAct}ms\n")
-        if duracionTemaAct > 0:
-            ahora = datetime.now()
-            self.finTemaAct = ahora + timedelta(milliseconds=duracionTemaAct)
-            print(f"[INFO]: Tema nuevo al aire. Terminará a las: {self.finTemaAct.time()}\n")
-        else:
-            self.finTemaAct = None
-            print("[ERROR]: No se pudo obtener la duración del tema.\n")
 
 
     def _goLiveVideo(self, musica = False, noticias = False):
@@ -625,6 +611,7 @@ class Scheduler:
         bloqueCamNew = DB.get_Camaras()
         if bloqueCamNew:
             self.bloqueCamaras = bloqueCamNew
+            print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.")
         # Si es Null NO asigno, me quedo con el anterior.
         # Ya está contemplado el caso de que no exista el bloque en la función de la db.
 
