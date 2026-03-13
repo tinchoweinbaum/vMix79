@@ -466,6 +466,35 @@ class VmixApi:
 
         print("================================\n")
 
+    def debug_inputs(self):
+        """
+        Printea una tabla con Nombre, Número y GUID de todos los inputs
+        detectados en el preset actual a través de la conexión TCP.
+        """
+        # Usamos el lock para evitar que el listener modifique el dict mientras leemos
+        with self._lock:
+            if not self.inputs:
+                print("\n[DEBUG]: No hay inputs cargados o aún no se recibió el XML de vMix.")
+                return
+
+            print(f"\n{'#'*90}")
+            print(f"{'NOMBRE DEL INPUT':<40} | {'N°':<3} | {'ID (GUID / KEY)':<40}")
+            print(f"{'-'*90}")
+
+            # Ordenamos por número de input para que sea más fácil de leer
+            inputs_ordenados = sorted(self.inputs.items(), key=lambda x: x[1]['number'])
+
+            for key, data in inputs_ordenados:
+                nombre = data.get('title', 'Sin título')
+                numero = data.get('number', '0')
+                
+                # Truncamos el nombre si es muy largo para no romper la tabla
+                nombre_display = (nombre[:37] + '..') if len(nombre) > 39 else nombre
+                
+                print(f"{nombre_display:<40} | {numero:<3} | {key:<40}")
+            
+            print(f"{'#'*90}\n")
+
 if __name__ == "__main__":
     vMix = VmixApi()
-    vMix.cut()
+    vMix.debug_inputs()

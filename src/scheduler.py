@@ -22,6 +22,9 @@ import time
 # TO DO: Cambio de logos de clima en las placas que tienen foto.
 # TO DO: Bloque default si no hay playlist.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
+# TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
+
+from enum import Enum
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -31,28 +34,27 @@ class TipoContenido(IntEnum):
     IMAGENCAM = 5
     FOTOBMP = 6
 
-class NumsInput(IntEnum):
-    CAMARA_ACT = 1
-    MUSICA_A = 2
-    VIDEO_A = 3
-    MICRO_A = 4
-    MUSICA_B = 5
-    VIDEO_B = 6
-    MICRO_B = 7
-    BLIP = 8
+class IdInputs(str, Enum):
+    MUSICA_A = "be7d700b-c30d-4a88-b4ad-9122dea69540"
+    VIDEO_A = "ad2fc430-395b-4dc0-88c4-1b94ffa45aff"
+    MICRO_A = "8495af6e-545f-49de-9501-77dd9c84fcd0"
+    MUSICA_B = "4f44e11b-c6f2-452e-987f-b4239d42eb05"
+    VIDEO_B = "cbab3333-2c77-438c-a180-2082f7569022"
+    MICRO_B = "734f2c01-fd38-42f4-8d6c-d5ec59cdfeff"
+    BLIP = "c426ef85-0b21-4518-a7cf-19c0aea8277e"
 
-class Placas(IntEnum):
-    ACTUAL_DATOS = 9
-    ACTUAL_DETALLE = 10
-    EXTENDIDO_MANANA = 11
-    EXTENDIDO_TARDE = 12
-    EXTENDIDO_2DIAS = 13
-    SALIDA_SOL = 14
-    FASES_LUNARES = 15
-    MAREAS = 16
-    NOTI_AGUANTE = 17
-    NOTICIAS = 18
-    ACTUAL_DETALLE_CLIMA = 19
+class IdPlacas(str, Enum):
+    ACTUAL_DATOS = "6d6b377a-09bf-4e48-836b-7c147836e20b"
+    ACTUAL_DETALLE = "1f91d1d8-211d-423e-a6c6-05a76029199d"
+    EXTENDIDO_MANANA = "20d3d18d-a21a-4e21-a435-ba168b49114c"
+    EXTENDIDO_TARDE = "46411a9f-c71d-49f4-9922-f3154eff93b2"
+    EXTENDIDO_2DIAS = "2dd4a0dd-870d-4ff9-b9c3-026782feef72"
+    SALIDA_SOL = "7484a5dc-3a50-4dc1-aeee-579358d05c3c"
+    FASES_LUNARES = "2a76b702-0ea7-4422-aa05-b76b0bd937e9"
+    MAREAS = "c5046a1f-243f-4e5a-b09b-fc64d5493566"
+    NOTI_AGUANTE = "97cb7733-6d23-4d89-bb49-07ebccfd11b1"
+    NOTICIAS = "c0ea010a-098d-4ea3-94b4-40246e3eed25"
+    ACTUAL_DETALLE_CLIMA = "6a5dd7d8-6fda-4538-a6bd-b4a5ca451185"
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
@@ -104,12 +106,12 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
-        self.vMix.cutDirect_number(NumsInput.CAMARA_ACT) # Arranca con la cámara.
+        self.vMix.cutDirect_number(IdInputs.CAMARA_ACT) # Arranca con la cámara.
         self.camaraLive = True
 
         self.__clearAll()
 
-        self.vMix.listAddInput(NumsInput.BLIP,blipPath) # Carga BLIP.WAV
+        self.vMix.listAddInput(IdInputs.BLIP,blipPath) # Carga BLIP.WAV
 
         self._buscaBloque() # Asigna valor correcto actual a self.indexBloque
         self._cargaProx() # Precarga los inputs prox para el primer tick
@@ -197,11 +199,11 @@ class Scheduler:
     def _startAudio(self):
         vMix = self.vMix
 
-        vMix.setAudio_on(NumsInput.VIDEO_A)
-        vMix.setAudio_on(NumsInput.VIDEO_B)
+        vMix.setAudio_on(IdInputs.VIDEO_A)
+        vMix.setAudio_on(IdInputs.VIDEO_B)
 
-        vMix.setAudio_on(NumsInput.MUSICA_A)
-        vMix.setAudio_on(NumsInput.MUSICA_B)
+        vMix.setAudio_on(IdInputs.MUSICA_A)
+        vMix.setAudio_on(IdInputs.MUSICA_B)
 
 
         
@@ -232,10 +234,10 @@ class Scheduler:
             print(cont.path)
             return
         
-        if self.videoAct == NumsInput.VIDEO_A: # Si estaba A al aire, B es prox
-            inputLibre = NumsInput.VIDEO_B
+        if self.videoAct == IdInputs.VIDEO_A: # Si estaba A al aire, B es prox
+            inputLibre = IdInputs.VIDEO_B
         else:
-            inputLibre = NumsInput.VIDEO_A # Si estaba B al aire (o ninguno), prox es A
+            inputLibre = IdInputs.VIDEO_A # Si estaba B al aire (o ninguno), prox es A
         
         vMix.listClear(inputLibre)
         vMix.listAddInput(inputLibre, cont.path)
@@ -248,10 +250,10 @@ class Scheduler:
         if self.microProx is not None:
             return
 
-        if self.microAct == NumsInput.MICRO_A:
-            inputLibre = NumsInput.MICRO_B
+        if self.microAct == IdInputs.MICRO_A:
+            inputLibre = IdInputs.MICRO_B
         else:
-            inputLibre = NumsInput.MICRO_A
+            inputLibre = IdInputs.MICRO_A
 
         vMix.listClear(inputLibre)
         vMix.listAddInput(inputLibre, cont.path)
@@ -264,10 +266,10 @@ class Scheduler:
             print("[ERROR]: Error de precarga de musica. (pre)\n")
             return
 
-        if self.musicaAct == NumsInput.MUSICA_A:
-            inputLibre = NumsInput.MUSICA_B
+        if self.musicaAct == IdInputs.MUSICA_A:
+            inputLibre = IdInputs.MUSICA_B
         else:
-            inputLibre = NumsInput.MUSICA_A
+            inputLibre = IdInputs.MUSICA_A
 
         vMix.listClear(inputLibre)
         vMix.listAddInput(inputLibre, path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
@@ -384,8 +386,8 @@ class Scheduler:
     def playBlip(self):
         vMix = self.vMix
 
-        vMix.setAudio_on(NumsInput.BLIP)
-        vMix.playInput_number(NumsInput.BLIP)
+        vMix.setAudio_on(IdInputs.BLIP)
+        vMix.playInput_number(IdInputs.BLIP)
 
     def _goLive(self,contAct, cargaProx = True):
         """
@@ -406,7 +408,7 @@ class Scheduler:
                 musicaBool = contAct.nombre in ["mapas", "MAPAS"]
                 placaBool = contAct.nombre in ["mapas", "MAPAS"]
                 horaAct = datetime.now().time()
-                if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza cámaras noticias y placas.
+                if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza cámaras noticias y IdPlacas.
                     self.actualizaPlacas()
                     self.actualizaCamaras()
                     self.actualizaNoticias()
@@ -502,41 +504,41 @@ class Scheduler:
 
         match contAct.nombre:
             case "Actual Datos":
-                vMix.setOverlay_on(Placas.ACTUAL_DATOS, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(IdPlacas.ACTUAL_DATOS, OverlaySlots.SLOT_PLACA)
 
             case "Actual Detalle":
                 horaAct = datetime.now().time()
                 if horaAct.hour >= 6  and horaAct.hour < 12:
-                    vMix.setOverlay_on(Placas.ACTUAL_DETALLE_CLIMA, OverlaySlots.SLOT_PLACA)
+                    vMix.setOverlay_on(IdPlacas.ACTUAL_DETALLE_CLIMA, OverlaySlots.SLOT_PLACA)
                 else:
-                    vMix.setOverlay_on(Placas.ACTUAL_DETALLE, OverlaySlots.SLOT_PLACA)
+                    vMix.setOverlay_on(IdPlacas.ACTUAL_DETALLE, OverlaySlots.SLOT_PLACA)
 
             case "Extendido Manana":
-                    vMix.setOverlay_on(Placas.EXTENDIDO_MANANA, OverlaySlots.SLOT_PLACA)
+                    vMix.setOverlay_on(IdPlacas.EXTENDIDO_MANANA, OverlaySlots.SLOT_PLACA)
 
             case "Extendido Tarde":
-                vMix.setOverlay_on(Placas.EXTENDIDO_TARDE, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(IdPlacas.EXTENDIDO_TARDE, OverlaySlots.SLOT_PLACA)
 
             case "Extendido 2 Dias":
-                vMix.setOverlay_on(Placas.EXTENDIDO_2DIAS, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(IdPlacas.EXTENDIDO_2DIAS, OverlaySlots.SLOT_PLACA)
 
             case "Salida de Sol":
-                vMix.setOverlay_on(Placas.SALIDA_SOL, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(IdPlacas.SALIDA_SOL, OverlaySlots.SLOT_PLACA)
 
             case "Fases Lunares":
-                vMix.setOverlay_on(Placas.FASES_LUNARES, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(IdPlacas.FASES_LUNARES, OverlaySlots.SLOT_PLACA)
 
             case "Mareas":
-                vMix.setOverlay_on(Placas.MAREAS, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(IdPlacas.MAREAS, OverlaySlots.SLOT_PLACA)
             
             case "Noti Aguante":
-                vMix.setOverlay_on(Placas.NOTI_AGUANTE, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_on(IdPlacas.NOTI_AGUANTE, OverlaySlots.SLOT_PLACA)
             
             case _:
                 print(f"[ERROR]: No se encontró la placa {contAct.nombre}.")
                 return
             
-        vMix.setOverlay_on(Placas.NOTICIAS, OverlaySlots.SLOT_NOTICIAS) # Después de mandar al aire las placas mando al aire las noticias.
+        vMix.setOverlay_on(IdPlacas.NOTICIAS, OverlaySlots.SLOT_NOTICIAS) # Después de mandar al aire las placas mando al aire las noticias.
 
 
     def _goLiveMicro(self, blip = False):
@@ -596,7 +598,7 @@ class Scheduler:
                 database._actualizaJson(datos)
                 print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Placas actualizadas correctamente.")
             else:
-                print("[INFO]: No se encontraron datos para actualizar las placas. Se mantienen los datos anteriores.")
+                print("[INFO]: No se encontraron datos para actualizar las IdPlacas. Se mantienen los datos anteriores.")
                 
         except Exception as e:
             print(f"[ERROR]: Error al actualizar las placas: {e}")
@@ -628,16 +630,16 @@ class Scheduler:
     def __clearAll(self):
         vMix = self.vMix
 
-        vMix.listClear(NumsInput.MICRO_A)
-        vMix.listClear(NumsInput.MICRO_B)
+        vMix.listClear(IdInputs.MICRO_A)
+        vMix.listClear(IdInputs.MICRO_B)
 
-        vMix.listClear(NumsInput.VIDEO_A)
-        vMix.listClear(NumsInput.VIDEO_B)
+        vMix.listClear(IdInputs.VIDEO_A)
+        vMix.listClear(IdInputs.VIDEO_B)
 
-        vMix.listClear(NumsInput.MUSICA_A)
-        vMix.listClear(NumsInput.MUSICA_B)    
+        vMix.listClear(IdInputs.MUSICA_A)
+        vMix.listClear(IdInputs.MUSICA_B)    
 
-        vMix.listClear(NumsInput.BLIP)
+        vMix.listClear(IdInputs.BLIP)
 
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
