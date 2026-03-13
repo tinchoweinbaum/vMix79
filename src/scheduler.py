@@ -151,7 +151,7 @@ class Scheduler:
         """
 
         if self.indexBloque >= len(self.bloqueAire):
-            self._swapBloque() # Ojo, loop infinito si el bloque no existe.
+            self._swapBloque() # Ojo, loop infinito si el bloque no existe. Arreglar con bloque default.
             return
         
         contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
@@ -560,7 +560,7 @@ class Scheduler:
         self.indexBloqueCam = 0
         self.horaProxCam = horaAct + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Inicializo parámetros de las cámaras.
         # *mando al aire la 1ra camara*
-        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam]} al aire, próxima cámara a las {self.horaProxCam}")
+        print(f"[INFO]: {self.bloqueCamaras[self.indexBloqueCam].nombre} al aire, próxima cámara a las {self.horaProxCam}")
 
     def proximaCamara(self):
         vMix = self.vMix
