@@ -3,7 +3,7 @@ Archivo principal del proyecto, se encarga de organizar la transmisión y de man
 Usa las clases de Database y vMixApiWrapper (TCP) para hacer esto.
 Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
 """
-from utilities import Contenido, Camara # Clase que representa los Contenidos de la programación.
+from utilities import Contenido, Camara, Musica # Clase que representa los Contenidos de la programación.
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix.
 from database import Database # Clase wrapper de la Database.
 from enum import IntEnum, Enum
@@ -57,11 +57,6 @@ class IdPlacas(str, Enum):
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
     SLOT_NOTICIAS = 2
-
-class Musica(str, Enum):
-    RUTA = r"C:\SERVERLOC_RES\MusicaAire"
-    DURACION_FADE = 5
-    TEMAS_POR_QUERY = 5
 
 class Bloque(IntEnum):
     DURACION = 5 # Duración en minutos.
@@ -268,12 +263,24 @@ class Scheduler:
     def _precargaMusica(self):
         """
         Esta función accede al bloque de musicas de la clase y carga el primero en MUSICA_A. Solo se la llama 1 vez por bloque si es que este es un reporte local.
-        Asume que el bloque de música ya está cargado.
+        Asume que el bloque de música ya está cargado en self.bloqueMusica.
         """
         vMix = self.vMix
 
         if not self.bloqueMusicas:
-            print("[ERROR]: ")
+            print("[ERROR]: No se pudo cargar el bloque de músicas.")
+            return
+        
+        if self.musicaAct == IdInputs.MUSICA_A:
+            inputLibre = IdInputs.MUSICA_B
+        else:
+            inputLibre = IdInputs.MUSICA_A
+
+        self.indexBloqueMusica = 0
+        musicaAct: Musica = self.bloqueMusicas[self.indexBloqueMusica]
+        vMix.listAddInput(inputLibre, musicaAct.path)
+
+        self.musicaProx = inputLibre
 
 
     def _swapBloque(self):
@@ -352,6 +359,7 @@ class Scheduler:
 
                 case TipoContenido.MUSICA:
                     self._precargaMusica()
+                    buscando_musica = False
                 
                 case TipoContenido.CAMARA:
                     continue
