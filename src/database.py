@@ -372,26 +372,30 @@ class Database:
         self.conn.begin()
         cursor: fdb.Cursor = self.conn.cursor() # Arranca la conxión y crea cursor para managearla
 
-        # Esta query mira cuantos elementos hay en la tabla y pide desde un punto menor a eso, si pide desde
-        query = f"""
-            SELECT * FROM (
-                SELECT FIRST {Musica.temasPorReporte} * FROM PLAYLISTMUSICADETAIL 
-                WHERE ORDEN >= ? 
-                ORDER BY ORDEN ASC
-            )
-            UNION ALL
-            SELECT * FROM (
-                SELECT FIRST {Musica.temasPorReporte} * FROM PLAYLISTMUSICADETAIL 
-                WHERE ORDEN < ? 
-                ORDER BY ORDEN ASC
-            )
-            ROWS {Musica.temasPorReporte}
-            """
         
+        query = "SELECT FIRST 1 ORDEN FROM PLAYLISTMUSICADETAIL ORDER BY RANDOM()" # Pido un número al azar dentro de la tabla.
         cursor.execute(query)
-        queryres = cursor.fetchall()
+        res = cursor.fetchone()
 
-        print(queryres)
+        if not res:
+            return []
+        entry = res[0] # Guardo el entry random de la tabla
+
+        query = f"SELECT FIRST {Musica.temasPorReporte} * FROM PLAYLISTMUSICADETAIL WHERE ORDEN >= ? ORDER BY ORDEN ASC"
+        cursor.execute(query,(entry,))
+        bloqueMusica = cursor.fetchall()
+
+        if len(bloqueMusica < Musica.temasPorReporte): # Si agarré desde el final de la tabla y no llegué a completar los 5, pido desde atrás del entry
+            restoTemas = Musica.temasPorReporte - len(bloqueMusica)
+            query = f"SELECT FIRST {restoTemas} * FROM PLAYLISTMUSICADETAIL WHERE ORDEN < ? ORDER BY ORDEN DESC"
+            cursor.execute(query, (entry,))
+            bloqueMusicaResto = cursor.fetchall()
+
+            bloqueMusicaResto.reverse() # Invierto para que la lista final de temas respete el orden de la tabla de musicas
+            bloqueMusica = bloqueMusicaResto + bloqueMusica
+
+
+        print(bloqueMusica)
 
         
 if __name__ == "__main__":
