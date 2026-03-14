@@ -84,3 +84,12 @@ class Camara:
     def _getCam_Nombre(cls,camNum):
         res = cls.dicc.get(camNum)
         return res[1] if res else "Cámara desconocida."
+    
+    class Musica():
+        def __init__(self, id_playlist_detail, orden, path, nombre, fecha_ins):
+            self.id_playlist_detail = id_playlist_detail
+            self.orden = orden
+            self.path = path
+            self.nombre = nombre
+            self.fecha_ins = fecha_ins # tipo DATE de firebird
+            self.temasPorReporte = 5

@@ -61,6 +61,7 @@ class OverlaySlots(IntEnum):
 class Musica(str, Enum):
     RUTA = r"C:\SERVERLOC_RES\MusicaAire"
     DURACION_FADE = 5
+    TEMAS_POR_QUERY = 5
 
 class Bloque(IntEnum):
     DURACION = 5 # Duración en minutos.
@@ -89,6 +90,8 @@ class Scheduler:
         self.indexBloqueCam = 0
         self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
+
+        self.bloqueMusicas 
 
         self.running = False
 
@@ -120,7 +123,7 @@ class Scheduler:
 
         self._startAudio()
 
-        self.vMix.setOutput_number(Camara._getCam_Id(4)) # Defaultea a Costa Galana
+        self.vMix.setOutput_number(Camara._getCam_Id(4)) # Defaultea a Costa Galana antes de mandar cualquier cosa al aire, por si esta cosa no existe.
 
         self.actualizaPlacas()
         self.actualizaNoticias()
@@ -260,6 +263,11 @@ class Scheduler:
         self.microProx = inputLibre
 
     def _precargaMusica(self,path):
+        """
+        Así como está ahora esta función lo único que hace es cambiar los inputs de vMix. Solo operativo digamos.
+        La idea sería que esta función reciba una lista de músicas (o use un atributo de la clase tipo bloqueMusica) y lo cargue? o lo mande al aire 1x1? no se
+        capaz q no tengo ni que usar esta func.
+        """
         vMix = self.vMix
         if self.musicaProx is not None:
             print("[ERROR]: Error de precarga de musica. (pre)\n")
@@ -365,13 +373,9 @@ class Scheduler:
                         buscando_micro = False
 
                 case TipoContenido.MUSICA:
+                    # Rehacer con playlist de música.
                     if buscando_musica:
-                        musicaPath = self.__randomMusica()
-                        if musicaPath is not None:
-                            self._precargaMusica(musicaPath) # _precargaMusica a diferencia de las otras funciones espera un path, no un cont
-                            buscando_musica = False
-                        else:
-                            print("No se pudo elegir una musica aleatoria.\n")
+                        self.database.get_musica()
                 
                 case TipoContenido.CAMARA:
                     pass

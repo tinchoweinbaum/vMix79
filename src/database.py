@@ -8,7 +8,7 @@ import json
 import os
 import random
 from pathlib import Path
-from utilities import Contenido, Camara
+from utilities import Contenido, Camara, Musica
 from pathlib import Path
 from datetime import date, datetime, time
 from dotenv import load_dotenv
@@ -364,10 +364,41 @@ class Database:
             listaCamaras.append(nueva_camara)
         return listaCamaras
 
+    def get_Musicas(self):
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida a la base de datos para pedir las músicas.")
+            return None
+        
+        self.conn.begin()
+        cursor: fdb.Cursor = self.conn.cursor() # Arranca la conxión y crea cursor para managearla
 
+        # Esta query mira cuantos elementos hay en la tabla y pide desde un punto menor a eso, si pide desde
+        query = """
+            WITH PuntoPartida AS (
+                SELECT ORDEN FROM PLAYLISTMUSICADETAIL 
+                ORDER BY RANDOM() 
+                LIMIT 1
+            )
+            SELECT * FROM (
+                (SELECT * FROM PLAYLISTMUSICADETAIL 
+                WHERE ORDEN >= (SELECT ORDEN FROM PuntoPartida) 
+                ORDER BY ORDEN ASC LIMIT CAST(? AS INTEGER))
+                
+                UNION ALL
+                
+                (SELECT * FROM PLAYLISTMUSICADETAIL 
+                WHERE ORDEN < (SELECT ORDEN FROM PuntoPartida) 
+                ORDER BY ORDEN ASC LIMIT CAST(? AS INTEGER))
+            )
+            LIMIT CAST(? AS INTEGER);
+                """
+        cursor.execute(query, (Musica.temasPorReporte, Musica.temasPorReporte, Musica.temasPorReporte))
+        queryres = cursor.fetchall()
+
+        print(queryres)
 
         
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database()
-    DB.get_Camaras()
+    DB.get_Musicas()
