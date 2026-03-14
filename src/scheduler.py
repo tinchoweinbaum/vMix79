@@ -18,11 +18,10 @@ import time
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
 # TO DO: Implementación e iteración del bloque de cámaras, si no encuentra el bloque, o la lista es None, que defaultee a una.
 # TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo. El arranque anda como el orto.
-# TO DO: Cambio de logos de clima en las placas que tienen foto.
 # TO DO: Bloque default si no hay playlist.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
 # TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
-
+# TO DO: Música
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -120,6 +119,8 @@ class Scheduler:
             return
 
         self._startAudio()
+
+        self.vMix.setOutput_number(Camara._getCam_Id(4)) # Defaultea a Costa Galana
 
         self.actualizaPlacas()
         self.actualizaNoticias()

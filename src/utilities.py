@@ -3,7 +3,8 @@ Este archivo va a tener las clases/modulos útiles para cualquier otra parte del
 
 la clase Contenido representa una fila del excel (un contenido multimedia cualquiera)
 
-la clasa Camara contiene las filas de la tabla CAMARAS de la db
+la clasa Camara contiene las filas de la tabla CAMARAS de la db, y también un diccionario que guarda la relacion idCam <-> id del input en vMix
+junto con un par de métodos necesarios para mandar al aire las camaras
 """
 
 from datetime import date, time
