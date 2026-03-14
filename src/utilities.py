@@ -93,3 +93,4 @@ class Musica():
         self.nombre = nombre
         self.fecha_ins = fecha_ins # tipo DATE de firebird
         self.temasPorReporte = 5
+        

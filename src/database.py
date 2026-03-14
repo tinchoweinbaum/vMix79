@@ -374,24 +374,25 @@ class Database:
 
         # Esta query mira cuantos elementos hay en la tabla y pide desde un punto menor a eso, si pide desde
         query = """
-            WITH PuntoPartida AS (
-                SELECT ORDEN FROM PLAYLISTMUSICADETAIL 
-                ORDER BY RANDOM() 
-                LIMIT 1
-            )
-            SELECT * FROM (
-                (SELECT * FROM PLAYLISTMUSICADETAIL 
-                WHERE ORDEN >= (SELECT ORDEN FROM PuntoPartida) 
-                ORDER BY ORDEN ASC LIMIT CAST(? AS INTEGER))
-                
-                UNION ALL
-                
-                (SELECT * FROM PLAYLISTMUSICADETAIL 
-                WHERE ORDEN < (SELECT ORDEN FROM PuntoPartida) 
-                ORDER BY ORDEN ASC LIMIT CAST(? AS INTEGER))
-            )
-            LIMIT CAST(? AS INTEGER);
-                """
+                WITH PuntoPartida AS (
+                    SELECT ORDEN FROM PLAYLISTMUSICADETAIL 
+                    ORDER BY RANDOM() 
+                    LIMIT 1
+                )
+                SELECT * FROM (
+                    (SELECT * FROM PLAYLISTMUSICADETAIL 
+                    WHERE ORDEN >= (SELECT ORDEN FROM PuntoPartida) 
+                    ORDER BY ORDEN ASC LIMIT CAST(? AS INTEGER))
+                    
+                    UNION ALL
+                    
+                    (SELECT * FROM PLAYLISTMUSICADETAIL 
+                    WHERE ORDEN < (SELECT ORDEN FROM PuntoPartida) 
+                    ORDER BY ORDEN ASC LIMIT CAST(? AS INTEGER))
+                ) AS m
+                LIMIT CAST(? AS INTEGER)
+            """
+        
         cursor.execute(query, (Musica.temasPorReporte, Musica.temasPorReporte, Musica.temasPorReporte))
         queryres = cursor.fetchall()
 
@@ -402,4 +403,3 @@ if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database()
     DB.get_Musicas()
-    
