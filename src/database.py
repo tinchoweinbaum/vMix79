@@ -373,30 +373,22 @@ class Database:
         cursor: fdb.Cursor = self.conn.cursor() # Arranca la conxión y crea cursor para managearla
 
         # Esta query mira cuantos elementos hay en la tabla y pide desde un punto menor a eso, si pide desde
-        query = """
-            WITH PuntoPartida AS (
-                SELECT ORDEN FROM PLAYLISTMUSICADETAIL 
-                ORDER BY RANDOM()
-                ROWS 1
-            )
+        query = f"""
             SELECT * FROM (
-                SELECT * FROM (
-                    SELECT * FROM PLAYLISTMUSICADETAIL 
-                    WHERE ORDEN >= (SELECT ORDEN FROM PuntoPartida) 
-                    ORDER BY ORDEN ASC
-                ) ROWS CAST(? AS INTEGER)
-                
-                UNION ALL
-                
-                SELECT * FROM (
-                    SELECT * FROM PLAYLISTMUSICADETAIL 
-                    WHERE ORDEN < (SELECT ORDEN FROM PuntoPartida) 
-                    ORDER BY ORDEN ASC
-                ) ROWS CAST(? AS INTEGER)
-            ) ROWS CAST(? AS INTEGER)
-        """
+                SELECT FIRST {Musica.temasPorReporte} * FROM PLAYLISTMUSICADETAIL 
+                WHERE ORDEN >= ? 
+                ORDER BY ORDEN ASC
+            )
+            UNION ALL
+            SELECT * FROM (
+                SELECT FIRST {Musica.temasPorReporte} * FROM PLAYLISTMUSICADETAIL 
+                WHERE ORDEN < ? 
+                ORDER BY ORDEN ASC
+            )
+            ROWS {Musica.temasPorReporte}
+            """
         
-        cursor.execute(query, (Musica.temasPorReporte, Musica.temasPorReporte, Musica.temasPorReporte))
+        cursor.execute(query)
         queryres = cursor.fetchall()
 
         print(queryres)
