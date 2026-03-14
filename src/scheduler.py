@@ -115,8 +115,9 @@ class Scheduler:
 
         self.vMix.listAddInput(IdInputs.BLIP,blipPath) # Carga BLIP.WAV
 
-        self._buscaBloque() # Asigna valor correcto actual a self.indexBloque
-        self._cargaProx() # Precarga los inputs prox para el primer tick
+        self._buscaBloque() # Asigna valor correcto actual a self.indexBloque.
+        self.getMusica() # Pido el bloque de música para no acceder a None.
+        self._cargaProx() # Precarga los inputs prox para el primer tick.
 
         if not self.bloqueAire:
             print("Bloque de arranque vacío.\n")
@@ -128,7 +129,6 @@ class Scheduler:
         self.actualizaPlacas()
         self.actualizaNoticias()
         self.actualizaCamaras()
-        self.getMusica()
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
@@ -163,7 +163,7 @@ class Scheduler:
         if self.camaraLive and horaAct >= self.horaProxCam: # Si hay cámara al aire y corresponde cambiar de cámara.
                 self.proximaCamara()
 
-        if horaAct >= self.finTemaAct:
+        if self.finTemaAct is not None and horaAct >= self.finTemaAct:
             self._swapMusica()
 
         if horaAct.time() >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
@@ -267,24 +267,14 @@ class Scheduler:
 
     def _precargaMusica(self):
         """
-        Esta función accede al bloque de musicas de la clase y carga el primero en MUSICA_A o MUSICA_B según corresponda.
+        Esta función accede al bloque de musicas de la clase y carga el primero en MUSICA_A. Solo se la llama 1 vez por bloque si es que este es un reporte local.
+        Asume que el bloque de música ya está cargado.
         """
         vMix = self.vMix
-        if self.musicaProx is not None:
-            print("[ERROR]: Error de precarga de musica. (pre)\n")
-            return
 
-        if self.musicaAct == IdInputs.MUSICA_A:
-            inputLibre = IdInputs.MUSICA_B
-        else:
-            inputLibre = IdInputs.MUSICA_A
+        if not self.bloqueMusicas:
+            print("[ERROR]: ")
 
-        musicaAct = self.bloqueMusicas[self.indexBloqueMusica]
-
-        vMix.listClear(inputLibre)
-        vMix.listAddInput(inputLibre, musicaAct.path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
-
-        self.musicaProx = inputLibre # Invierto act/prox
 
     def _swapBloque(self):
         if not self.bloqueProx:
@@ -361,10 +351,7 @@ class Scheduler:
                         buscando_micro = False
 
                 case TipoContenido.MUSICA:
-                    # Rehacer con playlist de música.
-                    if buscando_musica:
-                        self.getMusica()
-                        self._precargaMusica()
+                    self._precargaMusica()
                 
                 case TipoContenido.CAMARA:
                     continue
@@ -379,7 +366,7 @@ class Scheduler:
         vMix.setAudio_on(IdInputs.BLIP)
         vMix.playInput_number(IdInputs.BLIP)
 
-    def _goLive(self,contAct, cargaProx = True):
+    def _goLive(self,contAct: Contenido, cargaProx = True):
         """
         Este método tiene la lógica para mandar el tipo de contenido que corresponda al aire.
         Tiene un parámetro que funciona como flag para determinar si hay que precargar el proximo contenido o no. Se usa nada más en el primer llamado del arranque.
@@ -398,10 +385,11 @@ class Scheduler:
                 musicaBool = contAct.nombre in ["mapas", "MAPAS"]
                 placaBool = contAct.nombre in ["mapas", "MAPAS"]
                 horaAct = datetime.now().time()
-                if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza cámaras noticias y IdPlacas.
+                if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza cámaras, noticias, placas y pide 5 temas al azar.
                     self.actualizaPlacas()
                     self.actualizaCamaras()
                     self.actualizaNoticias()
+                    self.getMusica()
                     
                 self._goLiveVideo(musica = musicaBool, noticias = placaBool)
             case TipoContenido.CAMARA:
@@ -425,38 +413,28 @@ class Scheduler:
     
     def _goLiveMusica(self):
         """
-        Esta función asume que getMusica ya cargó el bloque de músicas correctamente y que precargaMusica ya cargó correctamente el bloque de música en el input correcto
+        goLiveMusica funciona como el "disparador" de la música, no es como goLiveMicro o goLiveVideo.
+        Inicializo manualmente el act/prox de la música.
         """
         vMix = self.vMix
-
-        if self.musicaProx is None:
-            print("[ERROR]: Error de precarga de música. (post)\n")
-            return
-
-        if self.musicaAct is not None:
-            vMix.setAudio_off(self.musicaAct)
-            vMix.listClear(self.musicaAct) # Apago y cleareo música anterior
-
-
-        if self.bloqueMusicas is None or not self.bloqueMusicas:
-            print("[ERROR]: Error en la precarga de músicas (post)")
-            return
         
         self.indexBloqueMusica = 0
+        self.musicaAct = IdInputs.MUSICA_A
 
-        vMix.setAudio_on(self.musicaProx)
-        vMix.restartInput_number(self.musicaProx)
+        vMix.setAudio_on(self.musicaAct)
+        vMix.restartInput_number(self.musicaAct)
         time.sleep(0.05)
-        vMix.playInput_number(self.musicaProx)
+        vMix.playInput_number(self.musicaAct)
 
-        self.musicaAct = self.musicaProx
-        self.musicaProx = None
+        self.musicaProx = IdInputs.MUSICA_B
         
+        # Inicializa finTemaAct
         try:
             horaAct = datetime.now()
             self.finTemaAct = horaAct + timedelta(seconds = vMix.getLength(self.musicaAct) / 1000)
         except Exception as e:
-            print(f"[ERROR]: Error al obtener la duración del tema actual: {e}")
+            self.finTemaAct = None
+            print(f"[ERROR]: Error al obtener la duración del tema actual: {e}. No se va a poder cambiar de canción una vez termine la actual.")
 
     def _goLiveVideo(self, musica = False, noticias = False):
         # Toggle de inputs de video.
@@ -490,7 +468,7 @@ class Scheduler:
         self.videoAct = self.videoProx
         self.videoProx = None
 
-    def _goLivePlaca(self,contAct):
+    def _goLivePlaca(self,contAct: Contenido):
         """
         Toggle de inputs de placa, adaptado para las placas en GT cada una en un input distinto.
         """
@@ -570,6 +548,10 @@ class Scheduler:
         else:
             print(f"[ERROR]: No se encontró el ID para {camAct.nombre} en el diccionario.")
 
+    def _swapMusica(self):
+        if self.musicaProx is None:
+            print("[ERROR]: Error de precarga de música (post)")
+
     def _goLiveCamara(self):
         self.camaraLive = True
 
@@ -633,7 +615,8 @@ class Scheduler:
 
     def getMusica(self):
         """
-        Carga el playlist de musicas, self.bloqueMusicas
+        Carga el playlist de musicas, self.bloqueMusicas.
+        No hace NADA operativo sobre el preset.
         """
         DB = self.database
 
