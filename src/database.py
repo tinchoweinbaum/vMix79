@@ -402,3 +402,4 @@ if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database()
     DB.get_Musicas()
+    
