@@ -372,20 +372,20 @@ class Database:
         self.conn.begin()
         cursor: fdb.Cursor = self.conn.cursor() # Arranca la conxión y crea cursor para managearla
 
-        
-        query = "SELECT FIRST 1 ORDEN FROM PLAYLISTMUSICADETAIL ORDER BY RANDOM()" # Pido un número al azar dentro de la tabla.
+        query = "SELECT MAX(ORDEN), MIN(ORDEN) FROM PLAYLISTMUSICADETAIL"
         cursor.execute(query)
-        res = cursor.fetchone()
 
-        if not res:
-            return []
-        entry = res[0] # Guardo el entry random de la tabla
+        res = cursor.fetchone()
+        if not res or res[0] is None:
+            return None
+        max, min = res 
+        entry = random.randint(min, max)
 
         query = f"SELECT FIRST {Musica.temasPorReporte} * FROM PLAYLISTMUSICADETAIL WHERE ORDEN >= ? ORDER BY ORDEN ASC"
         cursor.execute(query,(entry,))
         bloqueMusica = cursor.fetchall()
 
-        if len(bloqueMusica < Musica.temasPorReporte): # Si agarré desde el final de la tabla y no llegué a completar los 5, pido desde atrás del entry
+        if len(bloqueMusica) < Musica.temasPorReporte: # Si agarré desde el final de la tabla y no llegué a completar los 5, pido desde atrás del entry
             restoTemas = Musica.temasPorReporte - len(bloqueMusica)
             query = f"SELECT FIRST {restoTemas} * FROM PLAYLISTMUSICADETAIL WHERE ORDEN < ? ORDER BY ORDEN DESC"
             cursor.execute(query, (entry,))
@@ -394,7 +394,8 @@ class Database:
             bloqueMusicaResto.reverse() # Invierto para que la lista final de temas respete el orden de la tabla de musicas
             bloqueMusica = bloqueMusicaResto + bloqueMusica
 
-
+        cursor.close()
+        self.conn.commit()
         print(bloqueMusica)
 
         
