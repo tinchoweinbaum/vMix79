@@ -402,11 +402,8 @@ class Database:
         self.conn.commit()
 
         listaMusica = []
-        for fila in bloqueMusica:
+        for fila in bloqueMusica: # Lo devuelve en formato de la clase Musica
             listaMusica.append(Musica(*fila))
-
-        for musica in listaMusica:
-            print(musica.nombre)
         return listaMusica
 
         

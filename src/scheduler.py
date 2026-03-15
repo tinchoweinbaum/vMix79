@@ -91,7 +91,9 @@ class Scheduler:
         self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
 
-        self.bloqueMusicas 
+        self.bloqueMusicas: List[Musica] = []
+        self.indexBloqueMusica = 0
+        self.finTemaAct = None
 
         self.running = False
 
@@ -106,8 +108,8 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
-        self.vMix.cutDirect_key(IdInputs.CAMARA_ACT) # Arranca con la cámara.
         self.camaraLive = True
+        self.vMix.setOutput_number(Camara._getCam_Id(4)) # Defaultea a Costa Galana antes de mandar cualquier cosa al aire, por si esta cosa no existe.
 
         self.__clearAll()
 
@@ -123,11 +125,10 @@ class Scheduler:
 
         self._startAudio()
 
-        self.vMix.setOutput_number(Camara._getCam_Id(4)) # Defaultea a Costa Galana antes de mandar cualquier cosa al aire, por si esta cosa no existe.
-
         self.actualizaPlacas()
         self.actualizaNoticias()
         self.actualizaCamaras()
+        self.getMusica()
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
@@ -159,9 +160,11 @@ class Scheduler:
         contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
         horaAct = datetime.now()
 
-        if self.camaraLive: # Si hay cámara al aire y corresponde cambiar de cámara.
-            if horaAct >= self.horaProxCam:
+        if self.camaraLive and horaAct >= self.horaProxCam: # Si hay cámara al aire y corresponde cambiar de cámara.
                 self.proximaCamara()
+
+        if horaAct >= self.finTemaAct:
+            self._swapMusica()
 
         if horaAct.time() >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
             self.indexBloque += 1
@@ -262,11 +265,9 @@ class Scheduler:
 
         self.microProx = inputLibre
 
-    def _precargaMusica(self,path):
+    def _precargaMusica(self):
         """
-        Así como está ahora esta función lo único que hace es cambiar los inputs de vMix. Solo operativo digamos.
-        La idea sería que esta función reciba una lista de músicas (o use un atributo de la clase tipo bloqueMusica) y lo cargue? o lo mande al aire 1x1? no se
-        capaz q no tengo ni que usar esta func.
+        Esta función accede al bloque de musicas de la clase y carga el primero en MUSICA_A o MUSICA_B según corresponda.
         """
         vMix = self.vMix
         if self.musicaProx is not None:
@@ -278,10 +279,12 @@ class Scheduler:
         else:
             inputLibre = IdInputs.MUSICA_A
 
-        vMix.listClear(inputLibre)
-        vMix.listAddInput(inputLibre, path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
+        musicaAct = self.bloqueMusicas[self.indexBloqueMusica]
 
-        self.musicaProx = inputLibre
+        vMix.listClear(inputLibre)
+        vMix.listAddInput(inputLibre, musicaAct.path) # Al elegirse un archivo de una carpeta al azar, siempre existe el path.
+
+        self.musicaProx = inputLibre # Invierto act/prox
 
     def _swapBloque(self):
         if not self.bloqueProx:
@@ -327,9 +330,7 @@ class Scheduler:
         Clean slate para cuando se llame a goLiveMusica.
         De esta manera se puede usar musicaAct == None como forma de checkear si está sonando música actualmente.
         """
-        # print("llamo stop musica")
-        # print(f"MUSICA PROX: {self.musicaProx}")
-        # print(f"MUSICA ACT: {self.musicaAct}")
+
         vMix = self.vMix
 
         if self.musicaAct is not None: # Si estaba sonando música.
@@ -340,6 +341,10 @@ class Scheduler:
         if self.musicaProx is not None:
             vMix.listClear(self.musicaProx)
         self.musicaProx = None
+
+        self.bloqueMusicas = [] # Seteo los atributos que representan el estado de la música en "No está sonando música"
+        self.indexBloqueMusica = 0
+        self.finTemaAct = None
 
     def _cargaProx(self):
         """
@@ -375,7 +380,7 @@ class Scheduler:
                 case TipoContenido.MUSICA:
                     # Rehacer con playlist de música.
                     if buscando_musica:
-                        self.database.get_musica()
+                        self.getMusica()
                 
                 case TipoContenido.CAMARA:
                     pass
@@ -435,7 +440,11 @@ class Scheduler:
             self._cargaProx() # Después de mandar al aire precarga el prox.
     
     def _goLiveMusica(self):
+        """
+        Esta función asume que getMusica ya cargó el bloque de músicas correctamente y que precargaMusica ya cargó correctamente el bloque de música en el input correcto
+        """
         vMix = self.vMix
+
         if self.musicaProx is None:
             print("[ERROR]: Error de precarga de música. (post)\n")
             return
@@ -444,6 +453,13 @@ class Scheduler:
             vMix.setAudio_off(self.musicaAct)
             vMix.listClear(self.musicaAct) # Apago y cleareo música anterior
 
+
+        if self.bloqueMusicas is None or not self.bloqueMusicas:
+            print("[ERROR]: Error en la precarga de músicas (post)")
+            return
+        
+        self.indexBloqueMusica = 0
+
         vMix.setAudio_on(self.musicaProx)
         vMix.restartInput_number(self.musicaProx)
         time.sleep(0.05)
@@ -451,7 +467,6 @@ class Scheduler:
 
         self.musicaAct = self.musicaProx
         self.musicaProx = None
-
 
     def _goLiveVideo(self, musica = False, noticias = False):
         # Toggle de inputs de video.
@@ -625,6 +640,18 @@ class Scheduler:
             print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.")
         # Si es Null NO asigno, me quedo con el anterior.
         # Ya está contemplado el caso de que no exista el bloque en la función de la db.
+
+    def getMusica(self):
+        """
+        Carga el playlist de musicas, self.bloqueMusicas
+        """
+        DB = self.database
+
+        bloqueMusicaNew = DB.get_Musicas() # Pido bloque nuevo de músicas
+        if bloqueMusicaNew:
+            self.bloqueMusicas = bloqueMusicaNew # Guardo el bloque nuevo
+        else:
+            print("[ERROR]: No se pudieron pedir las músicas.")
 
     def __clearAll(self):
         vMix = self.vMix
