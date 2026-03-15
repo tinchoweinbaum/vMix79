@@ -499,4 +499,3 @@ class VmixApi:
 if __name__ == "__main__":
     vMix = VmixApi()
     # vMix.debug_inputs()
-    vMix.getLength("be7d700b-c30d-4a88-b4ad-9122dea69540") # MUSICA_A

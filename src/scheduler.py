@@ -308,23 +308,6 @@ class Scheduler:
 
         self._cargaProx()
     
-    def __randomMusica(self):
-        """
-        Elige un archivo al azar de la carpeta de música
-        """
-        musicaRuta = Path(Musica.RUTA) 
-        
-        if not musicaRuta.exists():
-            print(f"[ERROR]: La ruta {Musica.RUTA} no existe.\n")
-            return None
-        musicas = [item for item in musicaRuta.iterdir() if item.is_file()]
-        
-        if not musicas:
-            print("[ERROR]: No hay archivos en la carpeta de música.\n")
-            return None
-
-        return str(random.choice(musicas)) 
-    
     def _stopMusica(self):
         """
         Clean slate para cuando se llame a goLiveMusica.
@@ -381,13 +364,14 @@ class Scheduler:
                     # Rehacer con playlist de música.
                     if buscando_musica:
                         self.getMusica()
+                        self._precargaMusica()
                 
                 case TipoContenido.CAMARA:
-                    pass
+                    continue
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
-                    pass
+                    continue
 
     def playBlip(self):
         vMix = self.vMix
@@ -467,6 +451,12 @@ class Scheduler:
 
         self.musicaAct = self.musicaProx
         self.musicaProx = None
+        
+        try:
+            horaAct = datetime.now()
+            self.finTemaAct = horaAct + timedelta(seconds = vMix.getLength(self.musicaAct) / 1000)
+        except Exception as e:
+            print(f"[ERROR]: Error al obtener la duración del tema actual: {e}")
 
     def _goLiveVideo(self, musica = False, noticias = False):
         # Toggle de inputs de video.
