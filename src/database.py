@@ -337,7 +337,10 @@ class Database:
         if not queryRes:
             print("[ERROR]: No se pudo obtener el playlist de cámaras, o este no existe.")
             return None
-    
+
+        cursor.close()
+        self.conn.commit()
+
         listaCamaras = []
         for fila in queryRes:
             # Unpacking de la tupla fila
@@ -381,6 +384,7 @@ class Database:
         max, min = res 
         entry = random.randint(min, max)
 
+
         query = f"SELECT FIRST {Musica.temasPorReporte} * FROM PLAYLISTMUSICADETAIL WHERE ORDEN >= ? ORDER BY ORDEN ASC"
         cursor.execute(query,(entry,))
         bloqueMusica = cursor.fetchall()
@@ -396,7 +400,14 @@ class Database:
 
         cursor.close()
         self.conn.commit()
-        print(bloqueMusica)
+
+        listaMusica = []
+        for fila in bloqueMusica:
+            listaMusica.append(Musica(*fila))
+
+        for musica in listaMusica:
+            print(musica.nombre)
+        return listaMusica
 
         
 if __name__ == "__main__":
