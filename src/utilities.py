@@ -88,8 +88,9 @@ class Camara:
 class Musica():
     temasPorReporte = 5
 
-    def __init__(self, id_playlist_detail, orden, path, nombre, fecha_ins):
+    def __init__(self, id_playlist_detail, idplaylist, orden, path, nombre, fecha_ins):
         self.id_playlist_detail = id_playlist_detail
+        self.idplaylist = idplaylist # No sé que es esto la verdad, es 1 para todos los elementos de la tabla.
         self.orden = orden
         self.path = path
         self.nombre = nombre
