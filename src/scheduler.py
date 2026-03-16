@@ -149,9 +149,6 @@ class Scheduler:
         if self.camaraLive and horaAct >= self.horaProxCam: # Si hay cámara al aire y corresponde cambiar de cámara.
                 self.proximaCamara()
 
-        if self.finTemaAct is not None and horaAct >= self.finTemaAct:
-            self._swapMusica()
-
         if horaAct.time() >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
             self.indexBloque += 1
             self._goLive(contAct)
@@ -544,7 +541,7 @@ class Scheduler:
         bloqueCamNew = DB.get_Camaras()
         if bloqueCamNew:
             self.bloqueCamaras = bloqueCamNew
-            print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.")
+            print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.\n")
         # Si es Null NO asigno, me quedo con el anterior.
         # Ya está contemplado el caso de que no exista el bloque en la función de la db.
 
