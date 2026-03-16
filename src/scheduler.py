@@ -648,11 +648,13 @@ class Scheduler:
         Carga el playlist de musicas, self.bloqueMusicas.
         No hace NADA operativo sobre el preset.
         """
+        print("Llamo getMusica")
         DB = self.database
 
         bloqueMusicaNew = DB.get_Musicas() # Pido bloque nuevo de músicas
         if bloqueMusicaNew:
             self.bloqueMusicas = bloqueMusicaNew # Guardo el bloque nuevo
+            print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Música cargada correctamente.")
         else:
             print("[ERROR]: No se pudieron pedir las músicas.")
 
