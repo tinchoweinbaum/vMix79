@@ -269,6 +269,11 @@ class Scheduler:
         print("Llamo precargaMusica")
         vMix = self.vMix
 
+        print("Bloque de músicas cargado: ")
+        for musica in self.bloqueMusicas:
+            print(musica.nombre)
+
+
         if not self.bloqueMusicas:
             print("[ERROR]: No se pudo cargar el bloque de músicas.")
             return
