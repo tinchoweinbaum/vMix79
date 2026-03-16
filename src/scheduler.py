@@ -550,6 +550,7 @@ class Scheduler:
             vMix = self.vMix
 
             for tema in bloqueMusicaNew:
+                time.sleep(0.5)
                 vMix.listAddInput(IdInputs.MUSICA, tema.path)
         
         except Exception as e:

@@ -207,6 +207,7 @@ class VmixApi:
 
     def listNextItem(self,listId):
         """Recibe número, id o nombre de ListInput y skipea el item actual"""
+        self.__makeRequest("NextItem", extraParams = {"Input": listId})
 
     def getInputPath_num(self, inputNum):
             """
