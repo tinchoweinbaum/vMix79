@@ -2,6 +2,7 @@
 Archivo principal del proyecto, se encarga de organizar la transmisión y de mandar al aire el contenido que corresponda a la hora que corresponda.
 Usa las clases de Database y vMixApiWrapper (TCP) para hacer esto.
 Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
+Para la música se "fabrica" un playlist artificial, para poder manejar las horas de salida y entrada de las músicas.
 """
 from utilities import Contenido, Camara, Musica # Clase que representa los Contenidos de la programación.
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix.
@@ -111,7 +112,7 @@ class Scheduler:
         self.vMix.listAddInput(IdInputs.BLIP,blipPath) # Carga BLIP.WAV
 
         self._buscaBloque() # Asigna valor correcto actual a self.indexBloque.
-        self.getMusica() # Pido el bloque de música para no acceder a None.
+        self.getMusica() # Cargo el bloque de música en memoria.
         self._cargaProx() # Precarga los inputs prox para el primer tick.
 
         if not self.bloqueAire:
@@ -265,23 +266,22 @@ class Scheduler:
         Esta función accede al bloque de musicas de la clase y carga el primero en MUSICA_A. Solo se la llama 1 vez por bloque si es que este es un reporte local.
         Asume que el bloque de música ya está cargado en self.bloqueMusica.
         """
+        print("Llamo precargaMusica")
         vMix = self.vMix
 
         if not self.bloqueMusicas:
             print("[ERROR]: No se pudo cargar el bloque de músicas.")
             return
         
-        if self.musicaAct == IdInputs.MUSICA_A:
-            inputLibre = IdInputs.MUSICA_B
-        else:
-            inputLibre = IdInputs.MUSICA_A
+        if self.musicaAct is not None:
+            print("[ERROR]: Error al precargar la música.")
+            return
 
-        self.indexBloqueMusica = 0
-        musicaAct: Musica = self.bloqueMusicas[self.indexBloqueMusica]
-        vMix.listAddInput(inputLibre, musicaAct.path)
+        self.musicaAct = IdInputs.MUSICA_A # Inicializo a mano la música para goLiveMusica
+        self.musicaProx = IdInputs.MUSICA_B
 
-        self.musicaProx = inputLibre
-
+        temaAct = self.bloqueMusicas[self.indexBloqueMusica]
+        vMix.listAddInput(self.musicaAct, temaAct.path)
 
     def _swapBloque(self):
         if not self.bloqueProx:
@@ -322,7 +322,7 @@ class Scheduler:
             vMix.listClear(self.musicaProx)
         self.musicaProx = None
 
-        self.bloqueMusicas = [] # Seteo los atributos que representan el estado de la música en "No está sonando música"
+        self.bloqueMusicas = [] # Seteo los atributos que representan el estado de la música en "No está sonando música ni está cargada"
         self.indexBloqueMusica = 0
         self.finTemaAct = None
 
@@ -408,8 +408,7 @@ class Scheduler:
             case TipoContenido.MUSICA:
                 self._goLiveMusica()
             case TipoContenido.IMAGENCAM:
-                self.camaraLive = True
-                self.vMix.cutDirect_key(IdInputs.CAMARA_ACT) # PLACEHOLDER TAMBIEN
+                print("IMAGENCAM")
             case TipoContenido.FOTOBMP:
                 blipBool = contAct.nombre in ["79 partidas","79 Partidas"]
                 self._goLiveMicro(blip = blipBool)
@@ -421,20 +420,19 @@ class Scheduler:
     
     def _goLiveMusica(self):
         """
-        goLiveMusica funciona como el "disparador" de la música, no es como goLiveMicro o goLiveVideo.
+        goLiveMusica funciona como el "disparador" de la música, no es como goLiveMicro o goLiveVideo. Es más parecido a goLiveCamara
         Inicializo manualmente el act/prox de la música.
+        musicaAct y musicaProx llegan a esta función con los valores correctos.
         """
+        print("Llamo goLiveMusica")
         vMix = self.vMix
         
         self.indexBloqueMusica = 0
-        self.musicaAct = IdInputs.MUSICA_A
 
         vMix.setAudio_on(self.musicaAct)
         vMix.restartInput_number(self.musicaAct)
         time.sleep(0.05)
         vMix.playInput_number(self.musicaAct)
-
-        self.musicaProx = IdInputs.MUSICA_B
         
         # Inicializa finTemaAct
         try:
@@ -557,8 +555,32 @@ class Scheduler:
             print(f"[ERROR]: No se encontró el ID para {camAct.nombre} en el diccionario.")
 
     def _swapMusica(self):
+        print("Llamo _swapMusica")
         if self.musicaProx is None:
             print("[ERROR]: Error de precarga de música (post)")
+
+        vMix = self.vMix
+
+        # Mando al aire el próximo tema.
+        vMix.setAudio_on(self.musicaProx)
+        vMix.restartInput_number(self.musicaProx)
+        time.sleep(0.05)
+        vMix.playInput_number(self.musicaProx)
+        self.indexBloqueMusica +=  1
+
+        # Limpio el tema anterior
+        vMix.setAudio_off(self.musicaAct)
+        vMix.listClear(self.musicaAct)
+
+        # Intercambio musicaAct con musicaProx
+        self.musicaAct, self.musicaProx = self.musicaProx, self.musicaAct # locura esta función de python
+
+        # Precargo el próximo tema
+        try:
+            temaProx = self.bloqueMusicas[self.indexBloqueMusica + 1]
+            vMix.listAddInput(self.musicaProx, temaProx.path)
+        except IndexError:
+            print(f"[INFO]: Se cargaron todas las {Musica.temasPorReporte} músicas para este reporte, este valor se puede cambiar desde utilities.py.")
 
     def _goLiveCamara(self):
         self.camaraLive = True
