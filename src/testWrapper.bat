@@ -1,0 +1,2 @@
+python vMixApiWrapper.py
+pause
