@@ -12,7 +12,7 @@ from datetime import datetime, time as dt, timedelta
 from typing import List
 from pathlib import Path
 import pause
-import random
+import threading
 import time
 
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático. Agregar botón de "Actualizar placas".
@@ -544,12 +544,23 @@ class Scheduler:
             print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.\n")
         # Si es Null NO asigno, me quedo con el anterior.
         # Ya está contemplado el caso de que no exista el bloque en la función de la db.
+    
+    def _loaderMusica(self,bloqueMusicaNew):
+        try:
+            vMix = self.vMix
+
+            for tema in bloqueMusicaNew:
+                vMix.listAddInput(IdInputs.MUSICA, tema.path)
+        
+        except Exception as e:
+            print(f"[ERROR]: en el hilo paralelo de carga de música: {e}")
 
     def getMusica(self):
         """
         Carga el List Input de vMix con canciones traídas de la db.
         La cantidad de canciones se maneja con el atributo temasPorReporte en utilities.py
         """
+
         DB = self.database
 
         self.vMix.listClear(IdInputs.MUSICA) # Limpio música anterior.
@@ -561,9 +572,8 @@ class Scheduler:
             print("[ERROR]: No se pudieron pedir las músicas.")
             return
 
-        temaAct: Musica
-        for temaAct in bloqueMusicaNew: # Agrego todo el bloque de música que bajé de la db al ListInput
-            vMix.listAddInput(IdInputs.MUSICA, temaAct.path)
+        threadCarga = threading.Thread(target = self._loaderMusica, args=(bloqueMusicaNew,),daemon=True)
+        threadCarga.start()
 
     def __clearAll(self):
         vMix = self.vMix
