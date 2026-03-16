@@ -195,13 +195,18 @@ class VmixApi:
         self.cutDirect_key(inputKey)
 
     def listClear(self,listNum):
+        """Recibe número, id o nombre de ListInput y borra todos sus elementos"""
         function = "ListRemoveAll"
         self.__makeRequest(function,extraParams = {"Input": listNum}) # No pido árbol XML acá porque no es necesario para borrar.
 
     def listAddInput(self,listNum,path):
+        """Recibe número, id o nombre de ListInput junto con el path de un archivo y lo agrega a la lista"""
         function = "ListAdd"
         self.__makeRequest(function,extraParams = {"Input": listNum, "Value": path})
         self._send_raw("XML")
+
+    def listNextItem(self,listId):
+        """Recibe número, id o nombre de ListInput y skipea el item actual"""
 
     def getInputPath_num(self, inputNum):
             """
@@ -339,7 +344,7 @@ class VmixApi:
 
         return inputAct.text == str(inputNum)
     
-    def _isOverlayLive(self,overlayNum):
+    def isOverlayLive_num(self,overlayNum):
         """
         Recibe un número de overlay y checkea si está activo.
         """        
@@ -369,9 +374,9 @@ class VmixApi:
         
         return int(overlay.text)
     
-    def getLength(self, inputKey):
+    def getLength_id(self, inputKey):
         """
-        Usa el estado XML interno para obtener la duración de un input.
+        Recibe el ID de un input y devuelve la duración de su contenido. El primero en caso de ser una lista.
         """
         root = self.__getState()
         
@@ -395,7 +400,7 @@ class VmixApi:
     def restartInput_number(self, inputNum):
         self.__makeRequest("Restart", {"Input": inputNum})
 
-    def playInput_number(self, inputNum):
+    def playInput(self, inputNum):
         self.__makeRequest("Play", {"Input": inputNum})
 
     def pauseInput(self,inputNum):
@@ -498,4 +503,4 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    # vMix.debug_inputs()
+    vMix.debug_inputs()
