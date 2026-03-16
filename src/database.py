@@ -410,4 +410,6 @@ class Database:
 if __name__ == "__main__":
     pathDB = r"C:\Canal79\DB\CANAL79_DB.FDB"
     DB = Database()
-    print(musicaAct.nombre for musicaAct in DB.get_Musicas())
+    listaMusica = DB.get_Musicas()
+    for musica in listaMusica:
+        print(musica.nombre)
