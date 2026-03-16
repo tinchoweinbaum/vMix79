@@ -22,7 +22,7 @@ import time
 # TO DO: Bloque default si no hay playlist.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
 # TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
-# TO DO: Música
+# TO DO: IMPLEMENTAR LA MUSICA USANDO LAS LISTAS MISMAS DE VMIX, HACE TODO AUTOMÁTICAMENTE SOY UN TARADOO
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -448,6 +448,7 @@ class Scheduler:
         # Cargo el próximo tema
         try:
             temaProx = self.bloqueMusicas[self.indexBloqueMusica + 1]
+            vMix.listClear(self.musicaProx)
             vMix.listAddInput(self.musicaProx, temaProx.path)
         except IndexError:
             self.finTemaAct = None # Si ya pasaron todas las músicas, termina naturalmente el último y listo
