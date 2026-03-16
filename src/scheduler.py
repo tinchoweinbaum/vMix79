@@ -550,8 +550,8 @@ class Scheduler:
             vMix = self.vMix
 
             for tema in bloqueMusicaNew:
-                time.sleep(0.5)
                 vMix.listAddInput(IdInputs.MUSICA, tema.path)
+                time.sleep(10)
         
         except Exception as e:
             print(f"[ERROR]: en el hilo paralelo de carga de música: {e}")
