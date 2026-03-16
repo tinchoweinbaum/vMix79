@@ -261,18 +261,13 @@ class Scheduler:
 
         self.microProx = inputLibre
 
-    def _precargaMusica(self):
+    def _initMusica(self):
         """
         Esta función accede al bloque de musicas de la clase y carga el primero en MUSICA_A. Solo se la llama 1 vez por bloque si es que este es un reporte local.
         Asume que el bloque de música ya está cargado en self.bloqueMusica.
         """
-        print("Llamo precargaMusica")
+        print("Llamo initMusica")
         vMix = self.vMix
-
-        print("Bloque de músicas cargado: ")
-        for musica in self.bloqueMusicas:
-            print(musica.nombre)
-
 
         if not self.bloqueMusicas:
             print("[ERROR]: No se pudo cargar el bloque de músicas.")
@@ -282,11 +277,13 @@ class Scheduler:
             print("[ERROR]: Error al precargar la música.")
             return
 
-        self.musicaAct = IdInputs.MUSICA_A # Inicializo a mano la música para goLiveMusica
-        self.musicaProx = IdInputs.MUSICA_B
+        self.musicaProx = IdInputs.MUSICA_A # Inicializo a mano la música para goLiveMusica
+        self.musicaAct = None
 
-        temaAct = self.bloqueMusicas[self.indexBloqueMusica]
-        vMix.listAddInput(self.musicaAct, temaAct.path)
+        self.indexBloqueMusica = -1 # Inicializo en -1 para que goLiveMusica lo ponga en 0
+        temaAct = self.bloqueMusicas[0]
+        vMix.listClear(self.musicaProx)
+        vMix.listAddInput(self.musicaProx, temaAct.path)
 
     def _swapBloque(self):
         if not self.bloqueProx:
@@ -312,24 +309,15 @@ class Scheduler:
     
     def _stopMusica(self):
         """
-        Clean slate para cuando se llame a goLiveMusica.
-        De esta manera se puede usar musicaAct == None como forma de checkear si está sonando música actualmente.
+        Frena la música de tal manera que se puede resumir con el llamado de goLiveMusica, útil para noti aguante después de los reportes.
         """
 
         vMix = self.vMix
 
-        if self.musicaAct is not None: # Si estaba sonando música.
-            vMix.pauseInput_number(self.musicaAct)
-            vMix.listClear(self.musicaAct)
-        self.musicaAct = None
+        if self.musicaAct is not None:
+            vMix.pauseInput(self.musicaAct)
 
-        if self.musicaProx is not None:
-            vMix.listClear(self.musicaProx)
-        self.musicaProx = None
-
-        self.bloqueMusicas = [] # Seteo los atributos que representan el estado de la música en "No está sonando música ni está cargada"
-        self.indexBloqueMusica = 0
-        self.finTemaAct = None
+        self.finTemaAct = None # Representa que ya NO está saliendo música al aire.
 
     def _cargaProx(self):
         """
@@ -338,10 +326,9 @@ class Scheduler:
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
         buscando_micro = self.microProx is None
-        buscando_musica = self.musicaProx is None
 
         for cont in self.bloqueAire[self.indexBloque:]:
-            if not buscando_video and not buscando_micro and not buscando_musica:
+            if not buscando_video and not buscando_micro:
                 return
             
             if not cont.path_valido() and cont.path not in ["CAMARA", "MUSICA"]:
@@ -363,8 +350,7 @@ class Scheduler:
                         buscando_micro = False
 
                 case TipoContenido.MUSICA:
-                    self._precargaMusica()
-                    buscando_musica = False
+                    pass
                 
                 case TipoContenido.CAMARA:
                     continue
@@ -431,21 +417,41 @@ class Scheduler:
         """
         print("Llamo goLiveMusica")
         vMix = self.vMix
-        
-        self.indexBloqueMusica = 0
 
-        vMix.setAudio_on(self.musicaAct)
-        vMix.restartInput_number(self.musicaAct)
-        time.sleep(0.05)
-        vMix.playInput_number(self.musicaAct)
+        if self.musicaProx is not None:
+            vMix.setAudio_on(self.musicaProx)
+            vMix.restartInput_number(self.musicaProx)
+            time.sleep(0.05)
+            vMix.playInput_number(self.musicaProx)
+        else:
+            print(f"[ERROR]: Ya se reprodujeron todos los {Musica.temasPorReporte} temas cargados. Aumentar el número de canciones por reporte en utilities.py")
+            return
         
-        # Inicializa finTemaAct
+        self.indexBloqueMusica += 1
+        
+        # En este choclo HORRIBLE asigno correctamente musicaAct y musicaProx
+        if self.musicaProx == IdInputs.MUSICA_A:
+            self.musicaAct = IdInputs.MUSICA_A
+            self.musicaProx = IdInputs.MUSICA_B
+        elif self.musicaProx == IdInputs.MUSICA_B:
+            self.musicaAct = IdInputs.MUSICA_B
+            self.musicaProx = IdInputs.MUSICA_A
+
+        # Calcula finTemaAct
         try:
             horaAct = datetime.now()
             self.finTemaAct = horaAct + timedelta(seconds = vMix.getLength(self.musicaAct) / 1000)
         except Exception as e:
             self.finTemaAct = None
             print(f"[ERROR]: Error al obtener la duración del tema actual: {e}. No se va a poder cambiar de canción una vez termine la actual.")
+
+        # Cargo el próximo tema
+        try:
+            temaProx = self.bloqueMusicas[self.indexBloqueMusica + 1]
+            vMix.listAddInput(self.musicaProx, temaProx.path)
+        except IndexError:
+            self.finTemaAct = None # Si ya pasaron todas las músicas, termina naturalmente el último y listo
+            print(f"[INFO]: Se cargaron todas las {Musica.temasPorReporte} músicas para este reporte, este valor se puede cambiar desde utilities.py.")
 
     def _goLiveVideo(self, musica = False, noticias = False):
         # Toggle de inputs de video.
@@ -580,11 +586,17 @@ class Scheduler:
         # Intercambio musicaAct con musicaProx
         self.musicaAct, self.musicaProx = self.musicaProx, self.musicaAct # locura esta función de python
 
+        try:
+            self.finTemaAct = datetime.now() + timedelta(seconds = vMix.getLength(self.musicaAct) / 1000) # Calculo a que hora termina el tema actual.
+        except Exception as e:
+            print(f"[ERROR]: No se pudo calcular la duracion del tema actual. No se podrá cambiar de canción cuando termine la actual. {e}")
+
         # Precargo el próximo tema
         try:
             temaProx = self.bloqueMusicas[self.indexBloqueMusica + 1]
             vMix.listAddInput(self.musicaProx, temaProx.path)
         except IndexError:
+            self.finTemaAct = None # Si ya pasaron todas las músicas, termina naturalmente el último y listo
             print(f"[INFO]: Se cargaron todas las {Musica.temasPorReporte} músicas para este reporte, este valor se puede cambiar desde utilities.py.")
 
     def _goLiveCamara(self):
@@ -659,12 +671,8 @@ class Scheduler:
         bloqueMusicaNew = DB.get_Musicas() # Pido bloque nuevo de músicas
         if bloqueMusicaNew:
             self.bloqueMusicas = bloqueMusicaNew # Guardo el bloque nuevo
-            print("musicas que se pidieron de la db:")
-            for musica in bloqueMusicaNew:
-                print(musica.nombre)
-            if not bloqueMusicaNew:
-                print("[INFO]: El bloque de músicas que se pidió llegó vacío.")
             print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Música cargada correctamente.")
+            self._initMusica() # Llamo a initMusica para que cargue los inputs correctamente
         else:
             print("[ERROR]: No se pudieron pedir las músicas.")
 

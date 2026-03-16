@@ -86,7 +86,7 @@ class Camara:
         return res[1] if res else "Cámara desconocida."
     
 class Musica():
-    temasPorReporte = 5
+    temasPorReporte = 8
 
     def __init__(self, id_playlist_detail, idplaylist, orden, path, nombre, fecha_ins):
         self.id_playlist_detail = id_playlist_detail

@@ -398,7 +398,7 @@ class VmixApi:
     def playInput_number(self, inputNum):
         self.__makeRequest("Play", {"Input": inputNum})
 
-    def pauseInput_number(self,inputNum):
+    def pauseInput(self,inputNum):
         self.__makeRequest("Pause", {"Input": inputNum})
 
     def openPreset(self, presetPath):

@@ -2,6 +2,8 @@
 Wrapper de la conexión a la DB de firebird para el proyecto.
 IMPORTANTE: Para que funcione tiene que estar corriendo el servicio de FirebirdDB en windows. También tiene que tener fbclient.dll de 64 bits en la carpeta resources del proyecto.
 Las fechas las devuelve en formato datetime.datetime
+
+Todas las funciones que tienen el parámetro "Input" pueden funcionar tanto con key como con número o nombre del input.
 """
 import fdb
 import json
