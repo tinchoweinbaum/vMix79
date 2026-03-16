@@ -22,6 +22,7 @@ import time
 # TO DO: Bloque default si no hay playlist.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
 # TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
+# TO DO: La música hay que hacerla con un archivo .m3u que es un archivo de playlist, vMix carga 1 solo archivo y no frena todo
 
 class TipoContenido(IntEnum):
     VIDEO = 1
