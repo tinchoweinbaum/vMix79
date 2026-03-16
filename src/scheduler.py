@@ -654,6 +654,8 @@ class Scheduler:
         bloqueMusicaNew = DB.get_Musicas() # Pido bloque nuevo de músicas
         if bloqueMusicaNew:
             self.bloqueMusicas = bloqueMusicaNew # Guardo el bloque nuevo
+            if not bloqueMusicaNew:
+                print("[INFO]: El bloque de músicas que se pidió llegó vacío.")
             print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Música cargada correctamente.")
         else:
             print("[ERROR]: No se pudieron pedir las músicas.")
