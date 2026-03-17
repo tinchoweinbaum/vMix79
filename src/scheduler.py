@@ -89,7 +89,7 @@ class Scheduler:
 
         self.running = False
 
-    def start(self,blipPath):
+    def start(self):
 
         self.running = True
         print("Scheduler iniciado\n")
@@ -102,8 +102,6 @@ class Scheduler:
 
         self.__clearAll()
 
-        self.vMix.listAddInput(IdInputs.BLIP,blipPath) # Carga BLIP.WAV
-
         self._buscaBloque() # Asigna valor correcto actual a self.indexBloque.
         self.getMusica() # Cargo el bloque de música en memoria.
         self._cargaProx() # Precarga los inputs prox para el primer tick.
@@ -113,11 +111,13 @@ class Scheduler:
             self.stop()
             return
 
-        self._startAudio()
+        # self._startAudio()
 
         self.actualizaPlacas()
         self.actualizaNoticias()
         self.actualizaCamaras()
+
+        time.sleep(0.1)
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
@@ -646,10 +646,9 @@ class Scheduler:
 
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
-    blipPath = BASE_DIR.parent / "resources" / "vmix_resources" / "BLIP.WAV"
 
     database = Database()
     vMix = VmixApi()
     schMain = Scheduler(vMix,database)
 
-    schMain.start(blipPath)
+    schMain.start()
