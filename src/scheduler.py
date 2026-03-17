@@ -82,6 +82,8 @@ class Scheduler:
         self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
 
+        self.musicaLive = False
+
         self.running = False
 
     def start(self,blipPath):
@@ -277,6 +279,7 @@ class Scheduler:
         self.vMix.setAudio_off(IdInputs.MUSICA)
         self.vMix.pauseInput(IdInputs.MUSICA)
         self.vMix.listNextItem(IdInputs.MUSICA)
+        self.musicaLive = False
 
     def _cargaProx(self):
         """
@@ -373,6 +376,7 @@ class Scheduler:
         """
         Simplemente da play al ListInput de música.
         """
+        self.musicaLive = True
         print("[INFO]: Música al aire.")
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
@@ -386,7 +390,7 @@ class Scheduler:
         if not noticias:
             vMix.setOverlay_off(OverlaySlots.SLOT_NOTICIAS)
 
-        if not musica:
+        if not musica and self.musicaLive:
             self._stopMusica()
 
         if self.videoAct is not None:
