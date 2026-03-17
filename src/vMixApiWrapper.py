@@ -410,6 +410,11 @@ class VmixApi:
     def openPreset(self, presetPath):
         self.__makeRequest("OpenPreset", {"Value": presetPath})
 
+    def setText(self, input, value, field):
+        if not field.endswith(".Text"):
+            field = f"{field}.Text"
+        self.__makeRequest("SetText", extraParams = {"Input": input, "Value": value, "SelectedName": field})
+
     def awaitPresetCargado(self, timeout = 200):
         """
         Función "Pseudoasíncrona". Devuelve True una vez cargó el preset o False si no lo pudo cargar después del timeout
@@ -504,4 +509,5 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    vMix.debug_inputs()
+    # vMix.debug_inputs()
+    vMix.setText(1,"hola","TextBlock1.Text")

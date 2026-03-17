@@ -18,11 +18,10 @@ import time
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático. Agregar botón de "Actualizar placas".
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
 # TO DO: Implementación e iteración del bloque de cámaras, si no encuentra el bloque, o la lista es None, que defaultee a una.
-# TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo. El arranque anda como el orto.
+# TO DO: Cuando se le mandan muchos comandos a la vez a vMix, da play a inputs incorrectos, esto es especialmente notorio en el arranque o cuando se cambia la hora mientras se está al aire.
 # TO DO: Bloque default si no hay playlist.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
 # TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
-# TO DO: La música hay que hacerla con un archivo .m3u que es un archivo de playlist, vMix carga 1 solo archivo y no frena todo
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -304,7 +303,8 @@ class Scheduler:
                         buscando_video = False # Actualizo las flags cuando encuentro
                 
                 case TipoContenido.PLACA:
-                    continue
+                    if cont.nombre == "Noti Aguante":
+                        self._actualizaNoti()
                 
                 case TipoContenido.FOTOBMP:
                     if buscando_micro:
@@ -551,6 +551,31 @@ class Scheduler:
             print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.\n")
         # Si es Null NO asigno, me quedo con el anterior.
         # Ya está contemplado el caso de que no exista el bloque en la función de la db.
+
+    def _fecha_en_espanol(self):
+        ahora = datetime.now()
+        
+        dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+        
+        # ahora.weekday() devuelve 0 para Lunes, 1 para Martes...
+        dia_semana = dias[ahora.weekday()]
+        # ahora.month devuelve 1 para Enero, 2 para Febrero... (restamos 1 para el índice)
+        mes = meses[ahora.month - 1]
+        
+        return f"{dia_semana}, {ahora.day} de {mes} de {ahora.year}"
+
+    def _actualizaNoti(self):
+        # Cálculo hora del próximo reporte.
+        ahora = datetime.now()
+        minutos_faltantes = 10 - (ahora.minute % 10)
+        proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
+        horaProxReporte = proxima_hora.replace(second=0, microsecond=0)
+        self.vMix.setText(IdPlacas.NOTI_AGUANTE, horaProxReporte.strftime('%H:%M'),"proxReporte.Text")
+
+        #Seteo la fecha
+        self.vMix.setText(IdPlacas.NOTI_AGUANTE,self._fecha_en_espanol(),"fecha.Text")
     
     def _loaderMusica(self,bloqueMusicaNew):
         """Método para que el hilo de música cargue las músicas de forma paralela."""
