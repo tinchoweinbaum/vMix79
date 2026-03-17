@@ -98,9 +98,6 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
-        self.camaraLive = True
-        self.vMix.setOutput_number(Camara._getCam_Id(4)) # Defaultea a Costa Galana antes de mandar cualquier cosa al aire, por si esta cosa no existe.
-
         self.__clearAll()
 
         self.vMix.listAddInput(IdInputs.BLIP,blipPath) # Carga BLIP.WAV
@@ -278,7 +275,9 @@ class Scheduler:
         Pausa la música. Saca el tema que estaba sonando para que arranque desde el próximo después.
         """
         self.vMix.setAudio_off(IdInputs.MUSICA)
+        time.sleep(0.05)
         self.vMix.pauseInput(IdInputs.MUSICA)
+        time.sleep(0.05)
         self.vMix.listNextItem(IdInputs.MUSICA)
         self.musicaLive = False
 
@@ -484,16 +483,26 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def _swapCamLive(self, camAct):
+    def _swapCamLive(self, camAct: Camara):
         """Método interno para ejecutar el cambio físico en vMix."""
         idCam = Camara._getCam_Id(camAct.id_camara)
 
         if idCam:
+            self._actualizarTxtCamara(camAct.nombre)
             self.vMix.setOutput_number(idCam)
             # Actualizamos el tiempo de la próxima
             self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo)
         else:
             print(f"[ERROR]: No se encontró el ID para {camAct.nombre}.")
+
+    def _actualizarTxtCamara(self, nombreCam):
+        """Escribe el .txt que vMix usa de data source para el nombre de la camara"""
+        try:
+            ruta_txt = Path(__file__).resolve().parent.parent / "resources" / "vmix_resources" / "nombrecam.txt"
+            with open(ruta_txt, "w", encoding="utf-8") as f:
+                f.write(nombreCam)
+        except Exception as e:
+            print(f"[ERROR]: No se pudo escribir el nombre de la cámara en el .txt: {e}")
 
     def _goLiveCamara(self):
         self.camaraLive = True
