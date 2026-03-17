@@ -401,7 +401,7 @@ class Scheduler:
         if not hora:
             vMix.setOverlay_off(OverlaySlots.SLOT_HORA)
         else:
-            vMix.setOverlay_on(OverlaySlots.SLOT_HORA, IdPlacas.HORA_MAPAS)
+            vMix.setOverlay_on(IdPlacas.HORA_MAPAS, OverlaySlots.SLOT_HORA)
 
         if self.videoAct is not None:
             vMix.listClear(self.videoAct)
