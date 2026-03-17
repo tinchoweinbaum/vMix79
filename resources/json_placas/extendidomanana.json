@@ -1,11 +1,11 @@
 [
     {
-        "dia": "Martes",
-        "min": "12º",
-        "max": "23º",
-        "desc_min": "Mayormente nublado con tormentas, algunas fuertes. Vientos leves del sector norte rotando al sudoeste.",
-        "desc_max": "Mayormente nublado con tormentas. Mejorando. Vientos leves del sudoeste.",
-        "logo_min": "C:\\Canal79\\Iconos\\Clima\\15.png",
-        "logo_max": "C:\\Canal79\\Iconos\\Clima\\nubaum.png"
+        "dia": "Miércoles",
+        "min": "13º",
+        "max": "21º",
+        "desc_min": "Despejado. Vientos leves del sector sur.",
+        "desc_max": "Despejado o algo nublado. Vientos leves del sur rotando               al sector este.",
+        "logo_min": "C:\\Canal79\\Iconos\\Clima\\1.png",
+        "logo_max": "C:\\Canal79\\Iconos\\Clima\\algonublado.png"
     }
 ]
