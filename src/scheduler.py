@@ -83,6 +83,8 @@ class Scheduler:
 
         self.musicaLive = False
 
+        self.aguanteActualizada = False # Flag para saber si hay que actualizar Los datos de noti aguante este reporte
+
         self.running = False
 
     def start(self,blipPath):
@@ -303,7 +305,8 @@ class Scheduler:
                         buscando_video = False # Actualizo las flags cuando encuentro
                 
                 case TipoContenido.PLACA:
-                    if cont.nombre == "Noti Aguante":
+                    if self.aguanteActualizada == False and cont.nombre == "Noti Aguante":
+                        self.aguanteActualizada = True
                         self._actualizaNoti()
                 
                 case TipoContenido.FOTOBMP:
@@ -351,6 +354,7 @@ class Scheduler:
                     self.actualizaCamaras()
                     self.actualizaNoticias()
                     self.getMusica()
+                    self.aguanteActualizada = False # Cuando sale el repote al aire hay que actualizar noti aguante de nuevo.
 
                 print(f"{str(datetime.now().time())} - {contAct.path} al aire")   
                 self._goLiveVideo(musica = musicaBool, noticias = placaBool)
@@ -572,7 +576,7 @@ class Scheduler:
         minutos_faltantes = 10 - (ahora.minute % 10)
         proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
         horaProxReporte = proxima_hora.replace(second=0, microsecond=0)
-        self.vMix.setText(IdPlacas.NOTI_AGUANTE, horaProxReporte.strftime('%H:%M'),"proxReporte.Text")
+        self.vMix.setText(IdPlacas.NOTI_AGUANTE, "Próximo reporte local: " + horaProxReporte.strftime('%H:%M'),"proxReporte.Text")
 
         #Seteo la fecha
         self.vMix.setText(IdPlacas.NOTI_AGUANTE,self._fecha_en_espanol(),"fecha.Text")
