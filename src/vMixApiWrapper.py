@@ -509,5 +509,5 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    # vMix.debug_inputs()
-    vMix.setText(1,"hola","TextBlock1.Text")
+    vMix.debug_inputs()
+    # vMix.setText(1,"hola","TextBlock1.Text")
