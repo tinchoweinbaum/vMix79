@@ -640,8 +640,6 @@ class Scheduler:
 
         vMix.listClear(IdInputs.MUSICA)
 
-        vMix.listClear(IdInputs.BLIP)
-
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
 if __name__ == "__main__":
