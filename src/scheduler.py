@@ -329,7 +329,7 @@ class Scheduler:
         Este método tiene la lógica para mandar el tipo de contenido que corresponda al aire.
         Tiene un parámetro que funciona como flag para determinar si hay que precargar el proximo contenido o no. Se usa nada más en el primer llamado del arranque.
         """
-        print("Hora actual: " + str(datetime.now().time()) + "\n")
+        # print("Hora actual: " + str(datetime.now().time()) + "\n")
         if contAct == None:
             print("[ERROR]: Contenido inexistente\n")
 
@@ -348,7 +348,8 @@ class Scheduler:
                     self.actualizaCamaras()
                     self.actualizaNoticias()
                     self.getMusica()
-                    
+
+                print(f"{str(datetime.now().time())} - {contAct.path} al aire")   
                 self._goLiveVideo(musica = musicaBool, noticias = placaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
