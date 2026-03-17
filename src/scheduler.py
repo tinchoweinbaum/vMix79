@@ -51,10 +51,12 @@ class IdPlacas(str, Enum):
     NOTI_AGUANTE = "97cb7733-6d23-4d89-bb49-07ebccfd11b1"
     NOTICIAS = "c0ea010a-098d-4ea3-94b4-40246e3eed25"
     ACTUAL_DETALLE_CLIMA = "6a5dd7d8-6fda-4538-a6bd-b4a5ca451185"
+    HORA_MAPAS = "f150e53a-b06d-4261-b61f-f76be331203e"
 
 class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
     SLOT_NOTICIAS = 2
+    SLOT_HORA = 3
 
 class Bloque(IntEnum):
     DURACION = 5 # Duración en minutos.
@@ -345,8 +347,8 @@ class Scheduler:
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                musicaBool = contAct.nombre in ["mapas", "MAPAS"]
-                placaBool = contAct.nombre in ["mapas", "MAPAS"]
+                musicaBool = placaBool = horaBool = contAct.nombre.lower() in ["mapas"] # Lo mantengo en 3 vars. separadas porque capaz después hay otro video que usa otra combinación de estas vars.
+
                 horaAct = datetime.now().time()
                 if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza cámaras, noticias, placas y pide 5 temas al azar.
                     self.actualizaPlacas()
@@ -356,7 +358,7 @@ class Scheduler:
                     self.aguanteActualizada = False # Cuando sale el repote al aire hay que actualizar noti aguante de nuevo.
 
                 print(f"{str(datetime.now().time())} - {contAct.path} al aire")   
-                self._goLiveVideo(musica = musicaBool, noticias = placaBool)
+                self._goLiveVideo(musica = musicaBool, noticias = placaBool, hora = horaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
                 self._goLiveCamara()
@@ -384,7 +386,7 @@ class Scheduler:
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
 
-    def _goLiveVideo(self, musica = False, noticias = False):
+    def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.
         vMix = self.vMix
 
@@ -395,6 +397,11 @@ class Scheduler:
 
         if not musica and self.musicaLive:
             self._stopMusica()
+
+        if not hora:
+            vMix.setOverlay_off(OverlaySlots.SLOT_HORA)
+        else:
+            vMix.setOverlay_on(OverlaySlots.SLOT_HORA, IdPlacas.HORA_MAPAS)
 
         if self.videoAct is not None:
             vMix.listClear(self.videoAct)
