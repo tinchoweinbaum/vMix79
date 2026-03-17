@@ -274,8 +274,9 @@ class Scheduler:
         """
         Pausa la música. Saca el tema que estaba sonando para que arranque desde el próximo después.
         """
-        self.vMix.listNextItem(IdInputs.MUSICA)
+        self.vMix.setAudio_off(IdInputs.MUSICA)
         self.vMix.pauseInput(IdInputs.MUSICA)
+        self.vMix.listNextItem(IdInputs.MUSICA)
 
     def _cargaProx(self):
         """
@@ -547,6 +548,7 @@ class Scheduler:
         # Ya está contemplado el caso de que no exista el bloque en la función de la db.
     
     def _loaderMusica(self,bloqueMusicaNew):
+        """Método para que el hilo de música cargue las músicas de forma paralela."""
         try:
             vMix = self.vMix
 
