@@ -24,9 +24,11 @@ class Contenido:
         self.orden = orden
         self.es_publi = es_publi
 
-    def path_valido(self):        
+    def path_valido(self):
+        if self.path is None:
+            return False
         p = Path(self.path)
-        return p.exists() and p.is_file()
+        return p.exists()
     
 class Camara:
     def __init__(self, id_camara: int, nombre: str, desc: str, es_default: bool, dir_conexion: str, tiempo: int, orden: int, activo: bool, escalar: bool, mensaje: str,dir_verificada: str, hora_desde: time, hora_hasta: time, user: str, clave: str, controla_sol: bool):
