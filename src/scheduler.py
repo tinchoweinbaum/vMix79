@@ -273,7 +273,33 @@ class Scheduler:
         self._cargaProx()
 
     def __bloqueFallback(self):
-        # Lo tengo que hacer artificialmente porque en la db me parece que no hay un procedimiento de bloque default
+        # Lo tengo que hacer artificialmente porque en la db no hay un procedimiento de bloque default
+        ahora = datetime.now()
+        bloqueNew = List[Contenido] = []
+        if ahora.time().minute % 10 < 5: # Si el bloque actual sería reporte
+            bloqueNew = self.__fallbackNoti(ahora)
+            pass
+        else:
+            bloqueNew = self.__fallbackNoti(ahora)
+            pass
+
+        self.bloqueProx = bloqueNew # Cargo el bloque nuevo, creado artificalmente.
+
+    def __fallbackNoti(self, ahora: datetime) -> List[Contenido]:
+        """Devuelve un bloque "artificial" de noti aguante con rotación de cámaras y música. Contiene las órdenes de arranque de estos 3 items"""
+        horaNoti = 2 # despues veo como la calculo
+        objNoti = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.PLACA, None, None, "Noti Aguante", None, None, None) # Objeto noti aguante
+        objCamara = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
+        objMusica = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+
+        bloqueNoti = List[Contenido] = []
+        bloqueNoti.append(objNoti)
+        bloqueNoti.append(objCamara)
+        bloqueNoti.append(objMusica)
+
+        return bloqueNoti
+
+    def __fallbackReporte(self, ahora) -> List[Contenido]:
         pass
     
     def _stopMusica(self):
@@ -431,6 +457,10 @@ class Scheduler:
         """
         Toggle de inputs de placa, adaptado para las placas en GT cada una en un input distinto.
         """
+
+        # Si molesta mucho el pequeño delay que hay entre cámara y placa al arrancar al reporte, se puede reimplementar con una lista de placas porque el reporte siempre sigue el mismo orden
+        # Y de esa manera se evitaría el match para mejor performance.
+
         vMix = self.vMix
         self.playBlip()
 
@@ -500,7 +530,6 @@ class Scheduler:
 
         if idCam:
             self._actualizarTxtCamara(camAct.nombre)
-            self.vMix.dataSourceSelectRow("nombrecam",0) # Actualizo el data source del .txt
 
             self.vMix.setOutput_number(idCam)
             self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam
@@ -509,13 +538,18 @@ class Scheduler:
 
     def _actualizarTxtCamara(self, nombreCam):
         """Escribe el .txt que vMix usa de data source para el nombre de la camara"""
-        try:
-            ruta_txt = Path(__file__).resolve().parent.parent / "resources" / "vmix_resources" / "nombrecam.txt"
-            with open(ruta_txt, "w", encoding="utf-8") as f:
-                f.write(nombreCam)
-        except Exception as e:
-            print(f"[ERROR]: No se pudo escribir el nombre de la cámara en el .txt: {e}")
-
+        
+        intentos = 0
+        while intentos <= 3:
+            try:
+                ruta_txt = Path(__file__).resolve().parent.parent / "resources" / "vmix_resources" / "nombrecam.txt"
+                with open(ruta_txt, "w", encoding="utf-8") as f:
+                    f.write(nombreCam)
+                    break
+            except Exception as e:
+                print(f"[ERROR]: No se pudo escribir el nombre de la cámara en el .txt: {e}\nReintentando...")
+                intentos += 1
+    
     def _goLiveCamara(self):
         self.camaraLive = True
 
@@ -567,7 +601,6 @@ class Scheduler:
             print(f"[ERROR]: Error al actualizar las noticias: {e}")
 
     def actualizaCamaras(self):
-        # Llamar a database.getCamaras() y ver como hago para usar ese bloque
         DB = self.database
 
         bloqueCamNew = DB.get_Camaras()
@@ -623,6 +656,7 @@ class Scheduler:
         DB = self.database
 
         self.vMix.listClear(IdInputs.MUSICA) # Limpio música anterior.
+        time.sleep(0.1)
 
         bloqueMusicaNew = DB.get_Musicas() # Pido bloque nuevo de músicas
         if bloqueMusicaNew:
