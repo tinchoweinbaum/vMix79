@@ -376,8 +376,9 @@ class Scheduler:
         # print("Hora actual: " + str(datetime.now().time()) + "\n")
         if contAct == None:
             print("[ERROR]: Contenido inexistente\n")
+            return
 
-        if not contAct.path_valido() and contAct.path not in ["CAMARA", "MUSICA","IMAGENCAM"]:
+        if contAct.tipo != TipoContenido.PLACA and not contAct.path_valido() and contAct.path not in ["CAMARA", "MUSICA","IMAGENCAM"]:
             print("[ERROR]: No se encontró " + contAct.path + ", la imagen va a quedar congelada.\n")
             return
 
