@@ -258,7 +258,7 @@ class Scheduler:
     def _swapBloque(self):
         if not self.bloqueProx:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
-            self.__bloqueFallback()
+            self.bloqueProx = self.__bloqueFallback()
             return
         
         self.bloqueAire = self.bloqueProx
@@ -294,7 +294,7 @@ class Scheduler:
 
     def __fallbackNoti(self, ahora: datetime) -> List[Contenido]:
         """Devuelve un bloque "artificial" de noti aguante con rotación de cámaras y música. Contiene las órdenes de arranque de estos 3 items"""
-        horaNoti = 2 # despues veo como la calculo
+        horaNoti = ahora.time() # despues veo como la calculo
         objNoti = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.PLACA, None, None, "Noti Aguante", None, None, None) # Objeto noti aguante
         objCamara = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
         objMusica = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
