@@ -297,7 +297,7 @@ class Scheduler:
         objCamara = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
         objMusica = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
 
-        bloqueNoti = List[Contenido] = []
+        bloqueNoti: List[Contenido] = []
         bloqueNoti.append(objNoti)
         bloqueNoti.append(objCamara)
         bloqueNoti.append(objMusica)
