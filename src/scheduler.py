@@ -280,7 +280,7 @@ class Scheduler:
     def __bloqueFallback(self):
         # Lo tengo que hacer artificialmente porque en la db no hay un procedimiento de bloque default
         ahora = datetime.now()
-        bloqueNew = List[Contenido] = []
+        bloqueNew: List[Contenido] = []
         if ahora.time().minute % 10 < 5: # Si el bloque actual sería reporte
             bloqueNew = self.__fallbackNoti(ahora)
             pass
