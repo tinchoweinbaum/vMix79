@@ -253,7 +253,7 @@ class Scheduler:
     def _swapBloque(self):
         if not self.bloqueProx:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
-            # Asignar acá a bloqueProx el bloque default
+            self.__bloqueFallback()
             return
         
         self.bloqueAire = self.bloqueProx
@@ -271,6 +271,10 @@ class Scheduler:
             self.nroBloqueAire += 1
 
         self._cargaProx()
+
+    def __bloqueFallback(self):
+        # Lo tengo que hacer artificialmente porque en la db me parece que no hay un procedimiento de bloque default
+        pass
     
     def _stopMusica(self):
         """
@@ -496,9 +500,13 @@ class Scheduler:
 
         if idCam:
             self._actualizarTxtCamara(camAct.nombre)
+
+            self.vMix.__makeRequest("DataSourceSelectRow", extraParams={
+                "Source": "nombrecam", # El nombre que le pusiste en Data Sources
+                "Index": 0
+            })
             self.vMix.setOutput_number(idCam)
-            # Actualizamos el tiempo de la próxima
-            self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo)
+            self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam
         else:
             print(f"[ERROR]: No se encontró el ID para {camAct.nombre}.")
 
