@@ -179,7 +179,7 @@ class Scheduler:
         if bloqueNew:
             self.bloqueAire = bloqueNew # Devuelve el bloque actual en una lista.
         else:
-            self.__bloqueFallback()
+            self.bloqueAire = self.__bloqueFallback()
 
         # Calculo index:
 
@@ -278,7 +278,9 @@ class Scheduler:
         self._cargaProx()
 
     def __bloqueFallback(self):
-        # Lo tengo que hacer artificialmente porque en la db no hay un procedimiento de bloque default
+        """
+        Devuelve un bloque default, que dependiendo de la hora es reporte o noti aguante
+        """
         ahora = datetime.now()
         bloqueNew: List[Contenido] = []
         if ahora.time().minute % 10 < 5: # Si el bloque actual sería reporte
@@ -288,7 +290,7 @@ class Scheduler:
             bloqueNew = self.__fallbackNoti(ahora)
             pass
 
-        self.bloqueProx = bloqueNew # Cargo el bloque nuevo, creado artificalmente.
+        return bloqueNew # Cargo el bloque nuevo, creado artificalmente.
 
     def __fallbackNoti(self, ahora: datetime) -> List[Contenido]:
         """Devuelve un bloque "artificial" de noti aguante con rotación de cámaras y música. Contiene las órdenes de arranque de estos 3 items"""
