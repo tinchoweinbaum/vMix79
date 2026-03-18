@@ -500,11 +500,8 @@ class Scheduler:
 
         if idCam:
             self._actualizarTxtCamara(camAct.nombre)
+            self.vMix.dataSourceSelectRow("nombrecam",0) # Actualizo el data source del .txt
 
-            self.vMix.__makeRequest("DataSourceSelectRow", extraParams={
-                "Source": "nombrecam", # El nombre que le pusiste en Data Sources
-                "Index": 0
-            })
             self.vMix.setOutput_number(idCam)
             self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam
         else:

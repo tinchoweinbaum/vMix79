@@ -209,6 +209,9 @@ class VmixApi:
         """Recibe número, id o nombre de ListInput y skipea el item actual"""
         self.__makeRequest("NextItem", extraParams = {"Input": listId})
 
+    def dataSourceSelectRow(self, datasource, row = 0):
+        self.__makeRequest("DataSourceSelectRow", extraParams={"Source": datasource,"Index": row})
+
     def getInputPath_num(self, inputNum):
             """
             Retorna el path del archivo cargado en un input específico.
