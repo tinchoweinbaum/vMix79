@@ -198,7 +198,11 @@ class Scheduler:
         if bloqueNew:
             self.bloqueAire = bloqueNew # Devuelve el bloque actual en una lista.
         else:
-            self.bloqueAire = self.__bloqueFallback() # Esto está MAL. bloqueFallback devuelve el bloque OPUESTO al que tiene que salir ahora. Arreglar después de tener el fallback hecho,
+            if ahora.time().minute % 10 < 5: # Si el bloque actual es reporte
+                self.bloqueAire = self.__fallbackReporte(ahora) 
+            else: # Si el bloque actual es noti
+                self._actualizaNoti()
+                self.bloqueAire = self.__fallbackNoti(ahora)
 
         # Calculo index:
 
@@ -307,7 +311,7 @@ class Scheduler:
             self._actualizaNoti()
             bloqueNew = self.__fallbackNoti(ahora)
         else: # Si el bloque que sigue va a ser reporte
-            bloqueNew = self.__fallbackNoti(ahora)
+            bloqueNew = self.__fallbackReporte(ahora)
 
         return bloqueNew # Cargo el bloque nuevo, creado artificalmente.
 
@@ -336,20 +340,62 @@ class Scheduler:
         """
         Devuelve un bloque artificial de reporte local con música y rotación de cámaras, creado a mano con duraciones hardcodeadas.
         """
+        # Podría haber hecho un diccionario en vez de este acto de terrorismo pero bueno ya está.
+
         print("[INFO]: Usando bloque default Reporte Local")
-        ahora = datetime.now()
-        minutos_faltantes = 10 - (ahora.minute % 10)
-        proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
+        minutos_faltantes = 10 - (ahora.minute % 10) # ahora es tipo datetime
+        proximo_inicio = ahora.replace(second=0, microsecond=0) + timedelta(minutes=minutos_faltantes)
+
+        puntero_temporal = proximo_inicio
         listaReporte: List[Contenido] = []
 
-        objPresenta = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.VIDEO, None, None, "PRESENTA TRUCHA.mp4", r"\\SERVERLOC\Videos\PRESENTACIONES\PRESENTA TRUCHA.mp4",None, None)
+        objPresenta = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.VIDEO, None, None, "PRESENTA TRUCHA.mp4", r"\\SERVERLOC\Videos\PRESENTACIONES\PRESENTA TRUCHA.mp4",None, None)
         listaReporte.append(objPresenta)
-        proxima_hora = ahora.time() + timedelta(seconds = DuraReporte.PRESENTA)
+        puntero_temporal += timedelta(seconds = DuraReporte.PRESENTA)
 
-        objCamara = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
-        objMusica = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+        objCamara = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
+        listaReporte.append(objCamara)
 
+        objMusica = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+        listaReporte.append(objMusica)
 
+        objDatos = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Actual Datos", r"c:\Placas\HD\tiempoactual.png", None, None)
+        listaReporte.append(objDatos)
+        puntero_temporal += timedelta(seconds = DuraReporte.ACTUAL_DATOS) # Musica, cámara y datos salen al mismo tiempo.
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Actual Detalle", r"c:\Placas\HD\tiempoactual1.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.ACTUAL_DETALLE)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Extendido Manana", r"c:\Placas\HD\Extendido1.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_MANANA)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Extendido Tarde", r"c:\Placas\HD\Extendido1.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_TARDE)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Extendido 2 Dias", r"c:\Placas\HD\Extendido2.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_2DIAS)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Salida de Sol", r"c:\Placas\aire\HD\salidasol.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.SALIDA_SOL)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Fases Lunares", r"c:\Placas\aire\HD\faseslunares.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.FASES_LUNARES)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Mareas", r"c:\Placas\aire\HD\mareas.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.MAREAS)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.VIDEO, None, None, "mapas", r"\\SERVERLOC\Videos\mapas.mp4", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.MAPAS)
+
+        return listaReporte
     
     def _stopMusica(self):
         """
