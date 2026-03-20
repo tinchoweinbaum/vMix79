@@ -188,7 +188,7 @@ class Scheduler:
 
         ahora = datetime.now()
         fechaAct = ahora.strftime('%d.%m.%Y') 
-        horaAct = ahora.time()
+        horaAct = ahora.time() # esto es datetime.time
         minutoAct = horaAct.hour * 60 +  horaAct.minute
         print(fechaAct)
 
@@ -208,7 +208,8 @@ class Scheduler:
 
         self.indexBloque = 0
         for i, cont in enumerate(self.bloqueAire):
-            if horaAct >= cont.hora:
+            hora_item = cont.hora if isinstance(cont.hora, time) else cont.hora.time()
+            if horaAct >= hora_item:
                 self.indexBloque = i # Index del contenido que debería estar al aire.
             else:
                 break
@@ -341,6 +342,8 @@ class Scheduler:
         Devuelve un bloque artificial de reporte local con música y rotación de cámaras, creado a mano con duraciones hardcodeadas.
         """
         # Podría haber hecho un diccionario en vez de este acto de terrorismo pero bueno ya está.
+
+        # Inicia mal el index del bloque.
 
         print("[INFO]: Usando bloque default Reporte Local")
         minutos_faltantes = 10 - (ahora.minute % 10) # ahora es tipo datetime
