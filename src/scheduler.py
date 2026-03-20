@@ -308,7 +308,6 @@ class Scheduler:
             bloqueNew = self.__fallbackNoti(ahora)
         else: # Si el bloque que sigue va a ser reporte
             bloqueNew = self.__fallbackNoti(ahora)
-            pass
 
         return bloqueNew # Cargo el bloque nuevo, creado artificalmente.
 
@@ -320,7 +319,8 @@ class Scheduler:
 
         ahora = datetime.now()
         minutos_faltantes = 10 - (ahora.minute % 10)
-        proxima_hora = ahora.time() + timedelta(minutes=minutos_faltantes)
+        proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
+        proxima_hora = proxima_hora.time() # Typing correcto para la lógica del scheduler.
         
         objNoti = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante
         objCamara = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
