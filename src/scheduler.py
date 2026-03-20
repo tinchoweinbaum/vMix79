@@ -134,30 +134,36 @@ class Scheduler:
             time.sleep(0.2)
 
     def _tick(self):
-        """
-        _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
-        si hay que hacerlo.
-        
-        La hora del contenido se compara con datetime.now().time()
-        La hora de las cámaras se compara con datetime.now()
-        """
+            """
+            _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
+            si hay que hacerlo.
+            Se encarga también del cambio de bloque cada 5 minutos y de la rotación de las cámaras.
+            """
+            horaAct = datetime.now()
 
-        if self.indexBloque >= len(self.bloqueAire):
-            self._swapBloque() # Ojo, loop infinito si el bloque no existe. Arreglar con bloque default.
-            return
-        
-        contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
-        horaAct = datetime.now()
-
-        if self.camaraLive and horaAct >= self.horaProxCam: # Si hay cámara al aire y corresponde cambiar de cámara.
+            # --- Rotación de cámaras ---
+            if self.camaraLive and horaAct >= self.horaProxCam:
                 self.proximaCamara()
 
-        if horaAct.time() >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
-            self.indexBloque += 1
-            self._goLive(contAct)
-            
-            if self.indexBloque >= len(self.bloqueAire): # Si mandé el último contenido del bloque al aire precargo el próximo bloque en self.bloqueProx
-                self._cargaProxBloque()
+            # --- Swapeo de bloques ---
+            if self.indexBloque >= len(self.bloqueAire): # Si mandé el último al aire...
+                minutoAct = horaAct.hour * 60 + horaAct.minute
+                bloqueCorrespondiente = minutoAct // Bloque.DURACION + 1 # ...pero todavía NO corresponde cambiar de bloque
+
+                if bloqueCorrespondiente > self.nroBloqueAire:
+                    self._swapBloque()
+
+                return 
+
+            # --- Disparo de contenido ---
+
+            contAct = self.bloqueAire[self.indexBloque]
+            if horaAct.time() >= contAct.hora:
+                self.indexBloque += 1
+                self._goLive(contAct)
+                
+                if self.indexBloque >= len(self.bloqueAire):
+                    self._cargaProxBloque()
     
     def _buscaBloque(self):
         """
@@ -283,10 +289,10 @@ class Scheduler:
         """
         ahora = datetime.now()
         bloqueNew: List[Contenido] = []
-        if ahora.time().minute % 10 < 5: # Si el bloque actual sería reporte
+        if ahora.time().minute % 10 < 5: # Si el bloque que sigue va a ser noti
             bloqueNew = self.__fallbackNoti(ahora)
             pass
-        else:
+        else: # Si el bloque que sigue va a ser reporte
             bloqueNew = self.__fallbackNoti(ahora)
             pass
 

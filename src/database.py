@@ -59,7 +59,7 @@ class Database:
             print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. {e}")
             return False
         
-        print(f"[INFO]: Conexión con la Database en {self.host}:{self.path} establecida.\n")
+        print(f"[INFO]: Conexión con la Database en {self.path} establecida.\n")
         return True
     
     def getBloque_num(self, fecha, nroBloque):
@@ -71,6 +71,8 @@ class Database:
         # Query:
 
         # test fallback
+
+        return None
         
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida a la Database para pedir un bloque.")
