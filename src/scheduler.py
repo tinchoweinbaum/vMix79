@@ -208,7 +208,7 @@ class Scheduler:
 
         self.indexBloque = 0
         for i, cont in enumerate(self.bloqueAire):
-            hora_item = cont.hora if isinstance(cont.hora, datetime.time) else cont.hora.time()
+            hora_item = cont.hora if isinstance(cont.hora, dt) else cont.hora.time()
             if horaAct >= hora_item:
                 self.indexBloque = i # Index del contenido que debería estar al aire.
             else:
