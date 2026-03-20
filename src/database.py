@@ -28,18 +28,6 @@ class Database:
         envPath = BASE_DIR / "config" / "db.env"
         load_dotenv(str(envPath), override = True)
 
-        print(f"--- DEBUG DE INICIO ---")
-        print(f"1. Buscando archivo en: {envPath.absolute()}")
-        print(f"2. El archivo existe?: {envPath.exists()}")
-        
-        # Intentamos cargar
-        cargado = load_dotenv(str(envPath), override=True)
-        print(f"3. ¿load_dotenv devolvió True?: {cargado}")
-        
-        # Verificamos qué hay en os.environ JUSTO AHORA
-        print(f"4. DB_HOST en memoria: {os.environ.get('DB_HOST')}")
-        print(f"-----------------------")
-
         self.host = os.getenv("DB_HOST","localhost") # El segundo parámetro es el default, por si no existe el .env o no encuentra lo que busca.
         self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA_MARZO.FDB")}"
         self.user = os.getenv("DB_USER","SYSDBA")
