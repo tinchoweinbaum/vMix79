@@ -52,14 +52,14 @@ class Database:
 
         try:
             if self.conn is None:
-                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.                
+                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.          
             else:
                 return False
         except Exception as e:
             print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. {e}")
             return False
         
-        print("[INFO]: Conexión con la DB establecida.\n")
+        print(f"[INFO]: Conexión con la Database en {self.host}:{self.path} establecida.\n")
         return True
     
     def getBloque_num(self, fecha, nroBloque):
@@ -71,7 +71,6 @@ class Database:
         # Query:
 
         # test fallback
-        return None
         
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida a la Database para pedir un bloque.")
@@ -85,7 +84,8 @@ class Database:
                 WHERE FECHA = CAST(? AS DATE) AND BLOQUE = CAST(? AS INTEGER)
                 ORDER BY HORA"""
         
-        cursor.execute(query, (f'{fecha}', nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
+        cursor.execute(query, ('19.03.2026', nroBloque))
+        # cursor.execute(query, (f'{fecha}', nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
         queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
         
