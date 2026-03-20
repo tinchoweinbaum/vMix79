@@ -31,6 +31,28 @@ class TipoContenido(IntEnum):
     IMAGENCAM = 5
     FOTOBMP = 6
 
+class OverlaySlots(IntEnum):
+    SLOT_PLACA = 1
+    SLOT_NOTICIAS = 2
+    SLOT_HORA = 3
+
+class Bloque(IntEnum):
+    DURACION = 5 # Duración en minutos.
+    CANT_MAX = 288 # Cantidad de bloques = Minutos en un dia // 5
+
+class DuraReporte:
+    # da 309 segundos por algún motivo pero son los valores que hay en la db
+    PRESENTA = 11
+    ACTUAL_DATOS = 55
+    ACTUAL_DETALLE = 50
+    EXTENDIDO_MANANA = 35
+    EXTENDIDO_TARDE = 30
+    EXTENDIDO_2DIAS = 30
+    SALIDA_SOL = 20
+    FASES_LUNARES = 20
+    MAREAS = 29
+    MAPAS = 29
+
 class IdInputs(str, Enum):
     MUSICA = "be7d700b-c30d-4a88-b4ad-9122dea69540"
     VIDEO_A = "ad2fc430-395b-4dc0-88c4-1b94ffa45aff"
@@ -52,15 +74,6 @@ class IdPlacas(str, Enum):
     NOTICIAS = "c0ea010a-098d-4ea3-94b4-40246e3eed25"
     ACTUAL_DETALLE_CLIMA = "6a5dd7d8-6fda-4538-a6bd-b4a5ca451185"
     HORA_MAPAS = "f150e53a-b06d-4261-b61f-f76be331203e"
-
-class OverlaySlots(IntEnum):
-    SLOT_PLACA = 1
-    SLOT_NOTICIAS = 2
-    SLOT_HORA = 3
-
-class Bloque(IntEnum):
-    DURACION = 5 # Duración en minutos.
-    CANT_MAX = 288 # Cantidad de bloques = Minutos en un dia // 5
 
 class Scheduler:
     def __init__(self, vMix: VmixApi, database: Database):
@@ -285,35 +298,58 @@ class Scheduler:
 
     def __bloqueFallback(self):
         """
-        Devuelve un bloque default, que dependiendo de la hora es reporte o noti aguante
+        Devuelve un bloque default, que dependiendo de la hora es reporte o noti aguante.
+        Esto carga una sola vez la música, si se terminan los 10 temas, va a quedar al aire sin música.
         """
         ahora = datetime.now()
         bloqueNew: List[Contenido] = []
         if ahora.time().minute % 10 < 5: # Si el bloque que sigue va a ser noti
+            self._actualizaNoti()
             bloqueNew = self.__fallbackNoti(ahora)
-            pass
         else: # Si el bloque que sigue va a ser reporte
-            bloqueNew = self.__fallbackNoti(ahora)
+            bloqueNew = self.__fallbackReporte(ahora)
             pass
 
         return bloqueNew # Cargo el bloque nuevo, creado artificalmente.
 
     def __fallbackNoti(self, ahora: datetime) -> List[Contenido]:
         """Devuelve un bloque "artificial" de noti aguante con rotación de cámaras y música. Contiene las órdenes de arranque de estos 3 items"""
-        horaNoti = ahora.time() # despues veo como la calculo
-        objNoti = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante
-        objCamara = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
-        objMusica = Contenido(None, ahora.date(), horaNoti, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
 
+        print("[INFO]: Usando bloque default Noti Aguante")
         bloqueNoti: List[Contenido] = []
+
+        ahora = datetime.now()
+        minutos_faltantes = 10 - (ahora.minute % 10)
+        proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
+        
+        objNoti = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante
+        objCamara = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
+        objMusica = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+
         bloqueNoti.append(objNoti)
         bloqueNoti.append(objCamara)
         bloqueNoti.append(objMusica)
 
         return bloqueNoti
 
-    def __fallbackReporte(self, ahora) -> List[Contenido]:
-        pass
+    def __fallbackReporte(self, ahora: datetime) -> List[Contenido]:
+        """
+        Devuelve un bloque artificial de reporte local con música y rotación de cámaras, creado a mano con duraciones hardcodeadas.
+        """
+        print("[INFO]: Usando bloque default Reporte Local")
+        ahora = datetime.now()
+        minutos_faltantes = 10 - (ahora.minute % 10)
+        proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
+        listaReporte: List[Contenido] = []
+
+        objPresenta = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.VIDEO, None, None, "PRESENTA TRUCHA.mp4", r"\\SERVERLOC\Videos\PRESENTACIONES\PRESENTA TRUCHA.mp4",None, None)
+        listaReporte.append(objPresenta)
+        proxima_hora = ahora.time() + timedelta(seconds = DuraReporte.PRESENTA)
+
+        objCamara = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
+        objMusica = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+
+
     
     def _stopMusica(self):
         """
