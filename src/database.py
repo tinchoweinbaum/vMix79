@@ -26,7 +26,7 @@ class Database:
         """
         BASE_DIR = Path(__file__).resolve().parent.parent
         envPath = BASE_DIR / "config" / "db.env"
-        load_dotenv(str(envPath))
+        load_dotenv(str(envPath), override = True)
 
         self.host = os.getenv("DB_HOST","localhost") # El segundo parámetro es el default, por si no existe el .env o no encuentra lo que busca.
         self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA_MARZO.FDB")}"
