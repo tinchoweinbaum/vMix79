@@ -29,7 +29,7 @@ class Database:
         load_dotenv(str(envPath))
 
         self.host = os.getenv("DB_HOST","localhost") # El segundo parámetro es el default, por si no existe el .env o no encuentra lo que busca.
-        self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Canal79\DB\CANAL79_DB.FDB")}"
+        self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA_MARZO.FDB")}"
         self.user = os.getenv("DB_USER","SYSDBA")
         self.password = os.getenv("DB_PASS","masterkey")
         self.charset = "UTF8"
