@@ -72,7 +72,7 @@ class Database:
 
         # test fallback
 
-        return None
+        # return None
         
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida a la Database para pedir un bloque.")
