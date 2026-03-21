@@ -317,9 +317,9 @@ class Scheduler:
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             manana = datetime.now() + timedelta(days=1)
             print("hola disculpa voy a esperar hasta mañana...")
-            proxDia = datetime.combine(manana.date(), dt(0,0,0))
-            pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire. Puede haber race condition y quedar colgado hasta mañana. Muy muy muy raro.
-            print("...ya espere, sigo.")
+            while datetime.now().time().hour == 23: # Espero hasta mañana
+                time.sleep(0.1)
+            print("ya espere, sigo")
             self.nroBloqueAire = 1
         else:
             self.nroBloqueAire += 1
