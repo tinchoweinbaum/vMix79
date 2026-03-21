@@ -17,11 +17,8 @@ import time
 
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático. Agregar botón de "Actualizar placas".
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
-# TO DO: Implementación e iteración del bloque de cámaras, si no encuentra el bloque, o la lista es None, que defaultee a una.
 # TO DO: Cuando se le mandan muchos comandos a la vez a vMix, da play a inputs incorrectos, esto es especialmente notorio en el arranque o cuando se cambia la hora mientras se está al aire.
-# TO DO: Bloque default si no hay playlist.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
-# TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -319,8 +316,10 @@ class Scheduler:
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             manana = datetime.now() + timedelta(days=1)
+            print("hola disculpa voy a esperar hasta mañana...")
             proxDia = datetime.combine(manana.date(), dt(0,0,0))
             pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire. Puede haber race condition y quedar colgado hasta mañana. Muy muy muy raro.
+            print("...ya espere, sigo.")
             self.nroBloqueAire = 1
         else:
             self.nroBloqueAire += 1
@@ -340,7 +339,7 @@ class Scheduler:
         else: # Si el bloque que sigue va a ser reporte
             bloqueNew = self.__fallbackReporte(ahora)
 
-        return bloqueNew # Cargo el bloque nuevo, creado artificalmente.
+        return bloqueNew
 
     def __fallbackNoti(self, ahora: datetime) -> List[Contenido]:
         """Devuelve un bloque "artificial" de noti aguante con rotación de cámaras y música. Contiene las órdenes de arranque de estos 3 items"""
