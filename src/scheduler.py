@@ -280,6 +280,9 @@ class Scheduler:
         self.microProx = inputLibre
 
     def _swapBloque(self):
+
+        print("llamo swap")
+
         if not self.bloqueProx:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
             self.bloqueProx = self.__bloqueFallback()
@@ -288,6 +291,7 @@ class Scheduler:
         self.bloqueAire = self.bloqueProx
         self.indexBloque = 0
         self.bloqueProx = [] # Como self.bloqueProx = Null
+        
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             manana = datetime.now() + timedelta(days=1)
