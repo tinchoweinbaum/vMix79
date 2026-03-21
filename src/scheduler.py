@@ -290,11 +290,11 @@ class Scheduler:
         self.bloqueProx = [] # Como self.bloqueProx = Null
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
-            ahora = datetime.now()
-            manana = datetime.combine(ahora.date() + timedelta(days=1), time(0, 0, 0))
-            tiempoHastaManana = ahora - manana
-            print("Pauso hasta mañana")
-            pause.time(tiempoHastaManana.total_seconds)# Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
+            manana = datetime.now() + timedelta(days=1)
+            proxDia = datetime.combine(manana.date(), dt(0,0,0))
+            pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
+            # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
+            # Mucho ojo también con la race condition de que la linea pause.until(proxDia) no se ejecute despues de las 00:00 porque si no va a quedar colgado 1 dia entero.
             self.nroBloqueAire = 1
         else:
             self.nroBloqueAire += 1
