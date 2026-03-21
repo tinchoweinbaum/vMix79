@@ -233,7 +233,7 @@ class Scheduler:
 
         fechaAct = datetime.now().date()
 
-        nroBloqueProx = self.nroBloqueAire + 1 # Sumo 1 otra vez porque quiero el PRÓXIMO BLOQUE.
+        nroBloqueProx = self.nroBloqueAire + 1
 
         if nroBloqueProx > Bloque.CANT_MAX: # Si está al aire el último bloque voy al primer bloque de mañana
             fechaAct = fechaAct + timedelta(days = 1) # Dudo mucho de la lógica de cambio de día. Race condition para llamar antes de las 00
@@ -290,11 +290,10 @@ class Scheduler:
         self.bloqueProx = [] # Como self.bloqueProx = Null
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
-            manana = datetime.now() + timedelta(days=1)
-            proxDia = datetime.combine(manana.date(), dt(0,0,0))
-            pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
-            # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
-            # Mucho ojo también con la race condition de que la linea pause.until(proxDia) no se ejecute despues de las 00:00 porque si no va a quedar colgado 1 dia entero.
+            ahora = datetime.now()
+            manana = datetime.combine(ahora.date() + timedelta(days=1), time(0, 0, 0))
+            tiempoHastaManana = ahora - manana # no se como se hace
+            pause.time(tiempoHastaManana.total_seconds)# Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
             self.nroBloqueAire = 1
         else:
             self.nroBloqueAire += 1
