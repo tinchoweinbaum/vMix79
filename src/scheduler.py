@@ -319,6 +319,7 @@ class Scheduler:
             while datetime.now().time().hour == 23:
                 time.sleep(0.1)
             self.nroBloqueAire = 1
+            time.sleep(0.1)
         else:
             self.nroBloqueAire += 1
             self._cargaProx()
