@@ -315,16 +315,14 @@ class Scheduler:
         self.bloqueProx = [] # Como self.bloqueProx = Null
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
-            manana = datetime.now() + timedelta(days=1)
-            print("hola disculpa voy a esperar hasta mañana...")
-            while datetime.now().time().hour == 23: # Espero hasta mañana
+            self._cargaProx() # Llamo acá y no afuera del while para no cargar DESPUÉS de esperar y perder 1 segundo.
+            while datetime.now().time().hour == 23:
                 time.sleep(0.1)
-            print("ya espere, sigo")
             self.nroBloqueAire = 1
         else:
             self.nroBloqueAire += 1
+            self._cargaProx()
 
-        self._cargaProx()
 
     def __bloqueFallback(self):
         """
