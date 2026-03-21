@@ -124,8 +124,6 @@ class Scheduler:
             self.stop()
             return
 
-        # self._startAudio()
-
         self.actualizaPlacas()
         self.actualizaNoticias()
         self.actualizaCamaras()
@@ -146,6 +144,36 @@ class Scheduler:
             self._tick()
             time.sleep(0.2)
 
+
+    def _tick(self):
+        """
+        _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
+        si hay que hacerlo.
+        
+        La hora del contenido se compara con datetime.now().time()
+        La hora de las cámaras se compara con datetime.now()
+        """
+
+        horaAct = datetime.now()
+
+        # --- Rotación de cámaras ---
+        if self.camaraLive and horaAct >= self.horaProxCam:
+            self.proximaCamara()
+
+        # --- Cambio de Bloque ---
+        if self.indexBloque >= len(self.bloqueAire):
+            self._swapBloque() # OJO: El bloque default de noti aguante rompe esta lógica porque tiene un solo elemento. Cambiar el bloque O la lógica.
+            return
+        
+        # --- Disparo de contenido ---
+        contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
+        if horaAct.time() >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
+            self.indexBloque += 1
+            self._goLive(contAct)
+            
+            if self.indexBloque >= len(self.bloqueAire): # Si mandé el último contenido del bloque al aire precargo el próximo bloque en self.bloqueProx
+                self._cargaProxBloque()
+
     def _tick(self):
             """
             _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
@@ -163,7 +191,7 @@ class Scheduler:
                 minutoAct = horaAct.hour * 60 + horaAct.minute
                 bloqueCorrespondiente = minutoAct // Bloque.DURACION + 1 # ...pero todavía NO corresponde cambiar de bloque
 
-                if bloqueCorrespondiente != self.nroBloqueAire:
+                if bloqueCorrespondiente != self.nroBloqueAire: # MAL, llama a swapBloque DESPUES de las 00 al cambiar de día, queda colgado.
                     self._swapBloque()
 
                 return 
@@ -239,7 +267,7 @@ class Scheduler:
             fechaAct = fechaAct + timedelta(days = 1) # Dudo mucho de la lógica de cambio de día. Race condition para llamar antes de las 00
             nroBloqueProx = 1
 
-        self.bloqueProx = self.database.getBloque_num(fechaAct,nroBloqueProx) # Precarga el bloque próximo al actual. Por eso +1.
+        self.bloqueProx = self.database.getBloque_num(fechaAct, nroBloqueProx) # Guarda en bloqueProx el próximo bloque
         print(f"[INFO]: Bloque {nroBloqueProx} cargado. Ya no se puede modificar.\n")
 
     def stop(self):
@@ -280,9 +308,6 @@ class Scheduler:
         self.microProx = inputLibre
 
     def _swapBloque(self):
-
-        print("llamo swap")
-
         if not self.bloqueProx:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
             self.bloqueProx = self.__bloqueFallback()
@@ -291,14 +316,11 @@ class Scheduler:
         self.bloqueAire = self.bloqueProx
         self.indexBloque = 0
         self.bloqueProx = [] # Como self.bloqueProx = Null
-        
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             manana = datetime.now() + timedelta(days=1)
             proxDia = datetime.combine(manana.date(), dt(0,0,0))
-            pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
-            # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
-            # Mucho ojo también con la race condition de que la linea pause.until(proxDia) no se ejecute despues de las 00:00 porque si no va a quedar colgado 1 dia entero.
+            pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire. Puede haber race condition y quedar colgado hasta mañana. Muy muy muy raro.
             self.nroBloqueAire = 1
         else:
             self.nroBloqueAire += 1
@@ -328,8 +350,8 @@ class Scheduler:
 
         ahora = datetime.now()
         minutos_faltantes = 10 - (ahora.minute % 10)
-        proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
-        proxima_hora = proxima_hora.time() # Typing correcto para la lógica del scheduler.
+        proxima_hora_delta = ahora + timedelta(minutes=minutos_faltantes)
+        proxima_hora = proxima_hora_delta.time() # Typing correcto para la lógica del scheduler.
         
         objNoti = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante
         objCamara = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
@@ -339,6 +361,10 @@ class Scheduler:
         bloqueNoti.append(objCamara)
         bloqueNoti.append(objMusica)
 
+        # Meto este elemento de relleno para que no se rompa la lógica del tick con el swapeo de bloques.
+        objRelleno = Contenido(None, ahora.date(), (proxima_hora_delta + timedelta(minutes = Bloque.DURACION)).time(), None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante
+        bloqueNoti.append(objRelleno)
+
         return bloqueNoti
 
     def __fallbackReporte(self, ahora: datetime) -> List[Contenido]:
@@ -346,8 +372,6 @@ class Scheduler:
         Devuelve un bloque artificial de reporte local con música y rotación de cámaras, creado a mano con duraciones hardcodeadas.
         """
         # Podría haber hecho un diccionario en vez de este acto de terrorismo pero bueno ya está.
-
-        # Inicia mal el index del bloque.
 
         print("[INFO]: Usando bloque default Reporte Local")
         minutos_faltantes = 10 - (ahora.minute % 10) # ahora es tipo datetime
