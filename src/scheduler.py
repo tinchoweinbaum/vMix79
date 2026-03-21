@@ -292,7 +292,8 @@ class Scheduler:
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             ahora = datetime.now()
             manana = datetime.combine(ahora.date() + timedelta(days=1), time(0, 0, 0))
-            tiempoHastaManana = ahora - manana # no se como se hace
+            tiempoHastaManana = ahora - manana
+            print("Pauso hasta mañana")
             pause.time(tiempoHastaManana.total_seconds)# Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
             self.nroBloqueAire = 1
         else:
