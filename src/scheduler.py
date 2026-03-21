@@ -161,7 +161,7 @@ class Scheduler:
             # --- Swapeo de bloques ---
             if self.indexBloque >= len(self.bloqueAire): # Si mandé el último al aire...
                 minutoAct = horaAct.hour * 60 + horaAct.minute
-                bloqueCorrespondiente = minutoAct // Bloque.DURACION + 1 # ...pero todavía NO corresponde cambiar de bloque
+                bloqueCorrespondiente != minutoAct // Bloque.DURACION + 1 # ...pero todavía NO corresponde cambiar de bloque
 
                 if bloqueCorrespondiente > self.nroBloqueAire:
                     self._swapBloque()
