@@ -159,7 +159,7 @@ class Scheduler:
 
         # --- Cambio de Bloque ---
         if self.indexBloque >= len(self.bloqueAire):
-            self._swapBloque() # OJO: El bloque default de noti aguante rompe esta lógica porque tiene un solo elemento. Cambiar el bloque O la lógica.
+            self._swapBloque()
             return
         
         # --- Disparo de contenido ---
@@ -171,38 +171,6 @@ class Scheduler:
             if self.indexBloque >= len(self.bloqueAire): # Si mandé el último contenido del bloque al aire precargo el próximo bloque en self.bloqueProx
                 self._cargaProxBloque()
 
-    def _tick(self):
-            """
-            _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
-            si hay que hacerlo.
-            Se encarga también del cambio de bloque cada 5 minutos y de la rotación de las cámaras.
-            """
-            horaAct = datetime.now()
-
-            # --- Rotación de cámaras ---
-            if self.camaraLive and horaAct >= self.horaProxCam:
-                self.proximaCamara()
-
-            # --- Swapeo de bloques ---
-            if self.indexBloque >= len(self.bloqueAire): # Si mandé el último al aire...
-                minutoAct = horaAct.hour * 60 + horaAct.minute
-                bloqueCorrespondiente = minutoAct // Bloque.DURACION + 1 # ...pero todavía NO corresponde cambiar de bloque
-
-                if bloqueCorrespondiente != self.nroBloqueAire: # MAL, llama a swapBloque DESPUES de las 00 al cambiar de día, queda colgado.
-                    self._swapBloque()
-
-                return 
-
-            # --- Disparo de contenido ---
-
-            contAct = self.bloqueAire[self.indexBloque]
-            if horaAct.time() >= contAct.hora:
-                self.indexBloque += 1
-                self._goLive(contAct)
-                
-                if self.indexBloque >= len(self.bloqueAire):
-                    self._cargaProxBloque()
-    
     def _buscaBloque(self):
         """
         Carga el bloque actual según la hora y pone el indexBloque en el valor correspondiente.
@@ -315,11 +283,10 @@ class Scheduler:
         self.bloqueProx = [] # Como self.bloqueProx = Null
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
-            self._cargaProx() # Llamo acá y no afuera del while para no cargar DESPUÉS de esperar y perder 1 segundo.
+            self._cargaProx() # Llamo acá y no afuera del while para no cargar DESPUÉS de esperar y perder 1 segundo
             while datetime.now().time().hour == 23:
                 time.sleep(0.1)
             self.nroBloqueAire = 1
-            time.sleep(0.1)
         else:
             self.nroBloqueAire += 1
             self._cargaProx()
