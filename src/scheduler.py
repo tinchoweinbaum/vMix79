@@ -303,7 +303,8 @@ class Scheduler:
             self._actualizaNoti()
             bloqueNew = self.__fallbackNoti(ahora)
         else: # Si el bloque que sigue va a ser reporte
-            bloqueNew = self.__fallbackReporte(ahora)
+            # bloqueNew = self.__fallbackReporte(ahora)
+            bloqueNew = self.__fallbackNoti(ahora) # temporal
 
         return bloqueNew
 
