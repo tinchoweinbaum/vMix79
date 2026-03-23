@@ -191,11 +191,12 @@ class Scheduler:
         if bloqueNew:
             self.bloqueAire = bloqueNew # Devuelve el bloque actual en una lista.
         else:
+            print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
             if ahora.time().minute % 10 < 5: # Si el bloque actual es reporte
-                self.bloqueAire = self.__fallbackReporte(ahora) 
+                self.bloqueAire = self.__fallbackReporte(ahora, bloqueArranque = True) 
             else: # Si el bloque actual es noti
                 self._actualizaNoti()
-                self.bloqueAire = self.__fallbackNoti(ahora)
+                self.bloqueAire = self.__fallbackNoti(ahora, bloqueArranque = True)
 
         # Calculo index:
 
@@ -295,7 +296,6 @@ class Scheduler:
     def __bloqueFallback(self):
         """
         Devuelve un bloque default, que dependiendo de la hora es reporte o noti aguante.
-        Esto carga una sola vez la música, si se terminan los 10 temas, va a quedar al aire sin música.
         """
         ahora = datetime.now()
         bloqueNew: List[Contenido] = []
@@ -303,25 +303,31 @@ class Scheduler:
             self._actualizaNoti()
             bloqueNew = self.__fallbackNoti(ahora)
         else: # Si el bloque que sigue va a ser reporte
-            # bloqueNew = self.__fallbackReporte(ahora)
-            bloqueNew = self.__fallbackNoti(ahora) # temporal
+            bloqueNew = self.__fallbackReporte(ahora)
+ 
 
         return bloqueNew
 
-    def __fallbackNoti(self, ahora: datetime) -> List[Contenido]:
-        """Devuelve un bloque "artificial" de noti aguante con rotación de cámaras y música. Contiene las órdenes de arranque de estos 3 items"""
+    def __fallbackNoti(self, ahora: datetime, bloqueArranque = False) -> List[Contenido]:
+        """
+        Devuelve un bloque artificial de noti aguante. Si bloqueArranque = True, usa una hora en el pasado para que el bloque se dispare ya.
+        Si bloqueArranque = False devuelve la próxima hora en la que corresponda noti aguante.
+        """
+        print("[INFO]: Usando bloque default Noti Aguante\n")
+        minuto_actual = ahora.minute
+        residuo = minuto_actual % 5 # % 5 y no 10 xq solo se llama después de y 5 a esta función. Esto hace que siempre de una hora de noti aguante y no de reporte.
 
-        print("[INFO]: Usando bloque default Noti Aguante")
-        bloqueNoti: List[Contenido] = []
+        if bloqueArranque:
+            horaArranque = ahora - timedelta(minutes=residuo)
+        else:
+            faltante = 5 - residuo
+            horaArranque = ahora + timedelta(minutes=faltante)
+        horaArranque = horaArranque.time()
 
-        ahora = datetime.now()
-        minutos_faltantes = 10 - (ahora.minute % 10)
-        proxima_hora_delta = ahora + timedelta(minutes=minutos_faltantes)
-        proxima_hora = proxima_hora_delta.time() # Typing correcto para la lógica del scheduler.
-        
-        objNoti = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante
-        objCamara = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
-        objMusica = Contenido(None, ahora.date(), proxima_hora, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+        bloqueNoti = []
+        objNoti = Contenido(None, ahora.date(), horaArranque, None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante.
+        objCamara = Contenido(None, ahora.date(), horaArranque, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto Cámara.
+        objMusica = Contenido(None, ahora.date(), horaArranque, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica.
 
         bloqueNoti.append(objNoti)
         bloqueNoti.append(objCamara)
@@ -329,62 +335,69 @@ class Scheduler:
 
         return bloqueNoti
 
-    def __fallbackReporte(self, ahora: datetime) -> List[Contenido]:
+    def __fallbackReporte(self, ahora: datetime, bloqueArranque = False) -> List[Contenido]:
         """
         Devuelve un bloque artificial de reporte local con música y rotación de cámaras, creado a mano con duraciones hardcodeadas.
+        Si bloqueArranque = True, usa una hora en el pasado para que el bloque se dispare ya.
+        Si bloqueArranque = False devuelve la próxima hora en la que corresponda reporte local.
         """
-        # Podría haber hecho un diccionario en vez de este acto de terrorismo pero bueno ya está.
 
-        print("[INFO]: Usando bloque default Reporte Local")
-        minutos_faltantes = 10 - (ahora.minute % 10) # ahora es tipo datetime
-        proximo_inicio = ahora.replace(second=0, microsecond=0) + timedelta(minutes=minutos_faltantes)
+        print("[INFO]: Usando bloque default Reporte Local\n")
+        minuto_actual = ahora.minute
+        residuo = minuto_actual % 5 # % 5 y no 10 xq solo se llama después de las 0 a esta función. Esto hace que siempre de una hora de reporte y no de noti aguante.
 
-        puntero_temporal = proximo_inicio
+        if bloqueArranque:
+            horaArranque = ahora - timedelta(minutes=residuo)
+        else:
+            faltante = 5 - residuo
+            horaArranque = ahora + timedelta(minutes=faltante)
+
+        puntero_temporal = horaArranque
         listaReporte: List[Contenido] = []
 
-        objPresenta = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.VIDEO, None, None, "PRESENTA TRUCHA.mp4", r"\\SERVERLOC\Videos\PRESENTACIONES\PRESENTA TRUCHA.mp4",None, None)
+        objPresenta = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.VIDEO, None, None, "PRESENTA TRUCHA.mp4", r"\\SERVERLOC\Videos\PRESENTACIONES\PRESENTA TRUCHA.mp4",None, None)
         listaReporte.append(objPresenta)
         puntero_temporal += timedelta(seconds = DuraReporte.PRESENTA)
 
-        objCamara = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
+        objCamara = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
         listaReporte.append(objCamara)
 
-        objMusica = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+        objMusica = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
         listaReporte.append(objMusica)
 
-        objDatos = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Actual Datos", r"c:\Placas\HD\tiempoactual.png", None, None)
+        objDatos = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Actual Datos", r"c:\Placas\HD\tiempoactual.png", None, None)
         listaReporte.append(objDatos)
         puntero_temporal += timedelta(seconds = DuraReporte.ACTUAL_DATOS) # Musica, cámara y datos salen al mismo tiempo.
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Actual Detalle", r"c:\Placas\HD\tiempoactual1.png", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Actual Detalle", r"c:\Placas\HD\tiempoactual1.png", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.ACTUAL_DETALLE)
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Extendido Manana", r"c:\Placas\HD\Extendido1.png", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Extendido Manana", r"c:\Placas\HD\Extendido1.png", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_MANANA)
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Extendido Tarde", r"c:\Placas\HD\Extendido1.png", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Extendido Tarde", r"c:\Placas\HD\Extendido1.png", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_TARDE)
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Extendido 2 Dias", r"c:\Placas\HD\Extendido2.png", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Extendido 2 Dias", r"c:\Placas\HD\Extendido2.png", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_2DIAS)
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Salida de Sol", r"c:\Placas\aire\HD\salidasol.png", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Salida de Sol", r"c:\Placas\aire\HD\salidasol.png", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.SALIDA_SOL)
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Fases Lunares", r"c:\Placas\aire\HD\faseslunares.png", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Fases Lunares", r"c:\Placas\aire\HD\faseslunares.png", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.FASES_LUNARES)
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.PLACA, None, None, "Mareas", r"c:\Placas\aire\HD\mareas.png", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Mareas", r"c:\Placas\aire\HD\mareas.png", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.MAREAS)
 
-        objDetalle = Contenido(None, ahora.date(), puntero_temporal, None, TipoContenido.VIDEO, None, None, "mapas", r"\\SERVERLOC\Videos\mapas.mp4", None, None)
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.VIDEO, None, None, "mapas", r"\\SERVERLOC\Videos\mapas.mp4", None, None)
         listaReporte.append(objDetalle)
         puntero_temporal += timedelta(seconds = DuraReporte.MAPAS)
 
