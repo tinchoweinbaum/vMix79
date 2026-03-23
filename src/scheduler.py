@@ -326,10 +326,6 @@ class Scheduler:
         bloqueNoti.append(objCamara)
         bloqueNoti.append(objMusica)
 
-        # Meto este elemento de relleno para que no se rompa la lógica del tick con el swapeo de bloques.
-        objRelleno = Contenido(None, ahora.date(), (proxima_hora_delta + timedelta(minutes = Bloque.DURACION)).time(), None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante
-        bloqueNoti.append(objRelleno)
-
         return bloqueNoti
 
     def __fallbackReporte(self, ahora: datetime) -> List[Contenido]:

@@ -401,6 +401,9 @@ class VmixApi:
         
         return None
     
+    def newInput(self, tipo, value):
+        self.__makeRequest("AddInput", extraParams = {"Value": tipo + '|' + value})
+    
     def restartInput_number(self, inputNum):
         self.__makeRequest("Restart", {"Input": inputNum})
 
@@ -513,4 +516,4 @@ class VmixApi:
 if __name__ == "__main__":
     vMix = VmixApi()
     vMix.debug_inputs()
-    # vMix.setText(1,"hola","TextBlock1.Text")
+    # vMix.newInput("VLC","rtsp://admin:Mdqsurftv@192.168.0.242/mpeg4/media.amp")
