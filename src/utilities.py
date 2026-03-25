@@ -9,6 +9,7 @@ junto con un par de métodos necesarios para mandar al aire las camaras
 
 from datetime import date, time
 from pathlib import Path
+from pymediainfo import MediaInfo
 
 class Contenido:
     def __init__(self, id_playlist: str, fecha: date, hora: time, bloque: str, tipo: str, id_mult: str, dura: int, nombre: str, path: str, orden: int, es_publi: bool):
@@ -29,6 +30,26 @@ class Contenido:
             return False
         p = Path(self.path)
         return p.exists()
+    
+    def esSD(self):        
+        res = self._get_resolution()
+        if res[0] is None or res[1] is None:
+            return False
+        return res[0]/res[1] < 16/9
+
+    def _get_resolution(self):
+        """
+        Devuelve la resolución del archivo como una tupla (Width,Height)
+        """
+        try:
+            media_info = MediaInfo.parse(self.path)
+            for track in media_info.tracks:
+                if track.track_type == "Video":
+                    return (int(track.width), int(track.height))
+        except Exception as e:
+            print(f"[ERROR]: No se pudo leer la resolución de {self.path}: {e}")
+        
+        return (None, None)
     
 class Camara:
     def __init__(self, id_camara: int, nombre: str, desc: str, es_default: bool, dir_conexion: str, tiempo: int, orden: int, activo: bool, escalar: bool, mensaje: str,dir_verificada: str, hora_desde: time, hora_hasta: time, user: str, clave: str, controla_sol: bool):
@@ -97,4 +118,6 @@ class Musica():
         self.path = path
         self.nombre = nombre
         self.fecha_ins = fecha_ins # tipo DATE de firebird
-        
+
+if __name__ == "__main__":
+    pass

@@ -421,6 +421,9 @@ class VmixApi:
             field = f"{field}.Text"
         self.__makeRequest("SetText", extraParams = {"Input": input, "Value": value, "SelectedName": field})
 
+    def setZoom(self, input, value = 1.333):
+        self.__makeRequest("SetZoom",extraParams = {"Input": input, "Value": value})
+
     def awaitPresetCargado(self, timeout = 200):
         """
         Función "Pseudoasíncrona". Devuelve True una vez cargó el preset o False si no lo pudo cargar después del timeout
@@ -517,3 +520,4 @@ if __name__ == "__main__":
     vMix = VmixApi()
     vMix.debug_inputs()
     # vMix.newInput("VLC","rtsp://admin:Mdqsurftv@192.168.0.242/mpeg4/media.amp")
+    vMix.setZoom(2)
