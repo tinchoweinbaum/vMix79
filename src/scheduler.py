@@ -490,7 +490,7 @@ class Scheduler:
                     self.aguanteActualizada = False # Cuando sale el repote al aire hay que actualizar noti aguante de nuevo.
 
                 print(f"{str(datetime.now().time())} - {contAct.path} al aire")   
-                self._goLiveVideo(musica = musicaBool, noticias = placaBool, hora = horaBool, SD = contAct.esSD())
+                self._goLiveVideo(musica = musicaBool, noticias = placaBool, hora = horaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
                 self._goLiveCamara()
@@ -502,7 +502,7 @@ class Scheduler:
                 print("IMAGENCAM")
             case TipoContenido.FOTOBMP:
                 blipBool = contAct.nombre in ["79 partidas","79 Partidas"]
-                self._goLiveMicro(blip = blipBool, SD = contAct.esSD())
+                self._goLiveMicro(blip = blipBool)
             case _:
                 print(f"[ERROR]: Tipo de contenido desconocido: {tipo}\n")
 
@@ -518,7 +518,7 @@ class Scheduler:
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
 
-    def _goLiveVideo(self, musica = False, noticias = False, hora = False, SD = False):
+    def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.
         vMix = self.vMix
 
@@ -534,9 +534,6 @@ class Scheduler:
             vMix.setOverlay_off(OverlaySlots.SLOT_HORA)
         else:
             vMix.setOverlay_on(IdPlacas.HORA_MAPAS, OverlaySlots.SLOT_HORA)
-
-        zoom = 1.333 if SD else 1
-        vMix.setZoom(self.videoProx, zoom)
 
         if self.videoAct is not None:
             vMix.listClear(self.videoAct)
@@ -608,7 +605,7 @@ class Scheduler:
         vMix.setOverlay_on(IdPlacas.NOTICIAS, OverlaySlots.SLOT_NOTICIAS) # Después de mandar al aire las placas mando al aire las noticias.
 
 
-    def _goLiveMicro(self, blip = False, SD = False):
+    def _goLiveMicro(self, blip = False):
         # Toggle de inputs de micro (.bmp).
         vMix = self.vMix
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
@@ -616,10 +613,7 @@ class Scheduler:
         if self.microProx is None:
             print("[ERROR]: Error de precarga de micro.\n")
             return
-        
-        zoom = 1.333 if SD else 1
-        vMix.setZoom(self.microProx, zoom)
-
+    
         vMix.setOutput_number(self.microProx) # Swapeo
         if blip: # Si corresponde sonar blip
             self.playBlip()
