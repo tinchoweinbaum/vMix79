@@ -725,7 +725,7 @@ class Scheduler:
 
             if valor is not None:
                 with open(archivo_final, "w", encoding="utf-8") as f:
-                    f.write(str(valor))
+                    f.write(str(fuente))
                 
         except Exception as e:
             print(f"[ERROR]: No se pudo actualizar la fuente de los datos: {e}")
