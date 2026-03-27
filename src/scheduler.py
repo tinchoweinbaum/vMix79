@@ -578,6 +578,7 @@ class Scheduler:
             case "Actual Datos":
                 vMix.setOverlay_on(IdPlacas.ACTUAL_DATOS, OverlaySlots.SLOT_PLACA)
                 self.actualizaFuenteDatos("Actual Datos")
+                time.sleep(0.05)
                 vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Actual Detalle":
@@ -587,18 +588,26 @@ class Scheduler:
                     vMix.setOverlay_on(IdPlacas.ACTUAL_DETALLE_CLIMA, OverlaySlots.SLOT_PLACA)
                 else:
                     vMix.setOverlay_on(IdPlacas.ACTUAL_DETALLE, OverlaySlots.SLOT_PLACA)
+                time.sleep(0.05)
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Extendido Manana":
                     vMix.setOverlay_on(IdPlacas.EXTENDIDO_MANANA, OverlaySlots.SLOT_PLACA)
                     self.actualizaFuenteDatos("Extendido Manana")
+                    time.sleep(0.05)
+                    vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Extendido Tarde":
                 vMix.setOverlay_on(IdPlacas.EXTENDIDO_TARDE, OverlaySlots.SLOT_PLACA)
                 self.actualizaFuenteDatos("Extendido Tarde")
+                time.sleep(0.05)
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Extendido 2 Dias":
                 vMix.setOverlay_on(IdPlacas.EXTENDIDO_2DIAS, OverlaySlots.SLOT_PLACA)
                 self.actualizaFuenteDatos("Extendido 2 Dias")
+                time.sleep(0.05)
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Salida de Sol":
                 vMix.setOverlay_on(IdPlacas.SALIDA_SOL, OverlaySlots.SLOT_PLACA)
