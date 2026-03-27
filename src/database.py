@@ -176,6 +176,35 @@ class Database:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Fases Lunares. SELECT * FROM LUNAS con la fecha {fecha} no devolvió nada.\n")
 
         return self._formatoDict(dictPlacas,dictLuna) # Junta los dos diccionarios en 1 diccionario de diccionarios
+
+    def getDatos_fuente(self, placa):
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida para pedir la fuente de los datos actuales.")
+            return
+
+        self.conn.begin() # Arranca la conxión y crea cursor para managearla
+        cursor: fdb.Cursor = self.conn.cursor()
+        
+        match placa:
+            case "Actual Datos" | "Actual Detalle":
+                campo = "USA_ACTUAL"
+            case "Extendido Manana" | "Extendido Tarde" | "Extendido 2 Dias":
+                campo = "USA_EXTENDIDO"
+            case _:
+                campo = "USA_PROXHORAS"
+
+        query = f"SELECT {campo} FROM CONFIG_CLIMA"
+
+        try:
+            cursor.execute(query)
+            queryRes = cursor.fetchone()
+
+            cursor.close()
+            self.conn.commit()
+        except Exception as e:
+            print(f"[ERROR]: Error al pedir de la tabla CLIMA_CONFIG en la base de datos. {e}")
+
+        return queryRes[0] if queryRes else None
     
     def _actualizaJson(self, dictPlacas: dict):
             """

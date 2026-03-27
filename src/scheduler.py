@@ -32,10 +32,16 @@ class OverlaySlots(IntEnum):
     SLOT_PLACA = 1
     SLOT_NOTICIAS = 2
     SLOT_HORA = 3
+    SLOT_DATOS = 4
 
 class Bloque(IntEnum):
     DURACION = 5 # Duración en minutos.
     CANT_MAX = 288 # Cantidad de bloques = Minutos en un dia // 5
+
+class FuenteDatos(IntEnum):
+    SMN = 0
+    DATOS_PROPIOS = 1
+    ACCUWEATHER = 2
 
 class DuraReporte:
     # da 309 segundos por algún motivo pero son los valores que hay en la db
@@ -71,6 +77,8 @@ class IdPlacas(str, Enum):
     NOTICIAS = "c0ea010a-098d-4ea3-94b4-40246e3eed25"
     ACTUAL_DETALLE_CLIMA = "6a5dd7d8-6fda-4538-a6bd-b4a5ca451185"
     HORA_MAPAS = "f150e53a-b06d-4261-b61f-f76be331203e"
+    FUENTE_DATOS = "ee4e849f-d024-4707-a682-5e236010c298"
+
 
 class Scheduler:
     def __init__(self, vMix: VmixApi, database: Database):
@@ -569,8 +577,11 @@ class Scheduler:
         match contAct.nombre:
             case "Actual Datos":
                 vMix.setOverlay_on(IdPlacas.ACTUAL_DATOS, OverlaySlots.SLOT_PLACA)
+                self.actualizaFuenteDatos("Actual Datos")
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Actual Detalle":
+                self.actualizaFuenteDatos("Actual Detalle")
                 horaAct = datetime.now().time()
                 if horaAct.hour >= 6  and horaAct.hour < 12:
                     vMix.setOverlay_on(IdPlacas.ACTUAL_DETALLE_CLIMA, OverlaySlots.SLOT_PLACA)
@@ -579,25 +590,32 @@ class Scheduler:
 
             case "Extendido Manana":
                     vMix.setOverlay_on(IdPlacas.EXTENDIDO_MANANA, OverlaySlots.SLOT_PLACA)
+                    self.actualizaFuenteDatos("Extendido Manana")
 
             case "Extendido Tarde":
                 vMix.setOverlay_on(IdPlacas.EXTENDIDO_TARDE, OverlaySlots.SLOT_PLACA)
+                self.actualizaFuenteDatos("Extendido Tarde")
 
             case "Extendido 2 Dias":
                 vMix.setOverlay_on(IdPlacas.EXTENDIDO_2DIAS, OverlaySlots.SLOT_PLACA)
+                self.actualizaFuenteDatos("Extendido 2 Dias")
 
             case "Salida de Sol":
                 vMix.setOverlay_on(IdPlacas.SALIDA_SOL, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
 
             case "Fases Lunares":
                 vMix.setOverlay_on(IdPlacas.FASES_LUNARES, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
 
             case "Mareas":
                 vMix.setOverlay_on(IdPlacas.MAREAS, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
             
             case "Noti Aguante":
                 vMix.setOverlay_on(IdPlacas.NOTI_AGUANTE, OverlaySlots.SLOT_PLACA)
-            
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
+
             case _:
                 print(f"[ERROR]: No se encontró la placa {contAct.nombre}.")
                 return
@@ -687,6 +705,30 @@ class Scheduler:
                 
         except Exception as e:
             print(f"[ERROR]: Error al actualizar las placas: {e}")
+
+    def actualizaFuenteDatos(self, placa):
+        DB = self.database
+
+        ruta_base = Path(__file__).resolve().parent.parent
+        directorio_destino = ruta_base / "resources" / "vmix_resources"
+        archivo_final = directorio_destino / "fuente_datos.txt"
+        
+        try:
+            valor = database.getDatos_fuente(placa)
+
+            if valor == FuenteDatos.SMN:
+                fuente = "Fuente: S.M.N"
+            elif valor == FuenteDatos.DATOS_PROPIOS:
+                fuente = "Fuente: Datos Propios."
+            else:
+                fuente = "Fuente: Accuweather"
+
+            if valor is not None:
+                with open(archivo_final, "w", encoding="utf-8") as f:
+                    f.write(str(valor))
+                
+        except Exception as e:
+            print(f"[ERROR]: No se pudo actualizar la fuente de los datos: {e}")
 
     def actualizaNoticias(self):
         try:
