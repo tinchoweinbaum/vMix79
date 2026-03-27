@@ -1,11 +1,11 @@
 [
     {
-        "temp": "19º9",
-        "humedad": "88 %",
-        "presion": "1007.6",
-        "termica": "19.9",
-        "viento": "Norte 6 km/h",
-        "desc": "Nublado",
-        "logo": "C:\\Canal79\\Iconos\\Clima\\SMN\\43.png"
+        "temp": "23º7",
+        "humedad": "71 %",
+        "presion": "1008.6",
+        "termica": "23.7",
+        "viento": "Este 26 km/h",
+        "desc": "Parcialmente nublado",
+        "logo": "C:\\Canal79\\Iconos\\Clima\\SMN\\25.png"
     }
 ]
