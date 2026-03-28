@@ -153,7 +153,7 @@ class Scheduler:
     def _tick(self):
         """
         _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
-        si hay que hacerlo.
+        si hay que hacerlo. Se encarga también de la rotiación de cámaras y del cambio de bloque.
         
         La hora del contenido se compara con datetime.now().time()
         La hora de las cámaras se compara con datetime.now()
@@ -770,9 +770,7 @@ class Scheduler:
         meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
                 "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
         
-        # ahora.weekday() devuelve 0 para Lunes, 1 para Martes...
         dia_semana = dias[ahora.weekday()]
-        # ahora.month devuelve 1 para Enero, 2 para Febrero... (restamos 1 para el índice)
         mes = meses[ahora.month - 1]
         
         return f"{dia_semana}, {ahora.day} de {mes} de {ahora.year}"

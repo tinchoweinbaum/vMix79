@@ -188,9 +188,9 @@ class Database:
         match placa:
             case "Actual Datos" | "Actual Detalle":
                 campo = "USA_ACTUAL"
-            case "Extendido Manana" | "Extendido Tarde" | "Extendido 2 Dias":
+            case "Extendido Manana" | "Extendido Tarde":
                 campo = "USA_EXTENDIDO"
-            case _:
+            case "Extendido 2 Dias":
                 campo = "USA_PROXHORAS"
 
         query = f"SELECT {campo} FROM CONFIG_CLIMA"
