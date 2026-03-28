@@ -285,13 +285,13 @@ class Database:
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
                 "hora1": dictPlacas.get('HORA1'),
-                "marea1": dictPlacas.get('MAREA1'),
+                "marea1": dictPlacas.get('MAREA1') + "mt.",
                 "hora2": dictPlacas.get('HORA2'),
-                "marea2": dictPlacas.get('MAREA2'),
+                "marea2": dictPlacas.get('MAREA2') + "mt.",
                 "hora3": dictPlacas.get('HORA3'),
-                "marea3": dictPlacas.get('MAREA3'),
+                "marea3": dictPlacas.get('MAREA3') + "mt.",
                 "hora4": dictPlacas.get('HORA4'),
-                "marea4": dictPlacas.get('MAREA4')
+                "marea4": dictPlacas.get('MAREA4') + "mt."
             },
             "lunas":{
                 "idluna": dictLuna.get('IDLUNA'),
