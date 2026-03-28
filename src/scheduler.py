@@ -716,6 +716,7 @@ class Scheduler:
             print(f"[ERROR]: Error al actualizar las placas: {e}")
 
     def actualizaFuenteDatos(self, placa):
+        """"Me convenía hacerlo con SetText, trolie un toque ok lo admito."""
         DB = self.database
 
         ruta_base = Path(__file__).resolve().parent.parent
