@@ -81,7 +81,7 @@ class Database:
         self.conn.begin()
         cursor: fdb.Cursor = self.conn.cursor()
 
-        query = """SELECT HORA, PATH, NOMBRE, TIPOMULTIMEDIA 
+        query = """SELECT HORA, PATH, NOMBRE, TIPOMULTIMEDIA, DURACION
                 FROM PLAYLISTCONFIMADO
                 WHERE FECHA = CAST(? AS DATE) AND BLOQUE = CAST(? AS INTEGER)
                 ORDER BY HORA"""
@@ -95,12 +95,12 @@ class Database:
 
         listaCont = []
         for fila in queryRes:
-            hora, path, nombre, tipo = fila # fila es una tupla -> hacemos unpacking de esta manera que python lo permite, gracias python.
+            hora, path, nombre, tipo, dura = fila # fila es una tupla -> hacemos unpacking de esta manera que python lo permite, gracias python.
             listaCont.append(Contenido(id_playlist = None, 
                                        fecha = fecha, 
                                        hora = hora, bloque = 
                                        nroBloque, tipo = tipo, 
-                                       id_mult = None, dura = None,
+                                       id_mult = None, dura = dura,
                                        nombre = nombre, path = path, 
                                        orden = None, es_publi = None)) # Creo objeto de la clase Contenido
 
