@@ -169,7 +169,7 @@ class Scheduler:
         # --- Fade out de música ---
         if self.musicaLive and self.horaFadeMusica and horaAct >= self.horaFadeMusica:
             self.vMix.scriptStart("MusicaFade")
-            print("[INFO]: Ejecutando Fade out de música.")
+            print("[INFO]: Ejecutando fade-out de música.")
             self.horaFadeMusica = None
             
         # --- Cambio de Bloque ---
@@ -524,7 +524,7 @@ class Scheduler:
         if cargaProx:
             self._cargaProx() # Después de mandar al aire precarga el prox.
     
-    def _goLiveMusica(self, duracion = None):
+    def _goLiveMusica(self, duracion):
         """
         Da play al input de música y guarda la hora del fade out.
         """
@@ -532,8 +532,8 @@ class Scheduler:
         print("[INFO]: Música al aire.")
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
-        if duracion:
-            self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - 5)
+        self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - Musica.DuracionFade)
+        print(f"el fade de música se va a ejecutar a las {self.horaFadeMusica}")
 
     def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.
