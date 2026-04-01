@@ -195,13 +195,22 @@ class VmixApi:
         self.cutDirect_key(inputKey)
 
     def listClear(self,listNum):
+        """Recibe número, id o nombre de ListInput y borra todos sus elementos"""
         function = "ListRemoveAll"
         self.__makeRequest(function,extraParams = {"Input": listNum}) # No pido árbol XML acá porque no es necesario para borrar.
 
     def listAddInput(self,listNum,path):
+        """Recibe número, id o nombre de ListInput junto con el path de un archivo y lo agrega a la lista"""
         function = "ListAdd"
         self.__makeRequest(function,extraParams = {"Input": listNum, "Value": path})
         self._send_raw("XML")
+
+    def listNextItem(self,listId):
+        """Recibe número, id o nombre de ListInput y skipea el item actual"""
+        self.__makeRequest("NextItem", extraParams = {"Input": listId})
+
+    def dataSourceSelectRow(self, datasource, row = 0):
+        self.__makeRequest("DataSourceSelectRow", extraParams={"Source": datasource,"Index": row})
 
     def getInputPath_num(self, inputNum):
             """
@@ -339,7 +348,7 @@ class VmixApi:
 
         return inputAct.text == str(inputNum)
     
-    def _isOverlayLive(self,overlayNum):
+    def isOverlayLive_num(self,overlayNum):
         """
         Recibe un número de overlay y checkea si está activo.
         """        
@@ -369,9 +378,9 @@ class VmixApi:
         
         return int(overlay.text)
     
-    def getLength(self, inputKey):
+    def getLength_id(self, inputKey):
         """
-        Usa el estado XML interno para obtener la duración de un input.
+        Recibe el ID de un input y devuelve la duración de su contenido. El primero en caso de ser una lista.
         """
         root = self.__getState()
         
@@ -392,10 +401,13 @@ class VmixApi:
         
         return None
     
+    def newInput(self, tipo, value):
+        self.__makeRequest("AddInput", extraParams = {"Value": tipo + '|' + value})
+    
     def restartInput_number(self, inputNum):
         self.__makeRequest("Restart", {"Input": inputNum})
 
-    def playInput_number(self, inputNum):
+    def playInput(self, inputNum):
         self.__makeRequest("Play", {"Input": inputNum})
 
     def pauseInput(self,inputNum):
@@ -403,6 +415,14 @@ class VmixApi:
 
     def openPreset(self, presetPath):
         self.__makeRequest("OpenPreset", {"Value": presetPath})
+
+    def setText(self, input, value, field):
+        if not field.endswith(".Text"):
+            field = f"{field}.Text"
+        self.__makeRequest("SetText", extraParams = {"Input": input, "Value": value, "SelectedName": field})
+
+    def setZoom(self, input, value = 1.333):
+        self.__makeRequest("SetZoom",extraParams = {"Input": input, "Value": value})
 
     def awaitPresetCargado(self, timeout = 200):
         """
@@ -498,4 +518,6 @@ class VmixApi:
 
 if __name__ == "__main__":
     vMix = VmixApi()
-    # vMix.debug_inputs()
+    vMix.debug_inputs()
+    # vMix.newInput("VLC","rtsp://admin:Mdqsurftv@192.168.0.242/mpeg4/media.amp")
+    vMix.setZoom(2)

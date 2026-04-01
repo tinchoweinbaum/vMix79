@@ -9,6 +9,7 @@ junto con un par de métodos necesarios para mandar al aire las camaras
 
 from datetime import date, time
 from pathlib import Path
+from pymediainfo import MediaInfo
 
 class Contenido:
     def __init__(self, id_playlist: str, fecha: date, hora: time, bloque: str, tipo: str, id_mult: str, dura: int, nombre: str, path: str, orden: int, es_publi: bool):
@@ -24,9 +25,11 @@ class Contenido:
         self.orden = orden
         self.es_publi = es_publi
 
-    def path_valido(self):        
+    def path_valido(self):
+        if self.path is None:
+            return False
         p = Path(self.path)
-        return p.exists() and p.is_file()
+        return p.exists()
     
 class Camara:
     def __init__(self, id_camara: int, nombre: str, desc: str, es_default: bool, dir_conexion: str, tiempo: int, orden: int, activo: bool, escalar: bool, mensaje: str,dir_verificada: str, hora_desde: time, hora_hasta: time, user: str, clave: str, controla_sol: bool):
@@ -86,7 +89,7 @@ class Camara:
         return res[1] if res else "Cámara desconocida."
     
 class Musica():
-    temasPorReporte = 8
+    temasPorReporte = 10
 
     def __init__(self, id_playlist_detail, idplaylist, orden, path, nombre, fecha_ins):
         self.id_playlist_detail = id_playlist_detail
@@ -95,4 +98,6 @@ class Musica():
         self.path = path
         self.nombre = nombre
         self.fecha_ins = fecha_ins # tipo DATE de firebird
-        
+
+if __name__ == "__main__":
+    pass

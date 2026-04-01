@@ -1,12 +1,12 @@
 [
     {
-        "ex1_dia": "Viernes",
-        "ex1_min": "17º",
-        "ex1_max": "25º",
-        "ex1_logo": "C:\\Canal79\\Iconos\\Clima\\nubaum.png",
-        "ex2_dia": "Sábado ",
-        "ex2_min": "16º",
-        "ex2_max": "25º",
-        "ex2_logo": "C:\\Canal79\\Iconos\\Clima\\nublado.png"
+        "ex1_dia": "Domingo",
+        "ex1_min": "15º",
+        "ex1_max": "22º",
+        "ex1_logo": "C:\\Canal79\\Iconos\\Clima\\despejado.png",
+        "ex2_dia": "Lunes",
+        "ex2_min": "12º",
+        "ex2_max": "19º",
+        "ex2_logo": "C:\\Canal79\\Iconos\\Clima\\parcmnub.png"
     }
 ]

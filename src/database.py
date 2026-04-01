@@ -26,10 +26,10 @@ class Database:
         """
         BASE_DIR = Path(__file__).resolve().parent.parent
         envPath = BASE_DIR / "config" / "db.env"
-        load_dotenv(str(envPath))
+        load_dotenv(str(envPath), override = True)
 
         self.host = os.getenv("DB_HOST","localhost") # El segundo parámetro es el default, por si no existe el .env o no encuentra lo que busca.
-        self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Canal79\DB\CANAL79_DB.FDB")}"
+        self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA_MARZO.FDB")}"
         self.user = os.getenv("DB_USER","SYSDBA")
         self.password = os.getenv("DB_PASS","masterkey")
         self.charset = "UTF8"
@@ -52,14 +52,14 @@ class Database:
 
         try:
             if self.conn is None:
-                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.                
+                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.          
             else:
                 return False
         except Exception as e:
             print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. {e}")
             return False
         
-        print("[INFO]: Conexión con la DB establecida.\n")
+        print(f"[INFO]: Conexión con la Database en {self.path} establecida.\n")
         return True
     
     def getBloque_num(self, fecha, nroBloque):
@@ -69,6 +69,10 @@ class Database:
         """
 
         # Query:
+
+        # test fallback
+
+        # return None
         
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida a la Database para pedir un bloque.")
@@ -82,7 +86,8 @@ class Database:
                 WHERE FECHA = CAST(? AS DATE) AND BLOQUE = CAST(? AS INTEGER)
                 ORDER BY HORA"""
         
-        cursor.execute(query, (f'{fecha}', nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
+        cursor.execute(query, ('19.03.2026', nroBloque)) # fecha hardcodeada
+        # cursor.execute(query, (f'{fecha}', nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
         queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
         
@@ -171,6 +176,35 @@ class Database:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Fases Lunares. SELECT * FROM LUNAS con la fecha {fecha} no devolvió nada.\n")
 
         return self._formatoDict(dictPlacas,dictLuna) # Junta los dos diccionarios en 1 diccionario de diccionarios
+
+    def getDatos_fuente(self, placa):
+        if self.conn is None:
+            print("[ERROR]: No se encontró una conexión válida para pedir la fuente de los datos actuales.")
+            return
+
+        self.conn.begin() # Arranca la conxión y crea cursor para managearla
+        cursor: fdb.Cursor = self.conn.cursor()
+        
+        match placa:
+            case "Actual Datos" | "Actual Detalle":
+                campo = "USA_ACTUAL"
+            case "Extendido Manana" | "Extendido Tarde":
+                campo = "USA_EXTENDIDO"
+            case "Extendido 2 Dias":
+                campo = "USA_PROXHORAS"
+
+        query = f"SELECT {campo} FROM CONFIG_CLIMA"
+
+        try:
+            cursor.execute(query)
+            queryRes = cursor.fetchone()
+
+            cursor.close()
+            self.conn.commit()
+        except Exception as e:
+            print(f"[ERROR]: Error al pedir de la tabla CLIMA_CONFIG en la base de datos. {e}")
+
+        return queryRes[0] if queryRes else None
     
     def _actualizaJson(self, dictPlacas: dict):
             """
@@ -251,13 +285,13 @@ class Database:
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
                 "hora1": dictPlacas.get('HORA1'),
-                "marea1": dictPlacas.get('MAREA1'),
+                "marea1": dictPlacas.get('MAREA1') + "mt.",
                 "hora2": dictPlacas.get('HORA2'),
-                "marea2": dictPlacas.get('MAREA2'),
+                "marea2": dictPlacas.get('MAREA2') + "mt.",
                 "hora3": dictPlacas.get('HORA3'),
-                "marea3": dictPlacas.get('MAREA3'),
+                "marea3": dictPlacas.get('MAREA3') + "mt.",
                 "hora4": dictPlacas.get('HORA4'),
-                "marea4": dictPlacas.get('MAREA4')
+                "marea4": dictPlacas.get('MAREA4') + "mt."
             },
             "lunas":{
                 "idluna": dictLuna.get('IDLUNA'),

@@ -12,17 +12,13 @@ from datetime import datetime, time as dt, timedelta
 from typing import List
 from pathlib import Path
 import pause
-import random
+import threading
 import time
 
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático. Agregar botón de "Actualizar placas".
 # TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
-# TO DO: Implementación e iteración del bloque de cámaras, si no encuentra el bloque, o la lista es None, que defaultee a una.
-# TO DO: El contenido que sale después del goLive de _start sale MAL, no se precarga o se dispara cuando no tiene que hacerlo. El arranque anda como el orto.
-# TO DO: Bloque default si no hay playlist.
+# TO DO: Cuando se le mandan muchos comandos a la vez a vMix, da play a inputs incorrectos, esto es especialmente notorio en el arranque o cuando se cambia la hora mientras se está al aire.
 # TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
-# TO DO: Arranque en la cámara correcta si se arranca en mitad del reporte.
-# TO DO: Música
 
 class TipoContenido(IntEnum):
     VIDEO = 1
@@ -32,12 +28,38 @@ class TipoContenido(IntEnum):
     IMAGENCAM = 5
     FOTOBMP = 6
 
+class OverlaySlots(IntEnum):
+    SLOT_PLACA = 1
+    SLOT_NOTICIAS = 2
+    SLOT_HORA = 3
+    SLOT_DATOS = 4
+
+class Bloque(IntEnum):
+    DURACION = 5 # Duración en minutos.
+    CANT_MAX = 288 # Cantidad de bloques = Minutos en un dia // 5
+
+class FuenteDatos(IntEnum):
+    SMN = 0
+    DATOS_PROPIOS = 1
+    ACCUWEATHER = 2
+
+class DuraReporte:
+    # da 309 segundos por algún motivo pero son los valores que hay en la db
+    PRESENTA = 11
+    ACTUAL_DATOS = 55
+    ACTUAL_DETALLE = 50
+    EXTENDIDO_MANANA = 35
+    EXTENDIDO_TARDE = 30
+    EXTENDIDO_2DIAS = 30
+    SALIDA_SOL = 20
+    FASES_LUNARES = 20
+    MAREAS = 29
+    MAPAS = 29
+
 class IdInputs(str, Enum):
-    CAMARA_ACT = "35657cca-991d-49e3-b9a9-3ccf3b400b6b"
-    MUSICA_A = "be7d700b-c30d-4a88-b4ad-9122dea69540"
+    MUSICA = "be7d700b-c30d-4a88-b4ad-9122dea69540"
     VIDEO_A = "ad2fc430-395b-4dc0-88c4-1b94ffa45aff"
     MICRO_A = "8495af6e-545f-49de-9501-77dd9c84fcd0"
-    MUSICA_B = "4f44e11b-c6f2-452e-987f-b4239d42eb05"
     VIDEO_B = "cbab3333-2c77-438c-a180-2082f7569022"
     MICRO_B = "734f2c01-fd38-42f4-8d6c-d5ec59cdfeff"
     BLIP = "c426ef85-0b21-4518-a7cf-19c0aea8277e"
@@ -54,14 +76,9 @@ class IdPlacas(str, Enum):
     NOTI_AGUANTE = "97cb7733-6d23-4d89-bb49-07ebccfd11b1"
     NOTICIAS = "c0ea010a-098d-4ea3-94b4-40246e3eed25"
     ACTUAL_DETALLE_CLIMA = "6a5dd7d8-6fda-4538-a6bd-b4a5ca451185"
+    HORA_MAPAS = "f150e53a-b06d-4261-b61f-f76be331203e"
+    FUENTE_DATOS = "ee4e849f-d024-4707-a682-5e236010c298"
 
-class OverlaySlots(IntEnum):
-    SLOT_PLACA = 1
-    SLOT_NOTICIAS = 2
-
-class Bloque(IntEnum):
-    DURACION = 5 # Duración en minutos.
-    CANT_MAX = 288 # Cantidad de bloques = Minutos en un dia // 5
 
 class Scheduler:
     def __init__(self, vMix: VmixApi, database: Database):
@@ -79,21 +96,18 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
-        self.musicaAct = None
-        self.musicaProx = None
-
         self.camaraLive = False
         self.indexBloqueCam = 0
         self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
 
-        self.bloqueMusicas: List[Musica] = []
-        self.indexBloqueMusica = 0
-        self.finTemaAct = None
+        self.musicaLive = False
+
+        self.aguanteActualizada = False # Flag para saber si hay que actualizar Los datos de noti aguante este reporte
 
         self.running = False
 
-    def start(self,blipPath):
+    def start(self):
 
         self.running = True
         print("Scheduler iniciado\n")
@@ -104,12 +118,7 @@ class Scheduler:
         self.microAct = None
         self.microProx = None
 
-        self.camaraLive = True
-        self.vMix.setOutput_number(Camara._getCam_Id(4)) # Defaultea a Costa Galana antes de mandar cualquier cosa al aire, por si esta cosa no existe.
-
         self.__clearAll()
-
-        self.vMix.listAddInput(IdInputs.BLIP,blipPath) # Carga BLIP.WAV
 
         self._buscaBloque() # Asigna valor correcto actual a self.indexBloque.
         self.getMusica() # Cargo el bloque de música en memoria.
@@ -120,11 +129,11 @@ class Scheduler:
             self.stop()
             return
 
-        self._startAudio()
-
         self.actualizaPlacas()
         self.actualizaNoticias()
         self.actualizaCamaras()
+
+        time.sleep(0.1)
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
@@ -140,35 +149,36 @@ class Scheduler:
             self._tick()
             time.sleep(0.2)
 
+
     def _tick(self):
         """
         _tick es el cerebro del programa, cada 0,2 segundos checkea si hay que mandar un contenido nuevo al aire y lo manda
-        si hay que hacerlo.
+        si hay que hacerlo. Se encarga también de la rotiación de cámaras y del cambio de bloque.
         
         La hora del contenido se compara con datetime.now().time()
         La hora de las cámaras se compara con datetime.now()
         """
 
-        if self.indexBloque >= len(self.bloqueAire):
-            self._swapBloque() # Ojo, loop infinito si el bloque no existe. Arreglar con bloque default.
-            return
-        
-        contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
         horaAct = datetime.now()
 
-        if self.camaraLive and horaAct >= self.horaProxCam: # Si hay cámara al aire y corresponde cambiar de cámara.
-                self.proximaCamara()
+        # --- Rotación de cámaras ---
+        if self.camaraLive and horaAct >= self.horaProxCam:
+            self.proximaCamara()
 
-        if self.finTemaAct is not None and horaAct >= self.finTemaAct:
-            self._swapMusica()
-
+        # --- Cambio de Bloque ---
+        if self.indexBloque >= len(self.bloqueAire):
+            self._swapBloque()
+            return
+        
+        # --- Disparo de contenido ---
+        contAct = self.bloqueAire[self.indexBloque] # Objeto del contenido actual
         if horaAct.time() >= contAct.hora: # Si corresponde mandar al aire al contenido apuntado y no se terminó el bloque actual.
             self.indexBloque += 1
             self._goLive(contAct)
             
             if self.indexBloque >= len(self.bloqueAire): # Si mandé el último contenido del bloque al aire precargo el próximo bloque en self.bloqueProx
                 self._cargaProxBloque()
-    
+
     def _buscaBloque(self):
         """
         Carga el bloque actual según la hora y pone el indexBloque en el valor correspondiente.
@@ -179,18 +189,29 @@ class Scheduler:
 
         ahora = datetime.now()
         fechaAct = ahora.strftime('%d.%m.%Y') 
-        horaAct = ahora.time()
+        horaAct = ahora.time() # esto es datetime.time
         minutoAct = horaAct.hour * 60 +  horaAct.minute
         print(fechaAct)
 
         self.nroBloqueAire = minutoAct // Bloque.DURACION + 1 # Sumo 1 porque Firebird empieza desde 1 pero python desde 0.
-        self.bloqueAire = database.getBloque_num(fechaAct, self.nroBloqueAire) # Devuelve el bloque actual en una lista.
+
+        bloqueNew = database.getBloque_num(fechaAct, self.nroBloqueAire)
+        if bloqueNew:
+            self.bloqueAire = bloqueNew # Devuelve el bloque actual en una lista.
+        else:
+            print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
+            if ahora.time().minute % 10 < 5: # Si el bloque actual es reporte
+                self.bloqueAire = self.__fallbackReporte(ahora, bloqueArranque = True) 
+            else: # Si el bloque actual es noti
+                self._actualizaNoti()
+                self.bloqueAire = self.__fallbackNoti(ahora, bloqueArranque = True)
 
         # Calculo index:
 
         self.indexBloque = 0
         for i, cont in enumerate(self.bloqueAire):
-            if horaAct >= cont.hora:
+            hora_item = cont.hora if isinstance(cont.hora, dt) else cont.hora.time() # Convierto a tipos comparables.
+            if horaAct >= hora_item:
                 self.indexBloque = i # Index del contenido que debería estar al aire.
             else:
                 break
@@ -203,9 +224,8 @@ class Scheduler:
         vMix.setAudio_on(IdInputs.VIDEO_A)
         vMix.setAudio_on(IdInputs.VIDEO_B)
 
-        vMix.setAudio_on(IdInputs.MUSICA_A)
-        vMix.setAudio_on(IdInputs.MUSICA_B)
-
+        vMix.setAudio_on(IdInputs.BLIP)
+        vMix.setAudio_on(IdInputs.MUSICA)
 
         
     def _cargaProxBloque(self):
@@ -215,13 +235,13 @@ class Scheduler:
 
         fechaAct = datetime.now().date()
 
-        nroBloqueProx = self.nroBloqueAire + 1 # Sumo 1 otra vez porque quiero el PRÓXIMO BLOQUE.
+        nroBloqueProx = self.nroBloqueAire + 1
 
         if nroBloqueProx > Bloque.CANT_MAX: # Si está al aire el último bloque voy al primer bloque de mañana
             fechaAct = fechaAct + timedelta(days = 1) # Dudo mucho de la lógica de cambio de día. Race condition para llamar antes de las 00
             nroBloqueProx = 1
 
-        self.bloqueProx = self.database.getBloque_num(fechaAct,nroBloqueProx) # Precarga el bloque próximo al actual. Por eso +1.
+        self.bloqueProx = self.database.getBloque_num(fechaAct, nroBloqueProx) # Guarda en bloqueProx el próximo bloque
         print(f"[INFO]: Bloque {nroBloqueProx} cargado. Ya no se puede modificar.\n")
 
     def stop(self):
@@ -261,34 +281,10 @@ class Scheduler:
 
         self.microProx = inputLibre
 
-    def _initMusica(self):
-        """
-        Esta función accede al bloque de musicas de la clase y carga el primero en MUSICA_A. Solo se la llama 1 vez por bloque si es que este es un reporte local.
-        Asume que el bloque de música ya está cargado en self.bloqueMusica.
-        """
-        print("Llamo initMusica")
-        vMix = self.vMix
-
-        if not self.bloqueMusicas:
-            print("[ERROR]: No se pudo cargar el bloque de músicas.")
-            return
-        
-        if self.musicaAct is not None:
-            print("[ERROR]: Error al precargar la música.")
-            return
-
-        self.musicaProx = IdInputs.MUSICA_A # Inicializo a mano la música para goLiveMusica
-        self.musicaAct = None
-
-        self.indexBloqueMusica = -1 # Inicializo en -1 para que goLiveMusica lo ponga en 0
-        temaAct = self.bloqueMusicas[0]
-        vMix.listClear(self.musicaProx)
-        vMix.listAddInput(self.musicaProx, temaAct.path)
-
     def _swapBloque(self):
         if not self.bloqueProx:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
-            # Asignar acá a bloqueProx el bloque default
+            self.bloqueProx = self.__bloqueFallback()
             return
         
         self.bloqueAire = self.bloqueProx
@@ -296,28 +292,135 @@ class Scheduler:
         self.bloqueProx = [] # Como self.bloqueProx = Null
 
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
-            manana = datetime.now() + timedelta(days=1)
-            proxDia = datetime.combine(manana.date(), dt(0,0,0))
-            pause.until(proxDia) # Espera hasta mañana para seguir con la ejecución después de mandar el último bloque al aire.
-            # OJO: Esto hace que el programa se "cuelgue" después del último cont. del día hasta mañana. Deja de mandar logs y todo eso.
-            # Mucho ojo también con la race condition de que la linea pause.until(proxDia) no se ejecute despues de las 00:00 porque si no va a quedar colgado 1 dia entero.
+            self._cargaProx() # Llamo acá y no afuera del while para no cargar DESPUÉS de esperar y perder 1 segundo
+            while datetime.now().time().hour == 23:
+                time.sleep(0.1)
             self.nroBloqueAire = 1
         else:
             self.nroBloqueAire += 1
+            self._cargaProx()
 
-        self._cargaProx()
+
+    def __bloqueFallback(self):
+        """
+        Devuelve un bloque default, que dependiendo de la hora es reporte o noti aguante.
+        """
+        ahora = datetime.now()
+        bloqueNew: List[Contenido] = []
+        if ahora.time().minute % 10 < 5: # Si el bloque que sigue va a ser noti
+            self._actualizaNoti()
+            bloqueNew = self.__fallbackNoti(ahora)
+        else: # Si el bloque que sigue va a ser reporte
+            bloqueNew = self.__fallbackReporte(ahora)
+ 
+
+        return bloqueNew
+
+    def __fallbackNoti(self, ahora: datetime, bloqueArranque = False) -> List[Contenido]:
+        """
+        Devuelve un bloque artificial de noti aguante. Si bloqueArranque = True, usa una hora en el pasado para que el bloque se dispare ya.
+        Si bloqueArranque = False devuelve la próxima hora en la que corresponda noti aguante.
+        """
+        print("[INFO]: Usando bloque default Noti Aguante\n")
+        minuto_actual = ahora.minute
+        residuo = minuto_actual % 5 # % 5 y no 10 xq solo se llama después de y 5 a esta función. Esto hace que siempre de una hora de noti aguante y no de reporte.
+
+        if bloqueArranque:
+            horaArranque = ahora - timedelta(minutes=residuo)
+        else:
+            faltante = 5 - residuo
+            horaArranque = ahora + timedelta(minutes=faltante)
+        horaArranque = horaArranque.time()
+
+        bloqueNoti = []
+        objNoti = Contenido(None, ahora.date(), horaArranque, None, TipoContenido.PLACA, None, None, "Noti Aguante", "Noti Aguante", None, None) # Objeto noti aguante.
+        objCamara = Contenido(None, ahora.date(), horaArranque, None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto Cámara.
+        objMusica = Contenido(None, ahora.date(), horaArranque, None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica.
+
+        bloqueNoti.append(objNoti)
+        bloqueNoti.append(objCamara)
+        bloqueNoti.append(objMusica)
+
+        return bloqueNoti
+
+    def __fallbackReporte(self, ahora: datetime, bloqueArranque = False) -> List[Contenido]:
+        """
+        Devuelve un bloque artificial de reporte local con música y rotación de cámaras, creado a mano con duraciones hardcodeadas.
+        Si bloqueArranque = True, usa una hora en el pasado para que el bloque se dispare ya.
+        Si bloqueArranque = False devuelve la próxima hora en la que corresponda reporte local.
+        """
+
+        print("[INFO]: Usando bloque default Reporte Local\n")
+        minuto_actual = ahora.minute
+        residuo = minuto_actual % 5 # % 5 y no 10 xq solo se llama después de las 0 a esta función. Esto hace que siempre de una hora de reporte y no de noti aguante.
+
+        if bloqueArranque:
+            horaArranque = ahora - timedelta(minutes=residuo)
+        else:
+            faltante = 5 - residuo
+            horaArranque = ahora + timedelta(minutes=faltante)
+
+        puntero_temporal = horaArranque
+        listaReporte: List[Contenido] = []
+
+        objPresenta = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.VIDEO, None, None, "PRESENTA TRUCHA.mp4", r"\\SERVERLOC\Videos\PRESENTACIONES\PRESENTA TRUCHA.mp4",None, None)
+        listaReporte.append(objPresenta)
+        puntero_temporal += timedelta(seconds = DuraReporte.PRESENTA)
+
+        objCamara = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.CAMARA, None, None, "CAMARA", "CAMARA", None, None) # Objeto camara
+        listaReporte.append(objCamara)
+
+        objMusica = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.MUSICA, None, None, "MUSICA", "MUSICA", None, None) # Objeto Musica
+        listaReporte.append(objMusica)
+
+        objDatos = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Actual Datos", r"c:\Placas\HD\tiempoactual.png", None, None)
+        listaReporte.append(objDatos)
+        puntero_temporal += timedelta(seconds = DuraReporte.ACTUAL_DATOS) # Musica, cámara y datos salen al mismo tiempo.
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Actual Detalle", r"c:\Placas\HD\tiempoactual1.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.ACTUAL_DETALLE)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Extendido Manana", r"c:\Placas\HD\Extendido1.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_MANANA)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Extendido Tarde", r"c:\Placas\HD\Extendido1.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_TARDE)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Extendido 2 Dias", r"c:\Placas\HD\Extendido2.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.EXTENDIDO_2DIAS)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Salida de Sol", r"c:\Placas\aire\HD\salidasol.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.SALIDA_SOL)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Fases Lunares", r"c:\Placas\aire\HD\faseslunares.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.FASES_LUNARES)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.PLACA, None, None, "Mareas", r"c:\Placas\aire\HD\mareas.png", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.MAREAS)
+
+        objDetalle = Contenido(None, ahora.date(), puntero_temporal.time(), None, TipoContenido.VIDEO, None, None, "mapas", r"\\SERVERLOC\Videos\mapas.mp4", None, None)
+        listaReporte.append(objDetalle)
+        puntero_temporal += timedelta(seconds = DuraReporte.MAPAS)
+
+        return listaReporte
     
     def _stopMusica(self):
         """
-        Frena la música de tal manera que se puede resumir con el llamado de goLiveMusica, útil para noti aguante después de los reportes.
+        Pausa la música. Saca el tema que estaba sonando para que arranque desde el próximo después.
         """
-
-        vMix = self.vMix
-
-        if self.musicaAct is not None:
-            vMix.pauseInput(self.musicaAct)
-
-        self.finTemaAct = None # Representa que ya NO está saliendo música al aire.
+        self.vMix.setAudio_off(IdInputs.MUSICA)
+        time.sleep(0.05)
+        self.vMix.pauseInput(IdInputs.MUSICA)
+        time.sleep(0.05)
+        self.vMix.listNextItem(IdInputs.MUSICA)
+        self.musicaLive = False
 
     def _cargaProx(self):
         """
@@ -342,7 +445,9 @@ class Scheduler:
                         buscando_video = False # Actualizo las flags cuando encuentro
                 
                 case TipoContenido.PLACA:
-                    continue
+                    if self.aguanteActualizada == False and cont.nombre == "Noti Aguante":
+                        self.aguanteActualizada = True
+                        self._actualizaNoti()
                 
                 case TipoContenido.FOTOBMP:
                     if buscando_micro:
@@ -350,7 +455,7 @@ class Scheduler:
                         buscando_micro = False
 
                 case TipoContenido.MUSICA:
-                    pass
+                    continue
                 
                 case TipoContenido.CAMARA:
                     continue
@@ -363,34 +468,37 @@ class Scheduler:
         vMix = self.vMix
 
         vMix.setAudio_on(IdInputs.BLIP)
-        vMix.playInput_number(IdInputs.BLIP)
+        vMix.playInput(IdInputs.BLIP)
 
     def _goLive(self,contAct: Contenido, cargaProx = True):
         """
         Este método tiene la lógica para mandar el tipo de contenido que corresponda al aire.
         Tiene un parámetro que funciona como flag para determinar si hay que precargar el proximo contenido o no. Se usa nada más en el primer llamado del arranque.
         """
-        print("Hora actual: " + str(datetime.now().time()) + "\n")
+        # print("Hora actual: " + str(datetime.now().time()) + "\n")
         if contAct == None:
             print("[ERROR]: Contenido inexistente\n")
+            return
 
-        if not contAct.path_valido() and contAct.path not in ["CAMARA", "MUSICA","IMAGENCAM"]:
+        if contAct.tipo != TipoContenido.PLACA and not contAct.path_valido() and contAct.path not in ["CAMARA", "MUSICA","IMAGENCAM"]:
             print("[ERROR]: No se encontró " + contAct.path + ", la imagen va a quedar congelada.\n")
             return
 
         tipo = contAct.tipo
         match tipo:
             case TipoContenido.VIDEO:
-                musicaBool = contAct.nombre in ["mapas", "MAPAS"]
-                placaBool = contAct.nombre in ["mapas", "MAPAS"]
+                musicaBool = placaBool = horaBool = contAct.nombre.lower() in ["mapas"] # Lo mantengo en 3 vars. separadas porque capaz después hay otro video que usa otra combinación de estas vars.
+
                 horaAct = datetime.now().time()
                 if horaAct.minute % 10 == 0 and horaAct.second < 10: # Cuando viene presenta trucha actualiza cámaras, noticias, placas y pide 5 temas al azar.
                     self.actualizaPlacas()
                     self.actualizaCamaras()
                     self.actualizaNoticias()
                     self.getMusica()
-                    
-                self._goLiveVideo(musica = musicaBool, noticias = placaBool)
+                    self.aguanteActualizada = False # Cuando sale el repote al aire hay que actualizar noti aguante de nuevo.
+
+                print(f"{str(datetime.now().time())} - {contAct.path} al aire")   
+                self._goLiveVideo(musica = musicaBool, noticias = placaBool, hora = horaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
                 self._goLiveCamara()
@@ -411,49 +519,14 @@ class Scheduler:
     
     def _goLiveMusica(self):
         """
-        goLiveMusica funciona como el "disparador" de la música, no es como goLiveMicro o goLiveVideo. Es más parecido a goLiveCamara
-        Inicializo manualmente el act/prox de la música.
-        musicaAct y musicaProx llegan a esta función con los valores correctos.
+        Simplemente da play al ListInput de música.
         """
-        print("Llamo goLiveMusica")
-        vMix = self.vMix
+        self.musicaLive = True
+        print("[INFO]: Música al aire.")
+        self.vMix.setAudio_on(IdInputs.MUSICA)
+        self.vMix.playInput(IdInputs.MUSICA)
 
-        if self.musicaProx is not None:
-            vMix.setAudio_on(self.musicaProx)
-            vMix.restartInput_number(self.musicaProx)
-            time.sleep(0.05)
-            vMix.playInput_number(self.musicaProx)
-        else:
-            print(f"[ERROR]: Ya se reprodujeron todos los {Musica.temasPorReporte} temas cargados. Aumentar el número de canciones por reporte en utilities.py")
-            return
-        
-        self.indexBloqueMusica += 1
-        
-        # En este choclo HORRIBLE asigno correctamente musicaAct y musicaProx
-        if self.musicaProx == IdInputs.MUSICA_A:
-            self.musicaAct = IdInputs.MUSICA_A
-            self.musicaProx = IdInputs.MUSICA_B
-        elif self.musicaProx == IdInputs.MUSICA_B:
-            self.musicaAct = IdInputs.MUSICA_B
-            self.musicaProx = IdInputs.MUSICA_A
-
-        # Calcula finTemaAct
-        try:
-            horaAct = datetime.now()
-            self.finTemaAct = horaAct + timedelta(seconds = vMix.getLength(self.musicaAct) / 1000)
-        except Exception as e:
-            self.finTemaAct = None
-            print(f"[ERROR]: Error al obtener la duración del tema actual: {e}. No se va a poder cambiar de canción una vez termine la actual.")
-
-        # Cargo el próximo tema
-        try:
-            temaProx = self.bloqueMusicas[self.indexBloqueMusica + 1]
-            vMix.listAddInput(self.musicaProx, temaProx.path)
-        except IndexError:
-            self.finTemaAct = None # Si ya pasaron todas las músicas, termina naturalmente el último y listo
-            print(f"[INFO]: Se cargaron todas las {Musica.temasPorReporte} músicas para este reporte, este valor se puede cambiar desde utilities.py.")
-
-    def _goLiveVideo(self, musica = False, noticias = False):
+    def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.
         vMix = self.vMix
 
@@ -462,8 +535,13 @@ class Scheduler:
         if not noticias:
             vMix.setOverlay_off(OverlaySlots.SLOT_NOTICIAS)
 
-        if not musica:
+        if not musica and self.musicaLive:
             self._stopMusica()
+
+        if not hora:
+            vMix.setOverlay_off(OverlaySlots.SLOT_HORA)
+        else:
+            vMix.setOverlay_on(IdPlacas.HORA_MAPAS, OverlaySlots.SLOT_HORA)
 
         if self.videoAct is not None:
             vMix.listClear(self.videoAct)
@@ -475,7 +553,7 @@ class Scheduler:
         vMix.setOutput_number(self.videoProx) # Manda al aire
         vMix.restartInput_number(self.videoProx)
         time.sleep(0.05) # Reinicia, espera y manda play
-        vMix.playInput_number(self.videoProx)
+        vMix.playInput(self.videoProx)
 
         self.camaraLive = False # Ya no sale al aire cámara.
 
@@ -489,41 +567,64 @@ class Scheduler:
         """
         Toggle de inputs de placa, adaptado para las placas en GT cada una en un input distinto.
         """
+
+        # Si molesta mucho el pequeño delay que hay entre cámara y placa al arrancar al reporte, se puede reimplementar con una lista de placas porque el reporte siempre sigue el mismo orden
+        # Y de esa manera se evitaría el match para mejor performance.
+
         vMix = self.vMix
         self.playBlip()
 
         match contAct.nombre:
             case "Actual Datos":
                 vMix.setOverlay_on(IdPlacas.ACTUAL_DATOS, OverlaySlots.SLOT_PLACA)
+                self.actualizaFuenteDatos("Actual Datos")
+                time.sleep(0.05)
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Actual Detalle":
+                self.actualizaFuenteDatos("Actual Detalle")
                 horaAct = datetime.now().time()
                 if horaAct.hour >= 6  and horaAct.hour < 12:
                     vMix.setOverlay_on(IdPlacas.ACTUAL_DETALLE_CLIMA, OverlaySlots.SLOT_PLACA)
                 else:
                     vMix.setOverlay_on(IdPlacas.ACTUAL_DETALLE, OverlaySlots.SLOT_PLACA)
+                time.sleep(0.05)
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Extendido Manana":
                     vMix.setOverlay_on(IdPlacas.EXTENDIDO_MANANA, OverlaySlots.SLOT_PLACA)
+                    self.actualizaFuenteDatos("Extendido Manana")
+                    time.sleep(0.05)
+                    vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Extendido Tarde":
                 vMix.setOverlay_on(IdPlacas.EXTENDIDO_TARDE, OverlaySlots.SLOT_PLACA)
+                self.actualizaFuenteDatos("Extendido Tarde")
+                time.sleep(0.05)
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Extendido 2 Dias":
                 vMix.setOverlay_on(IdPlacas.EXTENDIDO_2DIAS, OverlaySlots.SLOT_PLACA)
+                self.actualizaFuenteDatos("Extendido 2 Dias")
+                time.sleep(0.05)
+                vMix.setOverlay_on(IdPlacas.FUENTE_DATOS,OverlaySlots.SLOT_DATOS)
 
             case "Salida de Sol":
                 vMix.setOverlay_on(IdPlacas.SALIDA_SOL, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
 
             case "Fases Lunares":
                 vMix.setOverlay_on(IdPlacas.FASES_LUNARES, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
 
             case "Mareas":
                 vMix.setOverlay_on(IdPlacas.MAREAS, OverlaySlots.SLOT_PLACA)
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
             
             case "Noti Aguante":
                 vMix.setOverlay_on(IdPlacas.NOTI_AGUANTE, OverlaySlots.SLOT_PLACA)
-            
+                vMix.setOverlay_off(OverlaySlots.SLOT_DATOS)
+
             case _:
                 print(f"[ERROR]: No se encontró la placa {contAct.nombre}.")
                 return
@@ -539,7 +640,7 @@ class Scheduler:
         if self.microProx is None:
             print("[ERROR]: Error de precarga de micro.\n")
             return
-
+    
         vMix.setOutput_number(self.microProx) # Swapeo
         if blip: # Si corresponde sonar blip
             self.playBlip()
@@ -552,53 +653,32 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def _swapCamLive(self, camAct):
+    def _swapCamLive(self, camAct: Camara):
         """Método interno para ejecutar el cambio físico en vMix."""
         idCam = Camara._getCam_Id(camAct.id_camara)
-        nombreCam = Camara._getCam_Nombre(camAct.id_camara)
 
         if idCam:
+            self._actualizarTxtCamara(camAct.nombre)
+
             self.vMix.setOutput_number(idCam)
-            # Actualizamos el tiempo de la próxima
-            self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo)
-            print(f"[INFO]: {nombreCam} al aire, próxima cámara a las {self.horaProxCam.strftime('%H:%M:%S')}")
+            self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam
         else:
-            print(f"[ERROR]: No se encontró el ID para {camAct.nombre} en el diccionario.")
+            print(f"[ERROR]: No se encontró el ID para {camAct.nombre}.")
 
-    def _swapMusica(self):
-        print("Llamo _swapMusica")
-        if self.musicaProx is None:
-            print("[ERROR]: Error de precarga de música (post)")
-
-        vMix = self.vMix
-
-        # Mando al aire el próximo tema.
-        vMix.setAudio_on(self.musicaProx)
-        vMix.restartInput_number(self.musicaProx)
-        time.sleep(0.05)
-        vMix.playInput_number(self.musicaProx)
-        self.indexBloqueMusica +=  1
-
-        # Limpio el tema anterior
-        vMix.setAudio_off(self.musicaAct)
-        vMix.listClear(self.musicaAct)
-
-        # Intercambio musicaAct con musicaProx
-        self.musicaAct, self.musicaProx = self.musicaProx, self.musicaAct # locura esta función de python
-
-        try:
-            self.finTemaAct = datetime.now() + timedelta(seconds = vMix.getLength(self.musicaAct) / 1000) # Calculo a que hora termina el tema actual.
-        except Exception as e:
-            print(f"[ERROR]: No se pudo calcular la duracion del tema actual. No se podrá cambiar de canción cuando termine la actual. {e}")
-
-        # Precargo el próximo tema
-        try:
-            temaProx = self.bloqueMusicas[self.indexBloqueMusica + 1]
-            vMix.listAddInput(self.musicaProx, temaProx.path)
-        except IndexError:
-            self.finTemaAct = None # Si ya pasaron todas las músicas, termina naturalmente el último y listo
-            print(f"[INFO]: Se cargaron todas las {Musica.temasPorReporte} músicas para este reporte, este valor se puede cambiar desde utilities.py.")
-
+    def _actualizarTxtCamara(self, nombreCam):
+        """Escribe el .txt que vMix usa de data source para el nombre de la camara"""
+        
+        intentos = 0
+        while intentos <= 3:
+            try:
+                ruta_txt = Path(__file__).resolve().parent.parent / "resources" / "vmix_resources" / "nombrecam.txt"
+                with open(ruta_txt, "w", encoding="utf-8") as f:
+                    f.write(nombreCam)
+                    break
+            except Exception as e:
+                print(f"[ERROR]: No se pudo escribir el nombre de la cámara en el .txt: {e}\nReintentando...")
+                intentos += 1
+    
     def _goLiveCamara(self):
         self.camaraLive = True
 
@@ -635,6 +715,31 @@ class Scheduler:
         except Exception as e:
             print(f"[ERROR]: Error al actualizar las placas: {e}")
 
+    def actualizaFuenteDatos(self, placa):
+        """"Me convenía hacerlo con SetText, trolie un toque ok lo admito."""
+        DB = self.database
+
+        ruta_base = Path(__file__).resolve().parent.parent
+        directorio_destino = ruta_base / "resources" / "vmix_resources"
+        archivo_final = directorio_destino / "fuente_datos.txt"
+        
+        try:
+            valor = database.getDatos_fuente(placa)
+
+            if valor == FuenteDatos.SMN:
+                fuente = "Fuente: S.M.N"
+            elif valor == FuenteDatos.DATOS_PROPIOS:
+                fuente = "Fuente: Datos Propios."
+            else:
+                fuente = "Fuente: Accuweather"
+
+            if valor is not None:
+                with open(archivo_final, "w", encoding="utf-8") as f:
+                    f.write(str(fuente))
+                
+        except Exception as e:
+            print(f"[ERROR]: No se pudo actualizar la fuente de los datos: {e}")
+
     def actualizaNoticias(self):
         try:
             database = self.database
@@ -650,31 +755,70 @@ class Scheduler:
             print(f"[ERROR]: Error al actualizar las noticias: {e}")
 
     def actualizaCamaras(self):
-        # Llamar a database.getCamaras() y ver como hago para usar ese bloque
         DB = self.database
 
         bloqueCamNew = DB.get_Camaras()
         if bloqueCamNew:
             self.bloqueCamaras = bloqueCamNew
-            print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.")
+            print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Cámaras actualizadas correctamente.\n")
         # Si es Null NO asigno, me quedo con el anterior.
         # Ya está contemplado el caso de que no exista el bloque en la función de la db.
 
+    def _fecha_en_espanol(self):
+        ahora = datetime.now()
+        
+        dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+        
+        dia_semana = dias[ahora.weekday()]
+        mes = meses[ahora.month - 1]
+        
+        return f"{dia_semana}, {ahora.day} de {mes} de {ahora.year}"
+
+    def _actualizaNoti(self):
+        # Cálculo hora del próximo reporte.
+        ahora = datetime.now()
+        minutos_faltantes = 10 - (ahora.minute % 10)
+        proxima_hora = ahora + timedelta(minutes=minutos_faltantes)
+        horaProxReporte = proxima_hora.replace(second=0, microsecond=0)
+        self.vMix.setText(IdPlacas.NOTI_AGUANTE, "Próximo reporte local: " + horaProxReporte.strftime('%H:%M'),"proxReporte.Text")
+
+        #Seteo la fecha
+        self.vMix.setText(IdPlacas.NOTI_AGUANTE,self._fecha_en_espanol(),"fecha.Text")
+    
+    def _loaderMusica(self,bloqueMusicaNew):
+        """Método para que el hilo de música cargue las músicas de forma paralela."""
+        try:
+            vMix = self.vMix
+
+            for tema in bloqueMusicaNew:
+                vMix.listAddInput(IdInputs.MUSICA, tema.path)
+                time.sleep(10)
+        
+        except Exception as e:
+            print(f"[ERROR]: en el hilo paralelo de carga de música: {e}")
+
     def getMusica(self):
         """
-        Carga el playlist de musicas, self.bloqueMusicas.
-        No hace NADA operativo sobre el preset.
+        Carga el List Input de vMix con canciones traídas de la db.
+        La cantidad de canciones se maneja con el atributo temasPorReporte en utilities.py
         """
-        print("Llamo getMusica")
+
         DB = self.database
+
+        self.vMix.listClear(IdInputs.MUSICA) # Limpio música anterior.
+        time.sleep(0.1)
 
         bloqueMusicaNew = DB.get_Musicas() # Pido bloque nuevo de músicas
         if bloqueMusicaNew:
-            self.bloqueMusicas = bloqueMusicaNew # Guardo el bloque nuevo
             print(f"[INFO]: {datetime.now().strftime('%H:%M:%S')} - Música cargada correctamente.")
-            self._initMusica() # Llamo a initMusica para que cargue los inputs correctamente
         else:
             print("[ERROR]: No se pudieron pedir las músicas.")
+            return
+
+        threadCarga = threading.Thread(target = self._loaderMusica, args=(bloqueMusicaNew,),daemon=True)
+        threadCarga.start()
 
     def __clearAll(self):
         vMix = self.vMix
@@ -685,19 +829,15 @@ class Scheduler:
         vMix.listClear(IdInputs.VIDEO_A)
         vMix.listClear(IdInputs.VIDEO_B)
 
-        vMix.listClear(IdInputs.MUSICA_A)
-        vMix.listClear(IdInputs.MUSICA_B)    
-
-        vMix.listClear(IdInputs.BLIP)
+        vMix.listClear(IdInputs.MUSICA)
 
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
-    blipPath = BASE_DIR.parent / "resources" / "vmix_resources" / "BLIP.WAV"
 
     database = Database()
     vMix = VmixApi()
     schMain = Scheduler(vMix,database)
 
-    schMain.start(blipPath)
+    schMain.start()
