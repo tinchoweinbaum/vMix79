@@ -102,6 +102,7 @@ class Scheduler:
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
 
         self.musicaLive = False
+        self.horaFadeMusica = None
 
         self.aguanteActualizada = False # Flag para saber si hay que actualizar Los datos de noti aguante este reporte
 
@@ -165,6 +166,11 @@ class Scheduler:
         if self.camaraLive and horaAct >= self.horaProxCam:
             self.proximaCamara()
 
+        # --- Fade out de música ---
+        if self.musicaLive and self.horaFadeMusica and horaAct >= self.horaFadeMusica:
+            self.vMix.scriptStart("MusicaFade")
+            self.horaFadeMusica = None
+            
         # --- Cambio de Bloque ---
         if self.indexBloque >= len(self.bloqueAire):
             self._swapBloque()
@@ -505,7 +511,7 @@ class Scheduler:
             case TipoContenido.PLACA:
                 self._goLivePlaca(contAct)
             case TipoContenido.MUSICA:
-                self._goLiveMusica()
+                self._goLiveMusica(contAct.dura)
             case TipoContenido.IMAGENCAM:
                 print("IMAGENCAM")
             case TipoContenido.FOTOBMP:
@@ -517,14 +523,16 @@ class Scheduler:
         if cargaProx:
             self._cargaProx() # Después de mandar al aire precarga el prox.
     
-    def _goLiveMusica(self):
+    def _goLiveMusica(self, duracion = None):
         """
-        Simplemente da play al ListInput de música.
+        Da play al input de música y guarda la hora del fade out.
         """
         self.musicaLive = True
         print("[INFO]: Música al aire.")
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
+        if duracion:
+            self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - 5)
 
     def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.

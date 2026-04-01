@@ -454,6 +454,9 @@ class VmixApi:
         """
         self.__makeRequest("SelectIndex", {"Input": inputNum, "Value": index})
 
+    def scriptStart(self, nombreScript):
+        self.__makeRequest("ScriptStart", {"Value": nombreScript})
+
     def print_state(self):
         print("===== ESTADO ACTUAL DE vMix =====")
         print(f"Host: {self.host}")
@@ -519,5 +522,3 @@ class VmixApi:
 if __name__ == "__main__":
     vMix = VmixApi()
     vMix.debug_inputs()
-    # vMix.newInput("VLC","rtsp://admin:Mdqsurftv@192.168.0.242/mpeg4/media.amp")
-    vMix.setZoom(2)
