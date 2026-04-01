@@ -169,6 +169,7 @@ class Scheduler:
         # --- Fade out de música ---
         if self.musicaLive and self.horaFadeMusica and horaAct >= self.horaFadeMusica:
             self.vMix.scriptStart("MusicaFade")
+            print("[INFO]: Ejecutando Fade out de música.")
             self.horaFadeMusica = None
             
         # --- Cambio de Bloque ---
