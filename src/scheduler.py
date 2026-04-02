@@ -662,17 +662,27 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def _swapCamLive(self, camAct: Camara):
-        """Método interno para ejecutar el cambio físico en vMix."""
-        idCam = Camara._getCam_Id(camAct.id_camara)
+    def _swapCamLive(self, camActIndex):
+        """Método interno para ejecutar el cambio de cámara físico en vMix."""
+        camAct: Camara = self.bloqueCamaras[camActIndex]
+        inputCam = Camara._getCam_Id(camAct.id_camara) # Id del Input de camAct en vMix. None si no la encontró en el diccionario.
 
-        if idCam:
+        if inputCam:
             self._actualizarTxtCamara(camAct.nombre)
 
-            self.vMix.setOutput_number(idCam)
+            self.vMix.setOutput_number(inputCam)
             self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam
         else:
             print(f"[ERROR]: No se encontró el ID para {camAct.nombre}.")
+
+        try:
+            camProx: Camara = self.bloqueCamaras[camActIndex + 1]
+        except IndexError:
+            camProx = self.bloqueCamaras[0]
+
+        inputProxCam = Camara._getCam_Id(camProx.id_camara) # Id del input de la próxima cámara en vMix.
+        self.vMix.resetInput(inputProxCam)
+
 
     def _actualizarTxtCamara(self, nombreCam):
         """Escribe el .txt que vMix usa de data source para el nombre de la camara"""
@@ -696,18 +706,16 @@ class Scheduler:
             return
         
         self.indexBloqueCam = 0
-        camAct = self.bloqueCamaras[self.indexBloqueCam]
 
-        self._swapCamLive(camAct)
+        self._swapCamLive(self.indexBloqueCam)
 
     def proximaCamara(self):
 
         self.indexBloqueCam += 1
         if self.indexBloqueCam >= len(self.bloqueCamaras): # Aumento index de camaras y si me paso loopeo.
             self.indexBloqueCam = 0
-        
-        camAct = self.bloqueCamaras[self.indexBloqueCam]
-        self._swapCamLive(camAct)
+
+        self._swapCamLive(self.indexBloqueCam)
         
     def actualizaPlacas(self):
         try:

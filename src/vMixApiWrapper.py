@@ -403,6 +403,10 @@ class VmixApi:
     
     def newInput(self, tipo, value):
         self.__makeRequest("AddInput", extraParams = {"Value": tipo + '|' + value})
+
+    def resetInput(self, inputId):
+        """Método para hacer reset a las cámaras en vMix"""
+        self.__makeRequest("ResetInput", extraParams = {"Input": inputId})
     
     def restartInput_number(self, inputNum):
         self.__makeRequest("Restart", {"Input": inputNum})
