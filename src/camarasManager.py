@@ -1,8 +1,11 @@
 """Esta clase va a ser instanciada dentro de la clase Scheduler, la clase Scheduler tiene un atributo bloqueCamaras, y es a ese atributo que accede el manager para tener el bloque de camaras.
-    En esta clase NO está la lógica para ver cuando cambio de cámaras, solo está la implementación física del cambio.
+    En esta clase NO está la lógica para ver cuando cambio de cámaras, solo está la implementación física del cambio. Es decir, maneja procesos de ffmpeg y llama a la api de vMix para hacer swap.
+    Los atributos Act/Prox de esta clase tienen que estar sincronizados con los del scheduler.
 """
 
 from vMixApiWrapper import VmixApi
+from scheduler import Scheduler
+from utilities import Camara
 
 import subprocess
 import time
@@ -14,7 +17,7 @@ class InputsCamID(str, Enum):
     CAMARA_B = "2a18a0fc-55d1-44d9-9f48-9071142ba548"
 
 class CamarasManager():
-    def __init__(self, scheduler, ffmpeg_path = "ffmpeg" , mtx_path = "mediamtx",):
+    def __init__(self, scheduler: Scheduler, ffmpeg_path = "ffmpeg" , mtx_path = "mediamtx",):
         """Inicializa todos los parámetros de la clase y abre una instancia de MediaMTX para hacer de puente con ffmpeg y vMix."""
 
         self.ffmpeg_path = ffmpeg_path # Los valores default del init asumen que los .exe de ffmpeg y mediamtx están en el path.
@@ -25,7 +28,7 @@ class CamarasManager():
         self.ffmpegCam_a = None
         self.ffmpegCam_b = None
 
-        self.ffmpegAct = None # Guarda si está ffmpegCam_a o ffmpegCam_b al aire.
+        self.ffmpegAct =  None
 
         try:
             self.mtx = subprocess.Popen(mtx_path)
@@ -38,14 +41,14 @@ class CamarasManager():
         #func. para dale a ffmpegCamaraProx un ffmpeg con la primer camara del playlist.
 
     def _llama_ffmpeg(self, cam_url, via):
-        """Devuelve el proceso ffmpeg con la conexión de la cámara abierta."""
+        """Devuelve el proceso ffmpeg con la conexión de la cámara abierta. Método privado."""
         comando = [
             self.ffmpeg_path, 
             "-rtsp_transport", "tcp", 
             "-i", cam_url, 
             "-c", "copy", 
             "-f", "rtsp", 
-            f"rtsp://localhost:8554/{via}"
+            f"rtsp://127.0.0.1:8554/{via}"
         ]
         # Usamos creationflags para no llenar de ventanas la PC
         # return subprocess.Popen(
@@ -54,15 +57,16 @@ class CamarasManager():
         #     stderr=subprocess.DEVNULL,
         #     creationflags=subprocess.CREATE_NO_WINDOW
         # )
+
+        # Este llamado crea una terminal con cada vez que abre una conexión a una cámara.
         return subprocess.Popen(
             comando, 
             stdout=subprocess.DEVNULL, 
             stderr=subprocess.DEVNULL
         )
-
-    def swapCamara(self):
-        """Ejecuta el cambio físico de cámara, usando _llama_ffmpeg, le da act a prox, y prox a act. Hace también el cambio físico en vMix."""
-        # Mando al aire el ffmpegCam_x que no esté al aire
-        # Mato al anterior
-        # En el que era el anterior, creo un ffmpeg nuevo
-
+    
+    def iniciaCamaras(self):
+        """Establece conexión con la primera cámara. Abre una instancia de ffmpeg."""
+        primera_camara: Camara = self.scheduler.bloqueCamaras[0]
+        self.ffmpegCam_a = self._llama_ffmpeg(primera_camara.dir_conexion, 'camara_a') # Creo el ffmpeg de la primera cámara y actualizo estado.
+        self.ffmpegAct = self.ffmpegCam_a

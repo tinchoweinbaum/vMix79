@@ -11,6 +11,7 @@ from enum import IntEnum, Enum
 from datetime import datetime, time as dt, timedelta
 from typing import List
 from pathlib import Path
+from camarasManager import CamarasManager
 import pause
 import threading
 import time
@@ -62,6 +63,8 @@ class IdInputs(str, Enum):
     MICRO_A = "8495af6e-545f-49de-9501-77dd9c84fcd0"
     VIDEO_B = "cbab3333-2c77-438c-a180-2082f7569022"
     MICRO_B = "734f2c01-fd38-42f4-8d6c-d5ec59cdfeff"
+    CAMARA_A = "123520d4-a22c-4e83-a5b7-a8291e7cb82c"
+    CAMARA_B = "2a18a0fc-55d1-44d9-9f48-9071142ba548"
     BLIP = "c426ef85-0b21-4518-a7cf-19c0aea8277e"
 
 class IdPlacas(str, Enum):
@@ -100,6 +103,10 @@ class Scheduler:
         self.indexBloqueCam = 0
         self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
+
+        self.camManager = CamarasManager(self) # Asumo que ffmpeg y mediamtx están en el path
+        self.camaraAct = None
+        self.camaraProx = None
 
         self.musicaLive = False
         self.horaFadeMusica = None
@@ -288,6 +295,13 @@ class Scheduler:
 
         self.microProx = inputLibre
 
+    def _preparaCamara(self):
+        self.camaraProx = IdInputs.CAMARA_A # OJO con esta condición cuando vuelven a salir cámaras después del arranque. Corregir.
+
+        self.indexBloqueCam = 0
+        self.camManager.iniciaCamaras()
+
+
     def _swapBloque(self):
         if not self.bloqueProx:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
@@ -441,7 +455,7 @@ class Scheduler:
             if not buscando_video and not buscando_micro:
                 return
             
-            if not cont.path_valido() and cont.path not in ["CAMARA", "MUSICA"]:
+            if not cont.path_valido() and cont.path not in ["MUSICA"]:
                 # print(cont.nombre + " No tiene un path valido.")
                 continue
 
@@ -465,7 +479,7 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    continue
+                    self._preparaCamara()
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
@@ -662,27 +676,26 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def _swapCamLive(self, camActIndex):
-        """Método interno para ejecutar el cambio de cámara físico en vMix."""
-        camAct: Camara = self.bloqueCamaras[camActIndex]
-        inputCam = Camara._getCam_Id(camAct.id_camara) # Id del Input de camAct en vMix. None si no la encontró en el diccionario.
+    def _swapCamLive(self):
+        """Este método maneja Los inputs de vMix de Cámaras (A o B) y los atributos de estado de las cámaras. NADA MAS.
+            el input camaraProx ya tiene que tener el ffmpeg correcto cargado.
+        """
+        vMix = self.vMix
 
-        if inputCam:
-            self._actualizarTxtCamara(camAct.nombre)
+        if self.camaraProx is None:
+            print("[ERROR]: Error de precarga de cámaras.\n")
+            return
+        
+        vMix.setOutput_number(self.camaraProx)
 
-            self.vMix.setOutput_number(inputCam)
-            self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam
+        self.camaraAct = self.camaraProx # Cambio act/prox
+
+        if self.camaraAct == IdInputs.CAMARA_A:
+            self.camaraProx = IdInputs.CAMARA_B
         else:
-            print(f"[ERROR]: No se encontró el ID para {camAct.nombre}.")
+            self.camaraProx = IdInputs.CAMARA_A
 
-        try:
-            camProx: Camara = self.bloqueCamaras[camActIndex + 1]
-        except IndexError:
-            camProx = self.bloqueCamaras[0]
-
-        inputProxCam = Camara._getCam_Id(camProx.id_camara) # Id del input de la próxima cámara en vMix.
-        self.vMix.resetInput(inputProxCam)
-
+        # precargar la próxima camara en el ffmpeg. manejar acá y allá los atributos act y prox.
 
     def _actualizarTxtCamara(self, nombreCam):
         """Escribe el .txt que vMix usa de data source para el nombre de la camara"""
@@ -699,15 +712,14 @@ class Scheduler:
                 intentos += 1
     
     def _goLiveCamara(self):
+        """Disparador de la rotación de cámaras."""
         self.camaraLive = True
 
         if not self.bloqueCamaras:
             print("[ERROR]: No se encontró un bloque de cámaras válido, se va a emitir la cámara default.") # Dar la opción de cambiar cámara default en la ui del navegador
             return
-        
-        self.indexBloqueCam = 0
 
-        self._swapCamLive(self.indexBloqueCam)
+        self._swapCamLive()
 
     def proximaCamara(self):
 
