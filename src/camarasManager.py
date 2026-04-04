@@ -36,6 +36,7 @@ class CamarasManager():
 
         self.ffmpegAct =  None
 
+        # Agregar check de si el proceso ya está corriendo
         try:
             self.mtx = subprocess.Popen(mtx_path)
             # self.mtx = subprocess.Popen(mtx_path, creationflags=subprocess.CREATE_NO_WINDOW)
@@ -73,7 +74,7 @@ class CamarasManager():
     
     def proxCam(self, indexProxCam):
         "Mata el proceso del ffmpeg actual y crea el próximo. No checkea si el index es válido por que solo se la va a llamar con indexes válidos."
-        proxCamara: Camara = self.scheduler.indexBloqueCam[indexProxCam]
+        proxCamara: Camara = self.scheduler.bloqueCamaras[indexProxCam]
 
         # --- Creo el próximo ffmpeg ---
         if self.ffmpegAct == self.ffmpegCam_a: # Veo en que slot de ffmpeg tengo que cargar.
