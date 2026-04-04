@@ -9,6 +9,10 @@
 from vMixApiWrapper import VmixApi
 from scheduler import Scheduler
 from utilities import Camara
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from scheduler import Scheduler  # El editor lo ve, el programa no.
 
 import subprocess
 import time
