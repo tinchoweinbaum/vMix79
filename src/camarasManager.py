@@ -1,6 +1,9 @@
 """Esta clase va a ser instanciada dentro de la clase Scheduler, la clase Scheduler tiene un atributo bloqueCamaras, y es a ese atributo que accede el manager para tener el bloque de camaras.
     En esta clase NO está la lógica para ver cuando cambio de cámaras, solo está la implementación física del cambio. Es decir, maneja procesos de ffmpeg y llama a la api de vMix para hacer swap.
     Los atributos Act/Prox de esta clase tienen que estar sincronizados con los del scheduler.
+
+    Es importante que en el init reciba al objeto scheduler completo como atributo de clase, porque en scheduler.py, cuando se le pasa self al init de esta clase, lo que se pasa es la referencia en memoria
+    del objeto Scheduler, por lo que puede ver los cambios en playlist de cámaras o cualquier parte.
 """
 
 from vMixApiWrapper import VmixApi
@@ -65,6 +68,32 @@ class CamarasManager():
             stderr=subprocess.DEVNULL
         )
     
+    def proxCam(self, indexProxCam):
+        "Mata el proceso del ffmpeg actual y crea el próximo. No checkea si el index es válido por que solo se la va a llamar con indexes válidos."
+        proxCamara: Camara = self.scheduler.indexBloqueCam[indexProxCam]
+
+        # --- Creo el próximo ffmpeg ---
+        if self.ffmpegAct == self.ffmpegCam_a: # Veo en que slot de ffmpeg tengo que cargar.
+            if self.ffmpegCam_b:
+                try:
+                    self.ffmpegCam_b.terminate() # Mato ffmpeg viejo
+                    self.ffmpegCam_b.wait(timeout = 2)
+                except subprocess.TimeoutExpired:
+                    self.ffmpegCam_b.kill()
+
+            self.ffmpegCam_b = self._llama_ffmpeg(proxCamara.dir_conexion,'camara_b')
+            self.ffmpegAct = self.ffmpegCam_b # Actualizo act
+        else:
+            if self.ffmpegCam_a:
+                try:
+                    self.ffmpegCam_a.terminate() # Mato ffmpeg viejo
+                    self.ffmpegCam_a.wait(timeout = 2)
+                except subprocess.TimeoutExpired:
+                    self.ffmpegCam_a.kill()
+
+            self.ffmpegCam_a = self._llama_ffmpeg(proxCamara.dir_conexion,'camara_a')
+            self.ffmpegAct = self.ffmpegCam_a # Actualizo act
+
     def iniciaCamaras(self):
         """Establece conexión con la primera cámara. Abre una instancia de ffmpeg."""
         primera_camara: Camara = self.scheduler.bloqueCamaras[0]

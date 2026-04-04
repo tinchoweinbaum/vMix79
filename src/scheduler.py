@@ -295,12 +295,11 @@ class Scheduler:
 
         self.microProx = inputLibre
 
-    def _preparaCamara(self):
-        self.camaraProx = IdInputs.CAMARA_A # OJO con esta condición cuando vuelven a salir cámaras después del arranque. Corregir.
+    def _initCamaras(self):
+        self.camaraProx = IdInputs.CAMARA_A
 
         self.indexBloqueCam = 0
         self.camManager.iniciaCamaras()
-
 
     def _swapBloque(self):
         if not self.bloqueProx:
@@ -479,7 +478,7 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    self._preparaCamara()
+                    self._initCamaras()
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
@@ -695,8 +694,6 @@ class Scheduler:
         else:
             self.camaraProx = IdInputs.CAMARA_A
 
-        # precargar la próxima camara en el ffmpeg. manejar acá y allá los atributos act y prox.
-
     def _actualizarTxtCamara(self, nombreCam):
         """Escribe el .txt que vMix usa de data source para el nombre de la camara"""
         
@@ -720,6 +717,7 @@ class Scheduler:
             return
 
         self._swapCamLive()
+        self.camManager.proxCam(1) # Precargo "a mano" la segunda cámara, buscar una manera más prolija de hacer esto.
 
     def proximaCamara(self):
 
@@ -727,7 +725,8 @@ class Scheduler:
         if self.indexBloqueCam >= len(self.bloqueCamaras): # Aumento index de camaras y si me paso loopeo.
             self.indexBloqueCam = 0
 
-        self._swapCamLive(self.indexBloqueCam)
+        self._swapCamLive(self.indexBloqueCam) # Mando al aire la próxima cámara.
+        self.camManager.proxCam(self.indexBloqueCam + 1) # Creo el ffmpeg de la próxima cámara.
         
     def actualizaPlacas(self):
         try:
