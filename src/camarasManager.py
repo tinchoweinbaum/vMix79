@@ -7,7 +7,6 @@
 """
 
 from vMixApiWrapper import VmixApi
-from scheduler import Scheduler
 from utilities import Camara
 from typing import TYPE_CHECKING
 
