@@ -479,6 +479,7 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
+                    print("HOLA VOY A PRECARGAR CAMARAS!!!")
                     self._initCamaras()
       
                 case _: # Default
