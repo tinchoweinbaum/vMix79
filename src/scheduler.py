@@ -324,6 +324,7 @@ class Scheduler:
             self._cargaProx()
 
         self.camarasInit = False # Cuando se cambia de bloque, se tienen que reinicializar las cámaras.
+        self.camManager.kill_all_ffmpeg()
 
 
     def __bloqueFallback(self):
@@ -795,6 +796,7 @@ class Scheduler:
             print(f"[ERROR]: Error al actualizar las noticias: {e}")
 
     def actualizaCamaras(self):
+        "Pide el playlista de cámaras a la db."
         DB = self.database
 
         bloqueCamNew = DB.get_Camaras()
@@ -874,7 +876,6 @@ class Scheduler:
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parent
 
     database = Database()
     vMix = VmixApi()

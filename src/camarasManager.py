@@ -108,3 +108,22 @@ class CamarasManager():
         primera_camara: Camara = self.scheduler.bloqueCamaras[0]
         self.ffmpegCam_a = self._llama_ffmpeg(primera_camara.dir_conexion, 'camara_a') # Creo el ffmpeg de la primera cámara y actualizo estado.
         self.ffmpegAct = self.ffmpegCam_a
+
+    def kill_all_ffmpeg(self):
+        if self.ffmpegCam_a:
+            try:
+                self.ffmpegCam_a.terminate() # Mato ffmpeg viejo
+                self.ffmpegCam_a.wait(timeout = 2)
+            except subprocess.TimeoutExpired:
+                self.ffmpegCam_a.kill()
+            self.ffmpegCam_a = None
+
+        if self.ffmpegCam_b:
+            try:
+                self.ffmpegCam_b.terminate() # Mato ffmpeg viejo
+                self.ffmpegCam_b.wait(timeout = 2)
+            except subprocess.TimeoutExpired:
+                self.ffmpegCam_b.kill()
+            self.ffmpegCam_b = None
+
+        self.ffmpegAct = None
