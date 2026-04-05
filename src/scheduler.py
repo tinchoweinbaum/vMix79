@@ -296,6 +296,7 @@ class Scheduler:
         self.microProx = inputLibre
 
     def _initCamaras(self):
+        print("llamo initCamaras")
         self.camaraProx = IdInputs.CAMARA_A
 
         self.indexBloqueCam = 0
