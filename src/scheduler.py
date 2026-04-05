@@ -725,7 +725,7 @@ class Scheduler:
         if self.indexBloqueCam >= len(self.bloqueCamaras): # Aumento index de camaras y si me paso loopeo.
             self.indexBloqueCam = 0
 
-        self._swapCamLive(self.indexBloqueCam) # Mando al aire la próxima cámara.
+        self._swapCamLive() # Mando al aire la próxima cámara.
         self.camManager.proxCam(self.indexBloqueCam + 1) # Creo el ffmpeg de la próxima cámara.
         
     def actualizaPlacas(self):
