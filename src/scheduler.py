@@ -106,6 +106,7 @@ class Scheduler:
         self.camManager = CamarasManager(self) # Asumo que ffmpeg y mediamtx están en el path
         self.camaraAct = None
         self.camaraProx = None
+        self.camarasInit = False # Flag booleana para identificar si las camaras están inicializadas.
 
         self.musicaLive = False
         self.horaFadeMusica = None
@@ -301,6 +302,8 @@ class Scheduler:
         self.indexBloqueCam = 0
         self.camManager.iniciaCamaras()
 
+        self.camarasInit = True
+
     def _swapBloque(self):
         if not self.bloqueProx:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
@@ -319,6 +322,8 @@ class Scheduler:
         else:
             self.nroBloqueAire += 1
             self._cargaProx()
+
+        self.camarasInit = False # Cuando se cambia de bloque, se tienen que reinicializar las cámaras.
 
 
     def __bloqueFallback(self):
@@ -478,7 +483,8 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    self._initCamaras()
+                    if self.camarasInit == False:
+                        self._initCamaras()
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
