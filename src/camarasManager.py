@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 import subprocess
 import time
+import os
 
 from enum import Enum
 
@@ -38,7 +39,10 @@ class CamarasManager():
 
         # Agregar check de si el proceso ya está corriendo
         try:
-            self.mtx = subprocess.Popen(mtx_path)
+            base_path = os.path.dirname(os.path.abspath(__file__))
+            yml_path = os.path.abspath(os.path.join(base_path, "..", "resources", "mediamtx.yml"))
+
+            self.mtx = subprocess.Popen([mtx_path, yml_path])
             # self.mtx = subprocess.Popen(mtx_path, creationflags=subprocess.CREATE_NO_WINDOW)
             time.sleep(2) # Damos tiempo a que MediaMTX abra el puerto 8554
         except Exception as e:
