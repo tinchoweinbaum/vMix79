@@ -56,6 +56,7 @@ class CamarasManager():
         comando = [
             self.ffmpeg_path, 
             "-rtsp_transport", "tcp", 
+            "-pkt-size", "1316", # numero mágico de tamaño de paquete
             "-i", cam_url, 
             "-c", "copy", 
             "-f", "rtsp", 

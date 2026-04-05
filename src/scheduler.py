@@ -717,13 +717,12 @@ class Scheduler:
             return
 
         self._swapCamLive()
-        self.camManager.proxCam(1) # Precargo "a mano" la segunda cámara, buscar una manera más prolija de hacer esto.
+        index_next = (self.indexBloqueCam + 1) % len(self.bloqueCamaras)
+        self.camManager.proxCam(index_next)
 
     def proximaCamara(self):
 
-        self.indexBloqueCam += 1
-        if self.indexBloqueCam >= len(self.bloqueCamaras): # Aumento index de camaras y si me paso loopeo.
-            self.indexBloqueCam = 0
+        self.indexBloqueCam = (self.indexBloqueCam + 1) % len(self.bloqueCamaras)
 
         self._swapCamLive() # Mando al aire la próxima cámara.
         self.camManager.proxCam(self.indexBloqueCam + 1) # Creo el ffmpeg de la próxima cámara.
