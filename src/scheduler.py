@@ -12,7 +12,6 @@ from datetime import datetime, time as dt, timedelta
 from typing import List
 from pathlib import Path
 from camarasManager import CamarasManager
-import pause
 import threading
 import time
 
@@ -296,7 +295,7 @@ class Scheduler:
         self.microProx = inputLibre
 
     def _initCamaras(self):
-        print("llamo initCamaras")
+        print("\nllamo initCamaras\n")
         self.camaraProx = IdInputs.CAMARA_A
 
         self.indexBloqueCam = 0
@@ -479,7 +478,6 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    print("HOLA VOY A PRECARGAR CAMARAS!!!")
                     self._initCamaras()
       
                 case _: # Default
@@ -718,16 +716,23 @@ class Scheduler:
             print("[ERROR]: No se encontró un bloque de cámaras válido, se va a emitir la cámara default.") # Dar la opción de cambiar cámara default en la ui del navegador
             return
 
-        self._swapCamLive()
-        index_next = (self.indexBloqueCam + 1) % len(self.bloqueCamaras)
+        self._swapCamLive() # <-- Esta función no sabe lo que es el index de las cámaras. Solo alterna entre CAMARA_A y CAMARA_B en vMix.
+
+        index_next = (self.indexBloqueCam + 1) % len(self.bloqueCamaras) # Precargo el ffmpeg de la próxima cámara.
         self.camManager.proxCam(index_next)
+
+        self.horaProxCam = datetime.now() + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo) # Actualizo la hora de la próxima cámara.
 
     def proximaCamara(self):
 
-        self.indexBloqueCam = (self.indexBloqueCam + 1) % len(self.bloqueCamaras)
+        self.indexBloqueCam = (self.indexBloqueCam + 1) % len(self.bloqueCamaras) # Avanzo el index
 
         self._swapCamLive() # Mando al aire la próxima cámara.
-        self.camManager.proxCam(self.indexBloqueCam + 1) # Creo el ffmpeg de la próxima cámara.
+
+        self.horaProxCam = datetime.now() + timedelta(seconds = self.bloqueCamaras[self.indexBloqueCam].tiempo)
+
+        index_next = (self.indexBloqueCam + 1) % len(self.bloqueCamaras) # Precargo el ffmpeg de la próxima cámara.
+        self.camManager.proxCam(index_next)
         
     def actualizaPlacas(self):
         try:
