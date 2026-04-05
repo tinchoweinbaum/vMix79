@@ -455,7 +455,7 @@ class Scheduler:
             if not buscando_video and not buscando_micro:
                 return
             
-            if not cont.path_valido() and cont.path not in ["MUSICA"]:
+            if not cont.path_valido() and cont.path not in ["MUSICA","CAMARAS"]:
                 # print(cont.nombre + " No tiene un path valido.")
                 continue
 
