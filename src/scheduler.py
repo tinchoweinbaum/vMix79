@@ -136,6 +136,10 @@ class Scheduler:
 
         self.__clearAll()
 
+        self.actualizaPlacas() # Primero actualizo todos los datos
+        self.actualizaNoticias()
+        self.actualizaCamaras()
+
         self._buscaBloque() # Asigna valor correcto actual a self.indexBloque.
         self.getMusica() # Cargo el bloque de música en memoria.
         self._cargaProx() # Precarga los inputs prox para el primer tick.
@@ -144,10 +148,6 @@ class Scheduler:
             print("Bloque de arranque vacío.\n")
             self.stop()
             return
-
-        self.actualizaPlacas()
-        self.actualizaNoticias()
-        self.actualizaCamaras()
 
         time.sleep(0.1)
 
