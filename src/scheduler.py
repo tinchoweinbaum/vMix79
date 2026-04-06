@@ -7,11 +7,13 @@ Para la música se "fabrica" un playlist artificial, para poder manejar las hora
 from utilities import Contenido, Camara, Musica # Clase que representa los Contenidos de la programación.
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix.
 from database import Database # Clase wrapper de la Database.
+from obsManager import Obs
+
 from enum import IntEnum, Enum
 from datetime import datetime, time as dt, timedelta
 from typing import List
 from pathlib import Path
-import pause
+
 import threading
 import time
 
@@ -63,6 +65,8 @@ class IdInputs(str, Enum):
     VIDEO_B = "cbab3333-2c77-438c-a180-2082f7569022"
     MICRO_B = "734f2c01-fd38-42f4-8d6c-d5ec59cdfeff"
     BLIP = "c426ef85-0b21-4518-a7cf-19c0aea8277e"
+    OBS_CAMARA_A = "635e44d9-5801-4419-a2ed-e4ff0e0f8dfc"
+    OBS_CAMARA_B = "5b0069eb-5a54-4d1e-ac5b-2f56b5b48cf8"
 
 class IdPlacas(str, Enum):
     ACTUAL_DATOS = "6d6b377a-09bf-4e48-836b-7c147836e20b"
@@ -79,6 +83,9 @@ class IdPlacas(str, Enum):
     HORA_MAPAS = "f150e53a-b06d-4261-b61f-f76be331203e"
     FUENTE_DATOS = "ee4e849f-d024-4707-a682-5e236010c298"
 
+class ObsEscenas(str, Enum):
+    CAMARA_A = "CAMARA_A"
+    CAMARA_B = "CAMARA_B"
 
 class Scheduler:
     def __init__(self, vMix: VmixApi, database: Database):
@@ -100,6 +107,13 @@ class Scheduler:
         self.indexBloqueCam = 0
         self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
+
+        self.camAct = None # Estos 2 atributos se encargan de los dos inputs de cámaras.
+        self.camProx = None
+
+        self.obs = Obs() # Conexión con el web socket de obs para las cámaras
+        self.obsAct = None # Que escena de OBS tiene la cámara que está al aire?
+        self.obsProx = None
 
         self.musicaLive = False
         self.horaFadeMusica = None
@@ -441,7 +455,7 @@ class Scheduler:
             if not buscando_video and not buscando_micro:
                 return
             
-            if not cont.path_valido() and cont.path not in ["CAMARA", "MUSICA"]:
+            if not cont.path_valido() and cont.path not in ["MUSICA"]:
                 # print(cont.nombre + " No tiene un path valido.")
                 continue
 
@@ -465,7 +479,7 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    continue
+                    self.__initCamaras()
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
@@ -662,27 +676,48 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def _swapCamLive(self, camActIndex):
-        """Método interno para ejecutar el cambio de cámara físico en vMix."""
-        camAct: Camara = self.bloqueCamaras[camActIndex]
-        inputCam = Camara._getCam_Id(camAct.id_camara) # Id del Input de camAct en vMix. None si no la encontró en el diccionario.
+    def __initCamaras(self):
+        "Carga en OBS la primera cámara e inicializa los atributos de estado."
+        obs = self.obs
+        
+        self.indexBloqueCam = 0 # Inicializo estados de cámaras.
+        self.camAct = None
+        self.camProx = IdInputs.OBS_CAMARA_A
 
-        if inputCam:
-            self._actualizarTxtCamara(camAct.nombre)
+        primera_camara = self.bloqueCamaras[0]
+        # Agregar protección por si no existe el playlist de cámaras.
 
-            self.vMix.setOutput_number(inputCam)
-            self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam
-        else:
-            print(f"[ERROR]: No se encontró el ID para {camAct.nombre}.")
+        # Inicializo estados de OBS.
+        obs.clearScene(ObsEscenas.CAMARA_A) # Limpio las 2 escenas antes de empezar.
+        obs.clearScene(ObsEscenas.CAMARA_B)
 
-        try:
-            camProx: Camara = self.bloqueCamaras[camActIndex + 1]
-        except IndexError:
-            camProx = self.bloqueCamaras[0]
+        obs.add_rtsp(ObsEscenas.CAMARA_A,primera_camara.nombre,primera_camara.dir_conexion)
+        self.obsAct = None
+        self.obsProx = ObsEscenas.CAMARA_A
 
-        inputProxCam = Camara._getCam_Id(camProx.id_camara) # Id del input de la próxima cámara en vMix.
-        self.vMix.resetInput(inputProxCam)
+    def _swapCamLive(self):
+        """Método interno para cambiar la cámara al aire en vMix. Actualiza atributos de estado de vMix y OBS"""
+        camAct: Camara = self.bloqueCamaras[self.indexBloqueCam]
 
+        indexProx = (self.indexBloqueCam + 1) % len(self.bloqueCamaras)
+        proxCam: Camara = self.bloqueCamaras[indexProx]
+
+        self._actualizarTxtCamara(camAct.nombre) # Nombre de la cámara.
+
+        self.vMix.setOutput_number(self.camProx)
+
+        if self.obsAct is not None: # Borro la cámara anterior.
+            self.obs.clearScene(self.obsAct)
+
+        self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam.
+
+        self.camAct = self.camProx # Actualizo atributos del scheduler.
+        self.camProx = IdInputs.OBS_CAMARA_A if self.camAct == IdInputs.OBS_CAMARA_B else IdInputs.OBS_CAMARA_B
+
+        self.obsAct = self.obsProx # Actualizo atributos de OBS.
+        self.obsProx = ObsEscenas.CAMARA_A if self.obsAct == ObsEscenas.CAMARA_B else ObsEscenas.CAMARA_B
+
+        self.obs.add_rtsp(self.obsProx, proxCam.nombre, proxCam.dir_conexion) # Precargo la próxima cámara.
 
     def _actualizarTxtCamara(self, nombreCam):
         """Escribe el .txt que vMix usa de data source para el nombre de la camara"""
@@ -704,10 +739,8 @@ class Scheduler:
         if not self.bloqueCamaras:
             print("[ERROR]: No se encontró un bloque de cámaras válido, se va a emitir la cámara default.") # Dar la opción de cambiar cámara default en la ui del navegador
             return
-        
-        self.indexBloqueCam = 0
 
-        self._swapCamLive(self.indexBloqueCam)
+        self._swapCamLive()
 
     def proximaCamara(self):
 
