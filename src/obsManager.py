@@ -30,7 +30,7 @@ class Obs:
                     "hw_decode": True, # Aceleración x hardware para usar GPU
                     "reconnect_delay": 2,
                     "buffering_mb": 1, # Buffer bajo para menor latencia en NDI
-                    "close_when_inactive": False, # Libera recursos si no se ve
+                    "close_when_inactive": False, # Las cámaras tienen que estar cargadas hasta que se borre el input
                     "restart_on_activate": False
                 },
                 sceneItemEnabled=True
@@ -39,7 +39,6 @@ class Obs:
             print(f"[ERROR]: Error al agregar la cámara con url {rtsp_url} a OBS: {e}")
 
     def restart_input(self,inputName):
-        "Da restart al input seleccionado, esto se usa con las cámaras para que comience la conexión y salga al aire."
         self.client.call(requests.TriggerMediaInputAction(
         sourceName= inputName,
         mediaAction="OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART" 

@@ -108,6 +108,7 @@ class Scheduler:
         self.horaProxCam = datetime.now()
         self.bloqueCamaras: List[Camara] = [] # Como el bloque de contenido pero con cámaras
 
+        self.camsInit = False # Atributo para ver si las cámaras están incializadas este bloque.
         self.camAct = None # Estos 2 atributos se encargan de los dos inputs de cámaras.
         self.camProx = None
 
@@ -479,7 +480,8 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    self.__initCamaras()
+                    if self.camsInit == False: # Si las cámaras no están inicializadas las incializo XD
+                        self.__initCamaras()
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
@@ -678,6 +680,7 @@ class Scheduler:
 
     def __initCamaras(self):
         "Carga en OBS la primera cámara e inicializa los atributos de estado."
+        print("__initCamaras")
         obs = self.obs
         
         self.indexBloqueCam = 0 # Inicializo estados de cámaras.
@@ -687,13 +690,15 @@ class Scheduler:
         primera_camara = self.bloqueCamaras[0]
         # Agregar protección por si no existe el playlist de cámaras.
 
-        # Inicializo estados de OBS.
-        obs.clearScene(ObsEscenas.CAMARA_A) # Limpio las 2 escenas antes de empezar.
+        obs.clearScene(ObsEscenas.CAMARA_A) # Limpio las 2 escenas de obs antes de empezar.
         obs.clearScene(ObsEscenas.CAMARA_B)
 
+        # Inicializo estados de OBS.
         obs.add_rtsp(ObsEscenas.CAMARA_A,primera_camara.nombre,primera_camara.dir_conexion)
         self.obsAct = None
         self.obsProx = ObsEscenas.CAMARA_A
+
+        self.camsInit = True
 
     def _swapCamLive(self):
         """Método interno para cambiar la cámara al aire en vMix. Actualiza atributos de estado de vMix y OBS"""
@@ -706,7 +711,7 @@ class Scheduler:
 
         self.vMix.setOutput_number(self.camProx)
 
-        if self.obsAct is not None: # Borro la cámara anterior.
+        if self.obsAct is not None: # Borro la cámara anterior si existe.
             self.obs.clearScene(self.obsAct)
 
         self.horaProxCam = datetime.now() + timedelta(seconds=camAct.tiempo) # Actualiza horaProxCam.
