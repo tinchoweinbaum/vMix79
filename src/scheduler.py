@@ -161,6 +161,9 @@ class Scheduler:
 
         time.sleep(1)
 
+        self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS para no consumir recursos con cámaras que no voy a usar.
+        self.obs.clearScene(ObsEscenas.CAMARA_B)
+
         while self.running:
             self._tick()
             time.sleep(0.2)
@@ -680,7 +683,7 @@ class Scheduler:
 
     def __initCamaras(self):
         "Carga en OBS la primera cámara e inicializa los atributos de estado."
-        print("__initCamaras")
+        print("LLAMO __initCamaras")
         obs = self.obs
         
         self.indexBloqueCam = 0 # Inicializo estados de cámaras.
