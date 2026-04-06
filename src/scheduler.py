@@ -187,7 +187,6 @@ class Scheduler:
         # --- Fade out de música ---
         if self.musicaLive and self.horaFadeMusica and horaAct >= self.horaFadeMusica:
             self.vMix.scriptStart("MusicaFade")
-            print("[INFO]: Ejecutando fade-out de música.")
             self.horaFadeMusica = None
             
         # --- Cambio de Bloque ---
@@ -454,9 +453,10 @@ class Scheduler:
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
         buscando_micro = self.microProx is None
+        buscando_cam = any(cont.tipo == TipoContenido.CAMARA for cont in self.bloqueAire) and self.camsInit == False
 
         for cont in self.bloqueAire[self.indexBloque:]:
-            if not buscando_video and not buscando_micro:
+            if not buscando_video and not buscando_micro and not buscando_cam:
                 return
             
             if not cont.path_valido() and cont.path not in ["MUSICA"]:
@@ -483,8 +483,9 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    if self.camsInit == False: # Si las cámaras no están inicializadas las incializo XD
+                    if buscando_cam: # Si este bloque tiene camaras, y todavia no están inicializadas...
                         self.__initCamaras()
+                        buscando_cam = False
       
                 case _: # Default
                     print(f"[ERROR]: Tipo de contenido desconocido: {cont.tipo}\n")
@@ -552,7 +553,6 @@ class Scheduler:
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
         self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - Musica.DuracionFade)
-        print(f"el fade de música se va a ejecutar a las {self.horaFadeMusica}")
 
     def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.
