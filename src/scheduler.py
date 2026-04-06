@@ -456,6 +456,7 @@ class Scheduler:
         buscando_cam = any(cont.tipo == TipoContenido.CAMARA for cont in self.bloqueAire) and self.camsInit == False
 
         for cont in self.bloqueAire[self.indexBloque:]:
+            print(f"TIPO DE CONTENIDO: {cont.tipo}")
             if not buscando_video and not buscando_micro and not buscando_cam:
                 return
             
