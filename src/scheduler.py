@@ -748,7 +748,7 @@ class Scheduler:
         if self.indexBloqueCam >= len(self.bloqueCamaras): # Aumento index de camaras y si me paso loopeo.
             self.indexBloqueCam = 0
 
-        self._swapCamLive(self.indexBloqueCam)
+        self._swapCamLive()
         
     def actualizaPlacas(self):
         try:
