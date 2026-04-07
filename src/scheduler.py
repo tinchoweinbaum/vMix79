@@ -315,6 +315,8 @@ class Scheduler:
         self.indexBloque = 0
         self.bloqueProx = [] # Como self.bloqueProx = Null
 
+        self.camsInit = False # Hay que reinicializar las cámaras para este reporte.
+        
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             self._cargaProx() # Llamo acá y no afuera del while para no cargar DESPUÉS de esperar y perder 1 segundo
             while datetime.now().time().hour == 23:
