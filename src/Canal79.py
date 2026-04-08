@@ -2,6 +2,9 @@ import subprocess
 import psutil
 import time
 import socket
+import os
+
+
 from pathlib import Path
 from vMixApiWrapper import VmixApi
 from obsManager import Obs
@@ -37,6 +40,7 @@ def isObsRunning():
 
 def runObs(obs_executable_path, nombre_coleccion):
 
+    obsPath = os.path.dirname(obs_executable_path)
     try:
         comando = [
             obs_executable_path,
@@ -44,7 +48,7 @@ def runObs(obs_executable_path, nombre_coleccion):
             "--disable-shutdown-check", # Salta el mensaje de "Safe Mode" si se cerró mal
         ]
     
-        subprocess.Popen(comando)
+        subprocess.Popen(comando, cwd = obsPath)
         
     except FileNotFoundError:
         print("[ERROR]: No se encontró el ejecutable de OBS en la ruta especificada.")
