@@ -82,17 +82,15 @@ def wait_for_vmix_server(timeout_total=30):
     print("\n[ERROR]: Timeout. El server TCP de vMix no respondió.")
     return False
 
-def wait_for_obs():
-    intentos = 0
-
-    while intentos < 5:
-        for proc in psutil.process_iter(['name']):
-            if proc.info['name'] == 'obs64.exe':
-                print("[INFO]: Obs corriendo...")
-                return True
-            intentos += 1
-            time.sleep(2)
-            
+def wait_for_obs(timeout=30):
+    inicio = time.time()
+    while time.time() - inicio < timeout:
+        if isObsRunning():
+            print("\n[INFO]: OBS detectado y corriendo.")
+            return True
+        time.sleep(1)
+    
+    print("\n[ERROR]: Timeout esperando a OBS.")
     return False
 
 
