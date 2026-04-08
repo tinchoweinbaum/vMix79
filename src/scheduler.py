@@ -316,7 +316,7 @@ class Scheduler:
         self.bloqueProx = [] # Como self.bloqueProx = Null
 
         self.camsInit = False # Hay que reinicializar las cámaras para este reporte.
-        
+
         if self.nroBloqueAire == Bloque.CANT_MAX: # Si acaba de terminar el último bloque del día
             self._cargaProx() # Llamo acá y no afuera del while para no cargar DESPUÉS de esperar y perder 1 segundo
             while datetime.now().time().hour == 23:
@@ -527,7 +527,7 @@ class Scheduler:
                     self.getMusica()
                     self.aguanteActualizada = False # Cuando sale el repote al aire hay que actualizar noti aguante de nuevo.
 
-                print(f"{str(datetime.now().time())} - {contAct.path} al aire")   
+                # print(f"{str(datetime.now().time())} - {contAct.path} al aire")   
                 self._goLiveVideo(musica = musicaBool, noticias = placaBool, hora = horaBool)
             case TipoContenido.CAMARA:
                 self.camaraLive = True
@@ -895,7 +895,6 @@ class Scheduler:
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parent
 
     database = Database()
     vMix = VmixApi()

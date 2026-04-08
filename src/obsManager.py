@@ -28,6 +28,7 @@ class Obs:
                     "input": rtsp_url,
                     "looping": False,
                     "hw_decode": True, # Aceleración x hardware para usar GPU
+                    "rtsp_transport": "tcp", # Pido por TCP y no por UDP
                     "reconnect_delay": 2,
                     "buffering_mb": 1, # Buffer bajo para menor latencia en NDI
                     "close_when_inactive": False, # Las cámaras tienen que estar cargadas hasta que se borre el input

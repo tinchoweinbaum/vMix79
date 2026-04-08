@@ -285,7 +285,7 @@ class Database:
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
                 "hora1": dictPlacas.get('HORA1'),
-                "marea1": dictPlacas.get('MAREA1') + "mt.",
+                "marea1": dictPlacas.get('MAREA1') + "mt.", # Agrega mt. al final de la altura de las mareas.
                 "hora2": dictPlacas.get('HORA2'),
                 "marea2": dictPlacas.get('MAREA2') + "mt.",
                 "hora3": dictPlacas.get('HORA3'),
