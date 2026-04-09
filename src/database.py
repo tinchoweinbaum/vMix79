@@ -384,7 +384,7 @@ class Database:
             # Llamado al constructor con todas las variables en orden
             nueva_camara = Camara(
                 id_camara, 
-                nombre, 
+                nombre.strip(), 
                 desc, 
                 es_default, 
                 dir_conexion, 
