@@ -462,7 +462,7 @@ class Scheduler:
             if not buscando_video and not buscando_micro and not buscando_cam:
                 return
             
-            if not cont.path_valido() and cont.path not in ["MUSICA", "CAMARA"]:
+            if not cont.path_valido() and cont.path not in ["MUSICA", "CAMARA", "IMAGENCAM"]:
                 # print(cont.nombre + " No tiene un path valido.")
                 continue
 
@@ -486,7 +486,7 @@ class Scheduler:
                     continue
                 
                 case TipoContenido.CAMARA:
-                    if buscando_cam: # Si este bloque tiene camaras, y todavia no están inicializadas...
+                    if buscando_cam and self.camaraLive is False: # Si este bloque tiene camaras, y todavia no están inicializadas...
                         self.__initCamaras()
                         buscando_cam = False
       
@@ -563,6 +563,11 @@ class Scheduler:
 
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
+        if self.camaraLive:
+            self.obs.clearScene(ObsEscenas.CAMARA_A) # Si había cámaras al aire, dejo de pedirlas al sacar un video.
+            self.obs.clearScene(ObsEscenas.CAMARA_B)
+            self.camaraLive = False # Ya no sale al aire cámara.
+        
         if not noticias:
             vMix.setOverlay_off(OverlaySlots.SLOT_NOTICIAS)
 
@@ -585,8 +590,6 @@ class Scheduler:
         vMix.restartInput_number(self.videoProx)
         time.sleep(0.05) # Reinicia, espera y manda play
         vMix.playInput(self.videoProx)
-
-        self.camaraLive = False # Ya no sale al aire cámara.
 
         if self.videoAct is not None:
             vMix.listClear(self.videoAct)
@@ -676,7 +679,10 @@ class Scheduler:
         if blip: # Si corresponde sonar blip
             self.playBlip()
 
-        self.camaraLive = False # Ya no sale al aire cámara
+        if self.camaraLive:
+            self.obs.clearScene(ObsEscenas.CAMARA_A) # Si había cámaras al aire, dejo de pedirlas al sacar un video.
+            self.obs.clearScene(ObsEscenas.CAMARA_B)
+            self.camaraLive = False # Ya no sale al aire cámara.
 
         if self.microAct is not None:
             vMix.listClear(self.microAct) # Cleareo anterior
