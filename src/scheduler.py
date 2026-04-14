@@ -225,7 +225,8 @@ class Scheduler:
         else:
             print("[ERROR]: No se encontró el próximo bloque a emitir.\n")
             if ahora.time().minute % 10 < 5: # Si el bloque actual es reporte
-                self.bloqueAire = self.__fallbackReporte(ahora, bloqueArranque = True) 
+                self.bloqueAire = self.__fallbackNoti(ahora, bloqueArranque = True)
+                #self.bloqueAire = self.__fallbackReporte(ahora, bloqueArranque = True) 
             else: # Si el bloque actual es noti
                 self._actualizaNoti()
                 self.bloqueAire = self.__fallbackNoti(ahora, bloqueArranque = True)
@@ -337,7 +338,8 @@ class Scheduler:
             self._actualizaNoti()
             bloqueNew = self.__fallbackNoti(ahora)
         else: # Si el bloque que sigue va a ser reporte
-            bloqueNew = self.__fallbackReporte(ahora)
+            # bloqueNew = self.__fallbackReporte(ahora)
+            bloqueNew = self.__fallbackNoti(ahora)
  
 
         return bloqueNew
