@@ -18,9 +18,6 @@ import threading
 import time
 
 # TO DO: Interfaz gráfica en navegador con JavaScript para manejar modo manual/automático. Agregar botón de "Actualizar placas".
-# TO DO: Manejo correcto de arranque en reporte local. Encontrar la manera de detectar un reporte local en el arranque.
-# TO DO: En el arranque el scheduler intenta mandar órdenes antes de que vMix esté listo, el 1er contenido no sale al aire porque vMix no está listo para recibirlos.
-# TO DO: Reintentar infinitamente conectar con la base de datos cuando no logra la conexión. El programa tiene que ser robusto.
 
 class TipoContenido(IntEnum):
     VIDEO = 1

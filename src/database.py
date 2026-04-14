@@ -48,19 +48,19 @@ class Database:
             fdb.load_api(dllPath) #
             print(f"[INFO]: fbclient.dll cargada correctamente desde {dllPath}")
         except Exception as e:
-            print(f"[ERROR]: Error cargando fbclent.dll: {e}")
-
-        try:
-            if self.conn is None:
-                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.          
-            else:
-                return False
-        except Exception as e:
-            print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. {e}")
+            print(f"[ERROR]: Error cargando fbclent.dll, no se podrá intentar conectar a la base de datos: {e}")
             return False
-        
-        print(f"[INFO]: Conexión con la Database en {self.path} establecida.\n")
-        return True
+
+        while self.conn is None:
+            try:
+                if self.conn is None:
+                    self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.          
+            except Exception as e:
+                print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. Esperando 3 segunos antes de reintentar... {e}")
+                time.sleep(3)
+            
+            print(f"[INFO]: Conexión con la Database en {self.path} establecida.\n")
+            return True
     
     def getBloque_num(self, fecha, nroBloque):
         """

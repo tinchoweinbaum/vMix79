@@ -1,7 +1,6 @@
 """Este archivo tiene la clase Obs que va a tener la conexión con OBS hecha para que scheduler.py pueda cargar/descargar cámaras en los outputs NDI A/B para vMix"""
 
 from obswebsocket import obsws, requests
-import time
 
 class Obs:
     def __init__(self, host = "127.0.0.1" , puerto = 4455, password = "masterkey"):
