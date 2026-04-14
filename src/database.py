@@ -86,7 +86,7 @@ class Database:
                 WHERE FECHA = CAST(? AS DATE) AND BLOQUE = CAST(? AS INTEGER)
                 ORDER BY HORA"""
         
-        cursor.execute(query, ('19.03.2026', nroBloque)) # fecha hardcodeada
+        cursor.execute(query, ('14.04.2026', nroBloque)) # fecha hardcodeada
         # cursor.execute(query, (f'{fecha}', nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
         queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
@@ -285,13 +285,13 @@ class Database:
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
                 "hora1": dictPlacas.get('HORA1'),
-                "marea1": str(dictPlacas.get('MAREA1')) + "mt.", # Agrega mt. al final de la altura de las mareas.
+                "marea1": str(dictPlacas.get('MAREA1')) + " mt.", # Agrega mt. al final de la altura de las mareas.
                 "hora2": str(dictPlacas.get('HORA2')),
-                "marea2": str(dictPlacas.get('MAREA2')) + "mt.",
+                "marea2": str(dictPlacas.get('MAREA2')) + " mt.",
                 "hora3": str(dictPlacas.get('HORA3')),
-                "marea3": str(dictPlacas.get('MAREA3')) + "mt.",
+                "marea3": str(dictPlacas.get('MAREA3')) + " mt.",
                 "hora4": str(dictPlacas.get('HORA4')),
-                "marea4": str(dictPlacas.get('MAREA4')) + "mt."
+                "marea4": str(dictPlacas.get('MAREA4')) + " mt."
             },
             "lunas":{
                 "idluna": dictLuna.get('IDLUNA'),
