@@ -27,12 +27,15 @@ class Obs:
                     "is_local_file": False,
                     "input": rtsp_url,
                     "looping": False,
-                    "hw_decode": True, # Aceleración x hardware para usar GPU
-                    "rtsp_transport": "tcp", # Pido por TCP y no por UDP
+                    "hw_decode": True,
+                    "rtsp_transport": "tcp", # RTSP over TCP
                     "reconnect_delay": 2,
-                    "buffering_mb": 1, # Buffer bajo para menor latencia en NDI
-                    "close_when_inactive": False, # Las cámaras tienen que estar cargadas hasta que se borre el input
-                    "restart_on_activate": False
+                    "buffering_mb": 2,
+                    "close_when_inactive": False,
+                    "restart_on_activate": False,
+                    "active": True,
+                    "clear_on_media_end": False,
+                    "ffmpeg_options": "allowed_media_types=video" # Traer SOLO video, sin audio.
                 },
                 sceneItemEnabled=True
             ))
