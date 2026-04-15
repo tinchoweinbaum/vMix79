@@ -19,7 +19,7 @@ from decimal import Decimal
 class PathEnum():
     ICONOS = r"C:\Canal79\pronosticos\Iconos"
     ICONOS_NOCHE = r"C:\Canal79\pronosticos\Iconos"
-    LUNAS = r"C:\Placas\Lunas\wax"
+    LUNAS = r"C:\Placas\Lunas"
 
 class HorasDefaultSol():
     # Esta clase tiene los valores default para el horario de cuando se usan los íconos de noche, por si no se puedieron pedir a la db los datos ded la placa de sol. NO afectan a la placa de salida del sol.
