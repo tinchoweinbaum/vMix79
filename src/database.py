@@ -183,6 +183,7 @@ class Database:
         return self._formatoDict(dictPlacas,dictLuna) # Junta los dos diccionarios en 1 diccionario de diccionarios
 
     def getDatos_fuente(self, placa):
+        "Recibe el nombre de la placa que llama a esta función y le devuelve la fuente de los datos que corresponda."
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida para pedir la fuente de los datos actuales.")
             return
