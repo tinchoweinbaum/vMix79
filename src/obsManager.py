@@ -18,7 +18,7 @@ class Obs:
     def add_rtsp(self, scene, inputName, rtsp_url):
         "Agrega una cámara RTSP en la escena indicada, NO comienza la conexión hasta no darle Cut al input de la cámara."
         try:
-            self.client.call(requests.CreateInput(
+            res = self.client.call(requests.CreateInput(
                 sceneName = scene,
                 inputName = inputName,
                 inputKind ="ffmpeg_source",
@@ -38,6 +38,9 @@ class Obs:
                 },
                 sceneItemEnabled=True
             ))
+            # Extraigo ID de la nueva cámara para estirarla.
+            nuevo_id = res.datain.get('sceneItemId')
+            self.stretchMedia(scene, nuevo_id)
         except Exception as e:
             print(f"[ERROR]: Error al agregar la cámara con url {rtsp_url} a OBS: {e}")
 
@@ -66,5 +69,36 @@ class Obs:
         except Exception as e:
             print(f"[ERROR]: Error al limpiar la escena {scene}: {e}")
 
+    def stretchMedia(self, scene, item_id):
+            self.client.call(requests.SetSceneItemTransform(
+                sceneName=scene,
+                sceneItemId=item_id, # El cliente a veces mapea el nombre al ID internamente
+                sceneItemTransform={
+                    'boundsType': 'OBS_BOUNDS_STRETCH',
+                    'boundsWidth': 1920.0,
+                    'boundsHeight': 1080.0
+                }
+            ))
+
+    def print_all_ids(self, scene_name):
+            try:
+                res = self.client.call(requests.GetSceneItemList(sceneName=scene_name))
+                
+                # 'datain' es el diccionario crudo con la respuesta de OBS
+                # Adentro tiene la key 'sceneItems' que es la lista de inputs
+                items = res.datain.get('sceneItems', [])
+                
+                print(f"\n--- IDs de inputs en la escena: {scene_name} ---")
+                for item in items:
+                    nombre = item['sourceName']
+                    id_num = item['sceneItemId']
+                    print(f"Input: {nombre} | ID: {id_num}")
+                print("-------------------------------------------\n")
+                
+            except Exception as e:
+                print(f"[ERROR]: Error al leer datain: {e}")
+
 if __name__ == "__main__":
     testObs = Obs()
+    testObs.print_all_ids("Scene")
+    testObs.stretchMedia("Scene", 8)
