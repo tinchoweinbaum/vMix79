@@ -17,8 +17,14 @@ from dotenv import load_dotenv
 from decimal import Decimal
 
 class PathEnum():
-    ICONOS = r"C:\Canal79\Iconos\Clima"
+    ICONOS = r"C:\Canal79\pronosticos\Iconos"
+    ICONOS_NOCHE = r"C:\Canal79\pronosticos\Iconos"
+    LUNAS = r"C:\Placas\Lunas\wax"
 
+class HorasDefaultSol():
+    # Esta clase tiene los valores default para el horario de cuando se usan los íconos de noche, por si no se puedieron pedir a la db los datos ded la placa de sol. NO afectan a la placa de salida del sol.
+    PUESTA = time(19, 0) # 7 de la tarde
+    SALIDA = time(6, 0) # 6 de la mañana
 class Database:
     def __init__(self):
         """
@@ -160,7 +166,6 @@ class Database:
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.\n")
 
-        #dictPlacas no tiene formato correcto. Es 1 diccionario gigante con todos los campos de todas las placas.
         cursor.close()
 
         # --- Pido placa luna ---
@@ -234,8 +239,22 @@ class Database:
 
     def _formatoDict(self,dictPlacas: dict, dictLuna: dict):
         """
-        Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson.
+        Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson. Transforma un diccionario gigante que tiene todos los datos de todas las placas en un diccionario de 
+        diccionarios, donde cada sub-diccionario representa una placa.
         """
+        horaAct = datetime.now().time()
+        if dictPlacas.get("salidadelsol") is not None:
+            horaSalida  = dictPlacas.get('SALIDA')
+            horaPuesta = dictPlacas.get('PUESTA')
+        else:
+            horaSalida = HorasDefaultSol.SALIDA
+            horaPuesta = HorasDefaultSol.PUESTA
+
+        if horaAct >= horaSalida and horaAct <= horaPuesta:
+            pathAct = PathEnum.ICONOS
+        else:
+            pathAct = PathEnum.ICONOS_NOCHE
+
         dictFormato = {
             "actualdatos": {
                 "temp": dictPlacas.get('TEMP_ACTUAL'),
@@ -244,7 +263,7 @@ class Database:
                 "termica": dictPlacas.get('TERMICA'),
                 "viento": dictPlacas.get('VIENTO'),
                 "desc": dictPlacas.get('DESCRIPCION'),
-                "logo": os.path.join(PathEnum.ICONOS, dictPlacas.get('PATH_ISOLOGO')).replace("/", "\\")
+                "logo": os.path.join(pathAct, dictPlacas.get('PATH_ISOLOGO')).replace("/", "\\")
             },
             "actualdetalle": {
                 "detalle": dictPlacas.get('DETALLE'),
@@ -299,7 +318,7 @@ class Database:
                 "tipoluna": dictLuna.get('TIPOLUNA'),
                 "salida": dictLuna.get('SALIDA'),
                 "puesta": dictLuna.get('PUESTA'),
-                "tipo": os.path.join(PathEnum.ICONOS,  dictLuna.get('TIPO')).replace("/", "\\"), # Por algún motivo en la db el ícono de la luna se llama TIPO.
+                "tipo": os.path.join(PathEnum.LUNAS,  dictLuna.get('TIPO')).replace("/", "\\"), # Por algún motivo en la db el ícono de la luna se llama TIPO.
             },
         }
         return dictFormato
