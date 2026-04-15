@@ -38,20 +38,6 @@ class Obs:
                 },
                 sceneItemEnabled=True
             ))
-
-            # --- Cámara en el centro ---
-            self.client.call(requests.SetSceneItemSettings(
-                sceneName = scene,
-                itemName = inputName,
-                itemSettings = {
-                    "bounds": {
-                        "type": "OBS_BOUNDS_STRETCH",
-                        "x": 1920.0,
-                        "y": 1080.0
-                    },
-                    "bounds_type": "OBS_BOUNDS_STRETCH" # Dependiendo de la versión de obs-websocket
-                }
-            ))
         except Exception as e:
             print(f"[ERROR]: Error al agregar la cámara con url {rtsp_url} a OBS: {e}")
 
