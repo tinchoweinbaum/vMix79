@@ -29,7 +29,7 @@ class Obs:
                     "hw_decode": True,
                     "rtsp_transport": "tcp", # RTSP over TCP
                     "reconnect_delay": 2,
-                    "buffering_mb": 2,
+                    "buffering_mb": 4,
                     "close_when_inactive": False,
                     "restart_on_activate": False,
                     "active": True,
