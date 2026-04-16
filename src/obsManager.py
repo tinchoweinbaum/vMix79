@@ -34,13 +34,16 @@ class Obs:
                     "restart_on_activate": False,
                     "active": True,
                     "clear_on_media_end": False,
-                    "ffmpeg_options": "allowed_media_types=video" # Traer SOLO video, sin audio.
+                    "ffmpeg_options": "rtsp_transport=tcp allowed_media_types=video"# Traer SOLO video, sin audio y RTSP over TCP
                 },
                 sceneItemEnabled=True
             ))
             # Extraigo ID de la nueva cámara para estirarla.
-            nuevo_id = res.datain.get('sceneItemId')
-            self.stretchMedia(scene, nuevo_id)
+            try:
+                nuevo_id = res.datain.get('sceneItemId')
+                self.stretchMedia(scene, nuevo_id)
+            except Exception as e:
+                print(f"[ERROR]: Error al extraer el ID de la cámara {inputName} o al estirar la imagen de la misma: {e}")
         except Exception as e:
             print(f"[ERROR]: Error al agregar la cámara con url {rtsp_url} a OBS: {e}")
 
