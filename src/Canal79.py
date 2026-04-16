@@ -2,8 +2,12 @@ import subprocess
 import psutil
 import time
 import socket
+import os
+
+
 from pathlib import Path
 from vMixApiWrapper import VmixApi
+from obsManager import Obs
 
 def isVmixRunning():
     for proc in psutil.process_iter(['name']):
@@ -26,6 +30,30 @@ def Canal79(vMix, schedulerPath, presetPath):
 
 def runVmix(vMixPath):
     subprocess.Popen([vMixPath])
+
+def isObsRunning():
+    for proc in psutil.process_iter(['name']):
+        if proc.info['name'] == 'obs64.exe':
+            return True
+        
+    return False
+
+def runObs(obs_executable_path, nombre_coleccion):
+
+    obsPath = os.path.dirname(obs_executable_path)
+    try:
+        comando = [
+            obs_executable_path,
+            "--collection", nombre_coleccion,
+            "--disable-shutdown-check", # Salta el mensaje de "Safe Mode" si se cerró mal
+        ]
+    
+        subprocess.Popen(comando, cwd = obsPath)
+        
+    except FileNotFoundError:
+        print("[ERROR]: No se encontró el ejecutable de OBS en la ruta especificada.")
+    except Exception as e:
+        print(f"[ERROR]: Ocurrió un error inesperado al abrir OBS: {e}")
 
 def vmix_tcp_ready(host="127.0.0.1", port=8099, timeout=1):
     """
@@ -54,11 +82,30 @@ def wait_for_vmix_server(timeout_total=30):
     print("\n[ERROR]: Timeout. El server TCP de vMix no respondió.")
     return False
 
+def wait_for_obs(timeout=30):
+    inicio = time.time()
+    while time.time() - inicio < timeout:
+        if isObsRunning():
+            print("\n[INFO]: OBS detectado y corriendo.")
+            return True
+        time.sleep(1)
+    
+    print("\n[ERROR]: Timeout esperando a OBS.")
+    return False
+
+
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     schedulerPath = BASE_DIR / "scheduler.py"
     presetPath = BASE_DIR.parent / "resources" / "vmix_resources" / "presetC79.vmix"
-    vMixPath = r"C:\Program Files (x86)\vMix\vMix64.exe"
+    vMixPath = r"C:\Program Files (x86)\vMix\vMix64.exe" # Permitir canbiar esto en un archivo de configuraciones o en el panel de control
+    obsPath = r"C:\Program Files\obs-studio\bin\64bit\obs64.exe"
+    obsLib = "escenasObs"
+
+    if not isObsRunning():
+        runObs(obsPath,obsLib)
+
+    wait_for_obs()
 
     if not isVmixRunning(): 
         runVmix(vMixPath)

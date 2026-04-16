@@ -17,8 +17,14 @@ from dotenv import load_dotenv
 from decimal import Decimal
 
 class PathEnum():
-    ICONOS = r"C:\Canal79\Iconos\Clima"
+    ICONOS = r"C:\Canal79\pronosticos\Iconos"
+    ICONOS_NOCHE = r"C:\Canal79\pronosticos\Iconos"
+    LUNAS = r"C:\Placas\Lunas"
 
+class HorasDefaultSol():
+    # Esta clase tiene los valores default para el horario de cuando se usan los íconos de noche, por si no se puedieron pedir a la db los datos ded la placa de sol. NO afectan a la placa de salida del sol.
+    PUESTA = time(19, 0) # 7 de la tarde
+    SALIDA = time(6, 0) # 6 de la mañana
 class Database:
     def __init__(self):
         """
@@ -48,19 +54,19 @@ class Database:
             fdb.load_api(dllPath) #
             print(f"[INFO]: fbclient.dll cargada correctamente desde {dllPath}")
         except Exception as e:
-            print(f"[ERROR]: Error cargando fbclent.dll: {e}")
-
-        try:
-            if self.conn is None:
-                self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.          
-            else:
-                return False
-        except Exception as e:
-            print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. {e}")
+            print(f"[ERROR]: Error cargando fbclent.dll, no se podrá intentar conectar a la base de datos: {e}")
             return False
-        
-        print(f"[INFO]: Conexión con la Database en {self.path} establecida.\n")
-        return True
+
+        while self.conn is None:
+            try:
+                if self.conn is None:
+                    self.conn = fdb.connect(dsn = self.path, user = self.user, password = self.password, charset = self.charset) # Metodo de la DB para conectar con python.          
+            except Exception as e:
+                print(f"[ERROR]: No se pudo conectar con la base de datos de Firebird. Esperando 3 segunos antes de reintentar... {e}")
+                time.sleep(3)
+            
+            print(f"[INFO]: Conexión con la Database en {self.path} establecida.\n")
+            return True
     
     def getBloque_num(self, fecha, nroBloque):
         """
@@ -86,7 +92,7 @@ class Database:
                 WHERE FECHA = CAST(? AS DATE) AND BLOQUE = CAST(? AS INTEGER)
                 ORDER BY HORA"""
         
-        cursor.execute(query, ('19.03.2026', nroBloque)) # fecha hardcodeada
+        cursor.execute(query, ('14.04.2026', nroBloque)) # fecha hardcodeada
         # cursor.execute(query, (f'{fecha}', nroBloque))  # Cuando se ejecuta la query, la librería fdb guarda el resultado en un buffer interno de su clase. Con el cursor se fetchea.
         queryRes = cursor.fetchall() # Devuelve una lista de tuplas, cada tupla es una fila del resultado de la query.
         self.conn.commit() # Al final de la transacción se commitea para "avisar" que no vamos a pedir más nada hasta la próxima query
@@ -160,7 +166,6 @@ class Database:
         else:
             print(f"[ERROR]: No se encontraron datos para cargar la placa Mareas. SELECT * FROM MAREAS con la fecha {fecha} no devolvió nada.\n")
 
-        #dictPlacas no tiene formato correcto. Es 1 diccionario gigante con todos los campos de todas las placas.
         cursor.close()
 
         # --- Pido placa luna ---
@@ -178,6 +183,7 @@ class Database:
         return self._formatoDict(dictPlacas,dictLuna) # Junta los dos diccionarios en 1 diccionario de diccionarios
 
     def getDatos_fuente(self, placa):
+        "Recibe el nombre de la placa que llama a esta función y le devuelve la fuente de los datos que corresponda."
         if self.conn is None:
             print("[ERROR]: No se encontró una conexión válida para pedir la fuente de los datos actuales.")
             return
@@ -234,8 +240,22 @@ class Database:
 
     def _formatoDict(self,dictPlacas: dict, dictLuna: dict):
         """
-        Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson.
+        Método "privado" para que el json tenga un formato más fácil de trabajar en _actualizaJson. Transforma un diccionario gigante que tiene todos los datos de todas las placas en un diccionario de 
+        diccionarios, donde cada sub-diccionario representa una placa.
         """
+        horaAct = datetime.now().time()
+        if dictPlacas.get("salidadelsol") is not None:
+            horaSalida  = dictPlacas.get('SALIDA')
+            horaPuesta = dictPlacas.get('PUESTA')
+        else:
+            horaSalida = HorasDefaultSol.SALIDA
+            horaPuesta = HorasDefaultSol.PUESTA
+
+        if horaAct >= horaSalida and horaAct <= horaPuesta:
+            pathAct = PathEnum.ICONOS
+        else:
+            pathAct = PathEnum.ICONOS_NOCHE
+
         dictFormato = {
             "actualdatos": {
                 "temp": dictPlacas.get('TEMP_ACTUAL'),
@@ -244,7 +264,7 @@ class Database:
                 "termica": dictPlacas.get('TERMICA'),
                 "viento": dictPlacas.get('VIENTO'),
                 "desc": dictPlacas.get('DESCRIPCION'),
-                "logo": os.path.join(PathEnum.ICONOS, dictPlacas.get('PATH_ISOLOGO')).replace("/", "\\")
+                "logo": os.path.join(pathAct, dictPlacas.get('PATH_ISOLOGO')).replace("/", "\\")
             },
             "actualdetalle": {
                 "detalle": dictPlacas.get('DETALLE'),
@@ -285,13 +305,13 @@ class Database:
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
                 "hora1": dictPlacas.get('HORA1'),
-                "marea1": dictPlacas.get('MAREA1') + "mt.",
-                "hora2": dictPlacas.get('HORA2'),
-                "marea2": dictPlacas.get('MAREA2') + "mt.",
-                "hora3": dictPlacas.get('HORA3'),
-                "marea3": dictPlacas.get('MAREA3') + "mt.",
-                "hora4": dictPlacas.get('HORA4'),
-                "marea4": dictPlacas.get('MAREA4') + "mt."
+                "marea1": str(dictPlacas.get('MAREA1')) + " mt.", # Agrega mt. al final de la altura de las mareas.
+                "hora2": str(dictPlacas.get('HORA2')),
+                "marea2": str(dictPlacas.get('MAREA2')) + " mt.",
+                "hora3": str(dictPlacas.get('HORA3')),
+                "marea3": str(dictPlacas.get('MAREA3')) + " mt.",
+                "hora4": str(dictPlacas.get('HORA4')),
+                "marea4": str(dictPlacas.get('MAREA4')) + " mt."
             },
             "lunas":{
                 "idluna": dictLuna.get('IDLUNA'),
@@ -299,7 +319,7 @@ class Database:
                 "tipoluna": dictLuna.get('TIPOLUNA'),
                 "salida": dictLuna.get('SALIDA'),
                 "puesta": dictLuna.get('PUESTA'),
-                "tipo": os.path.join(PathEnum.ICONOS,  dictLuna.get('TIPO')).replace("/", "\\"), # Por algún motivo en la db el ícono de la luna se llama TIPO.
+                "tipo": os.path.join(PathEnum.LUNAS,  dictLuna.get('TIPO')).replace("/", "\\"), # Por algún motivo en la db el ícono de la luna se llama TIPO.
             },
         }
         return dictFormato
@@ -384,7 +404,7 @@ class Database:
             # Llamado al constructor con todas las variables en orden
             nueva_camara = Camara(
                 id_camara, 
-                nombre, 
+                nombre.strip(), 
                 desc, 
                 es_default, 
                 dir_conexion, 
