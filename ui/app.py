@@ -1,8 +1,13 @@
+import sys
+import threading
+
 from flask import Flask, render_template
 from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.append(str(BASE_DIR.parent))
 from scheduler import Scheduler
 
-import threading
 "Flask lo que hace es linkear funciones usando decoradores, con direcciones de la página web, entonces /app/reiniciar llama a la función decorada con @app.route('/reiniciar')"
 
 app = Flask(__name__)
