@@ -3,20 +3,14 @@
 import importlib.util
 import sys
 import threading
+import os
 
 from flask import Flask, render_template
 from pathlib import Path
 from pathlib import Path
 
 # scheduler.py se importa dandole el path absoluto xq python es una pija.
-BASE_DIR = Path(__file__).resolve().parent
-path_al_scheduler = BASE_DIR.parent / "src" / "scheduler.py"
-
-spec = importlib.util.spec_from_file_location("scheduler", str(path_al_scheduler))
-scheduler_module = importlib.util.module_from_spec(spec)
-sys.modules["scheduler"] = scheduler_module
-spec.loader.exec_module(scheduler_module)
-
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from scheduler import Scheduler
 
 app = Flask(__name__)
