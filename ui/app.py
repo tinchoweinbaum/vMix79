@@ -10,8 +10,19 @@ from pathlib import Path
 from pathlib import Path
 
 # scheduler.py se importa dandole el path absoluto xq python es una pija.
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+import os
+from pathlib import Path
+
+# agrega toda la carpeta src a los imports
+raiz_del_proyecto = Path(__file__).resolve().parent.parent
+carpeta_src = str(raiz_del_proyecto / "src")
+if carpeta_src not in sys.path:
+    sys.path.insert(0, carpeta_src)
+
 from scheduler import Scheduler
+import utilities
+
 
 app = Flask(__name__)
  

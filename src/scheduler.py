@@ -786,7 +786,7 @@ class Scheduler:
         DB = self.database
 
         ruta_base = Path(__file__).resolve().parent.parent
-        directorio_destino = ruta_base / "resources" / "vmix_resources"
+        directorio_destino = ruta_base / "resources" / "vmix    _resources"
         archivo_final = directorio_destino / "fuente_datos.txt"
         
         try:
