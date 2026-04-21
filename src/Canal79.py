@@ -3,7 +3,8 @@ import psutil
 import time
 import socket
 import os
-
+import webbrowser
+import sys
 
 from pathlib import Path
 from vMixApiWrapper import VmixApi
@@ -16,17 +17,17 @@ def isVmixRunning():
         
     return False
 
-def Canal79(vMix, schedulerPath, presetPath):
+def Canal79(presetPath, appPath):
     """
-    Función que abre el preset y arranca el Canal 79. Necesita que vMix ya esté abierto.
+    Abre el preset de Canal79, corre la app de flask y abre el Control de Emisión en el navegador.
     """
     VmixApi().openPreset(presetPath)
     
     if VmixApi().awaitPresetCargado(timeout = 100):
-        print("Iniciando scheduler...")
-        subprocess.run(["python",f"{schedulerPath}"])
-    else:
-        print(f"No se pudo abrir el preset en {presetPath}")
+        subprocess.Popen([sys.executable, appPath]) # Corre la app de flask que aparte levanta el scheduler en otro hilo.
+        time.sleep(0.5) # Espera medio segundo a que la app de flask levante el server
+        webbrowser.open("http://localhost:5000")
+
 
 def runVmix(vMixPath):
     subprocess.Popen([vMixPath])
@@ -113,8 +114,8 @@ if __name__ == "__main__":
     wait_for_vmix_server()
     
     try:
-        vMix = VmixApi()
-        Canal79(vMix, schedulerPath, presetPath)
+        appPath = BASE_DIR.parent/ "ui" / "app.py"
+        Canal79(presetPath, appPath)
     except Exception as e:
         print(f"Error al conectar con vMix: {e}")
 

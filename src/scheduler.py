@@ -85,7 +85,7 @@ class ObsEscenas(str, Enum):
     CAMARA_B = "CAMARA_B"
 
 class Scheduler:
-    def __init__(self, vMix: VmixApi, database: Database):
+    def __init__(self, vMix: VmixApi = VmixApi(), database: Database = Database()):
         self.nroBloqueAire = 1
         self.bloqueAire: List[Contenido] = [] # Lista de objetos de la clase Contenido representando el bloque actual
         self.bloqueProx: List[Contenido] = [] 
@@ -790,7 +790,7 @@ class Scheduler:
         archivo_final = directorio_destino / "fuente_datos.txt"
         
         try:
-            valor = database.getDatos_fuente(placa)
+            valor = DB.getDatos_fuente(placa)
 
             if valor == FuenteDatos.SMN:
                 fuente = "Fuente: S.M.N"
@@ -900,9 +900,4 @@ class Scheduler:
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
 if __name__ == "__main__":
-
-    database = Database()
-    vMix = VmixApi()
-    schMain = Scheduler(vMix,database)
-
-    schMain.start()
+    pass
