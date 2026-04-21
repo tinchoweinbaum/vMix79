@@ -1,3 +1,5 @@
+"Flask lo que hace es linkear funciones usando decoradores, con direcciones de la página web, entonces /app/reiniciar llama a la función decorada con @app.route('/reiniciar')"
+
 import importlib.util
 import sys
 import threading
@@ -8,7 +10,7 @@ from pathlib import Path
 
 # scheduler.py se importa dandole el path absoluto xq python es una pija.
 BASE_DIR = Path(__file__).resolve().parent
-path_al_scheduler = BASE_DIR.parent / "scheduler.py"
+path_al_scheduler = BASE_DIR.parent / "src" / "scheduler.py"
 
 spec = importlib.util.spec_from_file_location("scheduler", str(path_al_scheduler))
 scheduler_module = importlib.util.module_from_spec(spec)
@@ -16,10 +18,6 @@ sys.modules["scheduler"] = scheduler_module
 spec.loader.exec_module(scheduler_module)
 
 from scheduler import Scheduler
-
-
-
-"Flask lo que hace es linkear funciones usando decoradores, con direcciones de la página web, entonces /app/reiniciar llama a la función decorada con @app.route('/reiniciar')"
 
 app = Flask(__name__)
  
