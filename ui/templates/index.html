@@ -1,13 +1,116 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Canal 79 - Control de Emisión</title>
+    <title>Canal 79 - Control de Emisión</title>
+    <style>
+        body {
+            background-color: #121212;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .c79-status-bar {
+            background: linear-gradient(135deg, #ff6600 0%, #00aeef 100%);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            padding: 0;
+            border-radius: 8px;
+            overflow: hidden; 
+            
+            border: none;
+            /* Aumentamos un poco el ancho mínimo para que entren los días */
+            min-width: 450px; 
+        }
+
+        .c79-label {
+            background-color: rgba(0, 0, 0, 0.12); 
+            padding: 10px 25px; 
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2.2px; 
+            font-size: 0.8rem;
+            color: #ffffff;
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.6);
+            align-self: stretch;
+            display: flex;
+            align-items: center;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .live-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #ff0000; 
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 15px;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .c79-timer {
+            padding: 8px 30px; 
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #ffffff; 
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            min-width: 180px; 
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h1>
-        {{ data.titulo }}
-    </h1>
+
+    <div class="c79-status-bar" id="uptime-container" data-start="{{ horaArranque }}">
+        <div class="c79-label">
+            <span class="live-dot"></span>
+            Corriendo hace
+        </div>
+        <div class="c79-timer" id="uptime">
+            00:00:00:00
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('uptime-container');
+        
+        const startTimeStr = container.dataset.start;
+        const fallbackTime = Date.now() / 1000;
+        const startTime = (parseFloat(startTimeStr)) * 1000;
+
+        function actualizarUptime() {
+            const ahora = Date.now();
+            const diferencia = Math.max(0, ahora - startTime);
+
+            // Cálculos incluyendo días
+            let dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+            let horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            let minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            let segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+            const fmt = (n) => n.toString().padStart(2, '0');
+
+            // Formateamos como: 00d 00:00:00
+            document.getElementById('uptime').innerText = 
+                `${fmt(dias)}:${fmt(horas)}:${fmt(minutos)}:${fmt(segundos)}`;
+        }
+
+        actualizarUptime();
+        setInterval(actualizarUptime, 1000);
+    </script>
 </body>
 </html>

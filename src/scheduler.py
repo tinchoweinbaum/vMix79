@@ -86,6 +86,8 @@ class ObsEscenas(str, Enum):
 
 class Scheduler:
     def __init__(self, vMix: VmixApi = VmixApi(), database: Database = Database()):
+        self.horaArranque = time.time() # Hora de arranque para timer en app.py. No la calculo en el front porque scheduler.py puede llegar a fallar.
+
         self.nroBloqueAire = 1
         self.bloqueAire: List[Contenido] = [] # Lista de objetos de la clase Contenido representando el bloque actual
         self.bloqueProx: List[Contenido] = [] 

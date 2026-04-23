@@ -1,17 +1,12 @@
 "Flask lo que hace es linkear funciones usando decoradores, con direcciones de la página web, entonces /app/reiniciar llama a la función decorada con @app.route('/reiniciar')"
-
-import importlib.util
 import sys
 import threading
-import os
 
 from flask import Flask, render_template
 from pathlib import Path
 from pathlib import Path
 
 # scheduler.py se importa dandole el path absoluto xq python es una pija.
-import sys
-import os
 from pathlib import Path
 
 # agrega toda la carpeta src a los imports
@@ -21,8 +16,6 @@ if carpeta_src not in sys.path:
     sys.path.insert(0, carpeta_src)
 
 from scheduler import Scheduler
-import utilities
-
 
 app = Flask(__name__)
  
@@ -45,4 +38,5 @@ if __name__ == "__main__":
     threadScheduler.start()
 
     # --- Server de Flask ---
-    app.run(host = "127.0.0.1", port = 5000)
+    horaArranque = schMain.horaArranque
+    app.run(host = "127.0.0.1", port = 5000, horaArranque = horaArranque) # Ver como hacer esto para que no tire la warning de 
