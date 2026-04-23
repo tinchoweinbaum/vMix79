@@ -18,14 +18,11 @@ if carpeta_src not in sys.path:
 from scheduler import Scheduler
 
 app = Flask(__name__)
+schMain = Scheduler() # Instancio objeto de clase Scheduler.
  
 @app.route('/')
 def index():
-    diccTest = {
-        "titulo":"hola si",
-        "otro": "¿Quién habla?"
-    }
-    return render_template('index.html', data = diccTest)
+    return render_template('index.html', horaArranque = horaArranque)
 
 if __name__ == "__main__":
     # --- Paths ---
@@ -33,10 +30,9 @@ if __name__ == "__main__":
     schedulerPath = BASE_DIR / "scheduler.py"
 
     # --- Hilo del Scheduler ---
-    schMain = Scheduler()
     threadScheduler = threading.Thread(target = schMain.start, daemon=True)
     threadScheduler.start()
 
     # --- Server de Flask ---
     horaArranque = schMain.horaArranque
-    app.run(host = "127.0.0.1", port = 5000, horaArranque = horaArranque) # Ver como hacer esto para que no tire la warning de 
+    app.run(host = "127.0.0.1", port = 5000) # Ver como hacer esto para que no tire la warning de "TAS LOCO COMO VAS A USAR ESTO FUERA DE PRODUCCIOn!!!"
