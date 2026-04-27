@@ -147,6 +147,7 @@ class Scheduler:
             self.indexBloqueCam = self._getIndexCam_start()
             self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
             self._goLiveCamara()
+            self._goLiveMusica()
         else:
             self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS al arrancar si no van cámaras al aire
             self.obs.clearScene(ObsEscenas.CAMARA_B)
@@ -270,12 +271,13 @@ class Scheduler:
             duracion = timedelta(seconds=self.bloqueCamaras[indexCamAct].tiempo)
             horaFinCam = horaCamAct + duracion
             
-            if horaCamAct <= horaAct < horaFinCam:
+            if horaCamAct <= horaAct and horaAct < horaFinCam:
                 return indexCamAct
 
             horaCamAct = horaFinCam
             indexCamAct += 1
 
+        print(f"indice encontrado de camaras: {indexCamAct}")
         return indexCamAct
     
     def _startAudio(self):
