@@ -145,6 +145,11 @@ class Scheduler:
 
         if self._checkCamara_start():
             self.indexBloqueCam = self._getIndexCam_start()
+            self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
+            self._goLiveCamara()
+        else:
+            self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS al arrancar si no van cámaras al aire
+            self.obs.clearScene(ObsEscenas.CAMARA_B)
             
 
         if not self.bloqueAire:
@@ -722,16 +727,15 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def __initCamaras(self):
+    def __initCamaras(self, indexCamInicial = 0):
         "Carga en OBS la primera cámara e inicializa los atributos de estado."
-        print("LLAMO __initCamaras")
         obs = self.obs
         
         self.indexBloqueCam = 0 # Inicializo estados de cámaras.
         self.camAct = None
         self.camProx = IdInputs.OBS_CAMARA_A
 
-        primera_camara = self.bloqueCamaras[0]
+        primera_camara = self.bloqueCamaras[indexCamInicial]
         # Agregar protección por si no existe el playlist de cámaras.
 
         obs.clearScene(ObsEscenas.CAMARA_A) # Limpio las 2 escenas de obs antes de empezar.
@@ -743,6 +747,7 @@ class Scheduler:
         self.obsProx = ObsEscenas.CAMARA_A
 
         self.camsInit = True
+        print("[INFO]: Cámaras incializadas.")
 
     def _swapCamLive(self):
         """Método interno para cambiar la cámara al aire en vMix. Actualiza atributos de estado de vMix y OBS"""
@@ -784,7 +789,6 @@ class Scheduler:
     
     def _goLiveCamara(self):
         self.camaraLive = True
-
         if not self.bloqueCamaras:
             print("[ERROR]: No se encontró un bloque de cámaras válido, se va a emitir la cámara default.") # Dar la opción de cambiar cámara default en la ui del navegador
             return
