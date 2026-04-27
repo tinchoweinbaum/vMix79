@@ -731,7 +731,7 @@ class Scheduler:
         "Carga en OBS la primera cámara e inicializa los atributos de estado."
         obs = self.obs
         
-        self.indexBloqueCam = 0 # Inicializo estados de cámaras.
+        self.indexBloqueCam = indexCamInicial# Inicializo estados de cámaras.
         self.camAct = None
         self.camProx = IdInputs.OBS_CAMARA_A
 
