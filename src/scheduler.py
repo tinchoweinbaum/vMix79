@@ -147,7 +147,7 @@ class Scheduler:
             self.indexBloqueCam = self._getIndexCam_start()
             self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
             self._goLiveCamara()
-            self._goLiveMusica()
+            # self._goLiveMusica() de donde corno saco la duración
         else:
             self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS al arrancar si no van cámaras al aire
             self.obs.clearScene(ObsEscenas.CAMARA_B)
