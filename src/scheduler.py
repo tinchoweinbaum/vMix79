@@ -494,7 +494,7 @@ class Scheduler:
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
         buscando_micro = self.microProx is None
-        buscando_cam = any(cont.tipo == TipoContenido.CAMARA for cont in self.bloqueAire) and self.camsInit == False
+        buscando_cam = any(cont.tipo == TipoContenido.CAMARA for cont in self.bloqueAire) and self.camsInit == False # Si hay camaras en este bloque y no estan inicializadas.
 
         for cont in self.bloqueAire[self.indexBloque:]:
             # print(f"TIPO DE CONTENIDO: {cont.tipo}")
@@ -586,14 +586,17 @@ class Scheduler:
         if cargaProx:
             self._cargaProx() # Después de mandar al aire precarga el prox.
     
-    def _goLiveMusica(self, duracion):
+    def _goLiveMusica(self, duracion = None):
         """
-        Da play al input de música y guarda la hora del fade out.
+        Da play al input de música y calcula la hora del fade out usando la duración del tema que sale al aire..
         """
         self.musicaLive = True
         print("[INFO]: Música al aire.")
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
+        if duracion is None:
+            while duracion is None:
+                duracion = self.vMix.getLength_id(IdInputs.MUSICA)
         self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - Musica.DuracionFade)
 
     def _goLiveVideo(self, musica = False, noticias = False, hora = False):
