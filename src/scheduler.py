@@ -147,12 +147,9 @@ class Scheduler:
             self.indexBloqueCam = self._getIndexCam_start()
             self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
             self._goLiveCamara()
-            duraPrimerTema = self.vMix.getLength_id(IdInputs.MUSICA)
-            self._goLiveMusica(duracion = duraPrimerTema) #de donde corno saco la duración
         else:
             self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS al arrancar si no van cámaras al aire
             self.obs.clearScene(ObsEscenas.CAMARA_B)
-            
 
         if not self.bloqueAire:
             print("Bloque de arranque vacío.\n")
@@ -163,6 +160,10 @@ class Scheduler:
 
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
+
+        if self._checkCamara_start():
+            duraPrimerTema = self.vMix.getLength_id(IdInputs.MUSICA) # Lo pongo acá y no en el if de arriba porque por race condition, getLength devuelve None.
+            self._goLiveMusica(duracion = duraPrimerTema) # Entonces en ver de hacer un hilo paralelo o llamar hasta que no de None lo llamo de nuevo acá y listo.
 
         if self.indexBloque < len(self.bloqueAire): # Al disparar el primer contenido manualmente, hay que volver a recargar los inputs para el próximo tick.
             self._cargaProx()
