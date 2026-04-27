@@ -144,7 +144,6 @@ class Scheduler:
         self._cargaProx() # Precarga los inputs prox para el primer tick.
 
         if self._checkCamara_start():
-            print("ARRANQUE CON CAMARAS YUPI")
             self.indexBloqueCam = self._getIndexCam_start()
             self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
             self._goLiveCamara()
@@ -170,9 +169,6 @@ class Scheduler:
             self._cargaProxBloque()
 
         time.sleep(1)
-
-        self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS para no consumir recursos con cámaras que no voy a usar.
-        self.obs.clearScene(ObsEscenas.CAMARA_B)
 
         while self.running:
             self._tick()
