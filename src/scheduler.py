@@ -282,7 +282,7 @@ class Scheduler:
         if itemMusica:
             # Corregido: datetime.now().date() o ahora.date()
             horaInicioMusica = datetime.combine(datetime.now().date(), itemMusica.hora)
-            horaFade = horaInicioMusica + timedelta(seconds=itemMusica.dura)
+            horaFade = horaInicioMusica + timedelta(seconds = itemMusica.dura - Musica.DuracionFade)
         else:
             horaFade = None
 
