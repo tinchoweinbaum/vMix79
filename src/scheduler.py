@@ -144,10 +144,12 @@ class Scheduler:
         self._cargaProx() # Precarga los inputs prox para el primer tick.
 
         if self._checkCamara_start():
-            self.indexBloqueCam, duracionMusica = self._getIndexCam_and_horaFadeMusica_start()
+            self.indexBloqueCam, horaFadeMusicaStart = self._getIndexCam_and_horaFadeMusica_start()
             self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
             self._goLiveCamara()
-            self._goLiveMusica(duracion = duracionMusica)
+
+            self.horaFadeMusica = horaFadeMusicaStart
+            self._goLiveMusica() # Actualizo horaFade desde afuera de goLiveMusica para calcularlo con la hora de inicio de la música.
         else:
             self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS al arrancar si no van cámaras al aire
             self.obs.clearScene(ObsEscenas.CAMARA_B)
@@ -278,11 +280,13 @@ class Scheduler:
         itemMusica = next((item for item in self.bloqueAire if item.tipo == TipoContenido.MUSICA), None)
 
         if itemMusica:
-            duracionMusica = itemMusica.dura
+            # Corregido: datetime.now().date() o ahora.date()
+            horaInicioMusica = datetime.combine(datetime.now().date(), itemMusica.hora)
+            horaFade = horaInicioMusica + timedelta(seconds=itemMusica.dura)
         else:
-            duracionMusica = None
+            horaFade = None
 
-        return indexCamAct, duracionMusica
+        return indexCamAct, horaFade
     
     def _startAudio(self):
         vMix = self.vMix
