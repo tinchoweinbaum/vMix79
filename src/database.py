@@ -306,7 +306,7 @@ class Database:
             },
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
-                "hora1": dictPlacas.get('HORA1')[:5],
+                "hora1": str(dictPlacas.get('HORA1'))[:5],
                 "marea1": str(dictPlacas.get('MAREA1')) + " mt.", # Agrega mt. al final de la altura de las mareas.
                 "hora2": str(dictPlacas.get('HORA2'))[:5],
                 "marea2": str(dictPlacas.get('MAREA2')) + " mt.",
