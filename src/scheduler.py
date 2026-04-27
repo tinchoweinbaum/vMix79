@@ -161,16 +161,16 @@ class Scheduler:
         self._goLive(self.bloqueAire[self.indexBloque], cargaProx = False) # Manda al aire el contenido correspondiente a la hora de ejecución. NO llama a cargaProx.
         self.indexBloque += 1
 
-        if self._checkCamara_start():
-            duraPrimerTema = self.vMix.getLength_id(IdInputs.MUSICA) # Lo pongo acá y no en el if de arriba porque por race condition, getLength devuelve None.
-            self._goLiveMusica(duracion = duraPrimerTema) # Entonces en ver de hacer un hilo paralelo o llamar hasta que no de None lo llamo de nuevo acá y listo.
-
         if self.indexBloque < len(self.bloqueAire): # Al disparar el primer contenido manualmente, hay que volver a recargar los inputs para el próximo tick.
             self._cargaProx()
         elif self.indexBloque >= len(self.bloqueAire):
             self._cargaProxBloque()
 
         time.sleep(1)
+
+        if self._checkCamara_start():
+            duraPrimerTema = self.vMix.getLength_id(IdInputs.MUSICA) # Lo pongo acá y no en el if de arriba porque por race condition, getLength devuelve None.
+            self._goLiveMusica(duracion = duraPrimerTema) # Entonces en ver de hacer un hilo paralelo o llamar hasta que no de None lo llamo de nuevo acá y listo.
 
         while self.running:
             self._tick()
