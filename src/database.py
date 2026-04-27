@@ -306,13 +306,13 @@ class Database:
             },
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
-                "hora1": dictPlacas.get('HORA1'),
+                "hora1": dictPlacas.get('HORA1')[:5],
                 "marea1": str(dictPlacas.get('MAREA1')) + " mt.", # Agrega mt. al final de la altura de las mareas.
-                "hora2": str(dictPlacas.get('HORA2')),
+                "hora2": str(dictPlacas.get('HORA2'))[:5],
                 "marea2": str(dictPlacas.get('MAREA2')) + " mt.",
-                "hora3": str(dictPlacas.get('HORA3')),
+                "hora3": str(dictPlacas.get('HORA3'))[:5],
                 "marea3": str(dictPlacas.get('MAREA3')) + " mt.",
-                "hora4": str(dictPlacas.get('HORA4')),
+                "hora4": str(dictPlacas.get('HORA4'))[:5],
                 "marea4": str(dictPlacas.get('MAREA4')) + " mt."
             },
             "lunas":{
