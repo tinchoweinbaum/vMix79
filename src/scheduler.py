@@ -143,6 +143,10 @@ class Scheduler:
         self.getMusica() # Cargo el bloque de música en memoria.
         self._cargaProx() # Precarga los inputs prox para el primer tick.
 
+        if self._checkCamara_start():
+            self.indexBloqueCam = self._getIndexCam_start()
+            
+
         if not self.bloqueAire:
             print("Bloque de arranque vacío.\n")
             self.stop()
@@ -241,6 +245,33 @@ class Scheduler:
                 break
 
         print(f"Bloque de arranque: {self.nroBloqueAire}\n")
+    
+    def _checkCamara_start(self):
+        "Método que checkea si en el momento de arranque debería haber una cámara al aire"
+        itemAireActual = self.bloqueAire[self.indexBloque]
+        return itemAireActual.tipo == TipoContenido.PLACA or itemAireActual.tipo == TipoContenido.CAMARA # Si está al aire una placa, es porque corresponde arrancar en cámara.
+    
+    def _getIndexCam_start(self):
+        "Método que devuelve según la hora de arranque, el elemento del playlist de cámaras que debería estar al aire"
+        horaAct = datetime.now()
+        itemCam = next((item for item in self.bloqueAire if item.tipo == TipoContenido.CAMARA), None) # Busca el primer (y unico) elemento con tipo camara
+        if not itemCam:
+            print("[ERROR]: Error al recuperar la cámara en el bloque de arranque.")
+            return
+        
+        horaCamAct = datetime.combine(datetime.now().date(), itemCam.hora) # Horario de la orden de cámara
+        indexCamAct = 0
+        while indexCamAct < len(self.bloqueCamaras):
+            duracion = timedelta(seconds=self.bloqueCamaras[indexCamAct].tiempo)
+            horaFinCam = horaCamAct + duracion
+            
+            if horaCamAct <= horaAct < horaFinCam:
+                return indexCamAct
+
+            horaCamAct = horaFinCam
+            indexCamAct += 1
+
+        return indexCamAct
     
     def _startAudio(self):
         vMix = self.vMix
