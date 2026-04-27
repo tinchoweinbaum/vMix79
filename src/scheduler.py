@@ -144,6 +144,7 @@ class Scheduler:
         self._cargaProx() # Precarga los inputs prox para el primer tick.
 
         if self._checkCamara_start():
+            print("ARRANQUE CON CAMARAS YUPI")
             self.indexBloqueCam = self._getIndexCam_start()
             self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
             self._goLiveCamara()
@@ -272,6 +273,7 @@ class Scheduler:
             horaFinCam = horaCamAct + duracion
             
             if horaCamAct <= horaAct and horaAct < horaFinCam:
+                print(f"indice encontrado de camaras: {indexCamAct}")
                 return indexCamAct
 
             horaCamAct = horaFinCam
