@@ -144,9 +144,10 @@ class Scheduler:
         self._cargaProx() # Precarga los inputs prox para el primer tick.
 
         if self._checkCamara_start():
-            self.indexBloqueCam = self._getIndexCam_start()
+            self.indexBloqueCam, duracionMusica = self._getIndexCam_and_horaFadeMusica_start()
             self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
             self._goLiveCamara()
+            self._goLiveMusica(duracion = duracionMusica)
         else:
             self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS al arrancar si no van cámaras al aire
             self.obs.clearScene(ObsEscenas.CAMARA_B)
@@ -167,10 +168,6 @@ class Scheduler:
             self._cargaProxBloque()
 
         time.sleep(1)
-
-        if self._checkCamara_start():
-            duraPrimerTema = self.vMix.getLength_id(IdInputs.MUSICA) # Lo pongo acá y no en el if de arriba porque por race condition, getLength devuelve None.
-            self._goLiveMusica(duracion = duraPrimerTema) # Entonces en ver de hacer un hilo paralelo o llamar hasta que no de None lo llamo de nuevo acá y listo.
 
         while self.running:
             self._tick()
@@ -256,8 +253,8 @@ class Scheduler:
         itemAireActual = self.bloqueAire[self.indexBloque]
         return itemAireActual.tipo == TipoContenido.PLACA or itemAireActual.tipo == TipoContenido.CAMARA # Si está al aire una placa, es porque corresponde arrancar en cámara.
     
-    def _getIndexCam_start(self):
-        "Método que devuelve según la hora de arranque, el elemento del playlist de cámaras que debería estar al aire"
+    def _getIndexCam_and_horaFadeMusica_start(self):
+        "Método que devuelve según la hora de arranque, el elemento del playlist de cámaras que debería estar al aire junto con la hora del fade de musica"
         horaAct = datetime.now()
         itemCam = next((item for item in self.bloqueAire if item.tipo == TipoContenido.CAMARA), None) # Busca el primer (y unico) elemento con tipo camara
         if not itemCam:
@@ -271,14 +268,21 @@ class Scheduler:
             horaFinCam = horaCamAct + duracion
             
             if horaCamAct <= horaAct and horaAct < horaFinCam:
-                print(f"indice encontrado de camaras: {indexCamAct}")
-                return indexCamAct
+                break
 
             horaCamAct = horaFinCam
             indexCamAct += 1
 
         print(f"indice encontrado de camaras: {indexCamAct}")
-        return indexCamAct
+
+        itemMusica = next((item for item in self.bloqueAire if item.tipo == TipoContenido.MUSICA), None)
+
+        if itemMusica:
+            duracionMusica = itemMusica.dura
+        else:
+            duracionMusica = None
+
+        return indexCamAct, duracionMusica
     
     def _startAudio(self):
         vMix = self.vMix
@@ -588,16 +592,14 @@ class Scheduler:
     
     def _goLiveMusica(self, duracion = None):
         """
-        Da play al input de música y calcula la hora del fade out usando la duración del tema que sale al aire..
+        Da play al input de música y calcula la hora del fade out usando la duración de la orden MUSICA que viene de la db.
         """
         self.musicaLive = True
         print("[INFO]: Música al aire.")
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
-        if duracion is None:
-            while duracion is None:
-                duracion = self.vMix.getLength_id(IdInputs.MUSICA)
-        self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - Musica.DuracionFade)
+        if duracion:
+            self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - Musica.DuracionFade)
 
     def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.
