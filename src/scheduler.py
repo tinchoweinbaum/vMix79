@@ -2,7 +2,6 @@
 Archivo principal del proyecto, se encarga de organizar la transmisión y de mandar al aire el contenido que corresponda a la hora que corresponda.
 Usa las clases de Database y vMixApiWrapper (TCP) para hacer esto.
 Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
-Para la música se "fabrica" un playlist artificial, para poder manejar las horas de salida y entrada de las músicas.
 """
 from utilities import Contenido, Camara, Musica # Clase que representa los Contenidos de la programación.
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix.
@@ -280,7 +279,6 @@ class Scheduler:
         itemMusica = next((item for item in self.bloqueAire if item.tipo == TipoContenido.MUSICA), None)
 
         if itemMusica:
-            # Corregido: datetime.now().date() o ahora.date()
             horaInicioMusica = datetime.combine(datetime.now().date(), itemMusica.hora)
             horaFade = horaInicioMusica + timedelta(seconds = itemMusica.dura - Musica.DuracionFade)
         else:

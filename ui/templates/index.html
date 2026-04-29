@@ -3,114 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canal 79 - Control de Emisión</title>
-    <style>
-        body {
-            background-color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .c79-status-bar {
-            background: linear-gradient(135deg, #ff6600 0%, #00aeef 100%);
-            color: white;
-            display: inline-flex;
-            align-items: center;
-            padding: 0;
-            border-radius: 8px;
-            overflow: hidden; 
-            
-            border: none;
-            /* Aumentamos un poco el ancho mínimo para que entren los días */
-            min-width: 450px; 
-        }
-
-        .c79-label {
-            background-color: rgba(0, 0, 0, 0.12); 
-            padding: 10px 25px; 
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 2.2px; 
-            font-size: 0.8rem;
-            color: #ffffff;
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.6);
-            align-self: stretch;
-            display: flex;
-            align-items: center;
-            border-right: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .live-dot {
-            height: 10px;
-            width: 10px;
-            background-color: #ff0000; 
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 15px;
-            box-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
-            animation: pulse 2s infinite ease-in-out;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.4; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .c79-timer {
-            padding: 8px 30px; 
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1.6rem;
-            font-weight: bold;
-            color: #ffffff; 
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-            min-width: 180px; 
-            text-align: center;
-        }
-    </style>
+    <title>Canal 79 - Master Control</title>
+    <link rel="stylesheet" href="../static/css/styles.css">
 </head>
 <body>
 
-    <div class="c79-status-bar" id="uptime-container" data-start="{{ horaArranque }}">
-        <div class="c79-label">
-            <span class="live-dot"></span>
-            Corriendo hace
-        </div>
-        <div class="c79-timer" id="uptime">
-            00:00:00:00
-        </div>
-    </div>
-
-    <script>
-        const container = document.getElementById('uptime-container');
+    <main class="main-container">
         
-        const startTimeStr = container.dataset.start;
-        const fallbackTime = Date.now() / 1000;
-        const startTime = (parseFloat(startTimeStr)) * 1000;
+        <section class="left-panel">
+            <div class="monitor-wrapper">
+                <div class="screen-box">
+                    <div class="aire-badge">● AIRE</div>
+                    <span>PREVIEW DE SALIDA</span>
+                </div>
+            </div>
 
-        function actualizarUptime() {
-            const ahora = Date.now();
-            const diferencia = Math.max(0, ahora - startTime);
+            <div class="runtime-card" id="runtime-data" data-start="{{ horaArranque }}">
+                <p class="runtime-label">TIEMPO DE EMISIÓN</p>
+                <h2 class="runtime-clock" id="uptime">00:00:00:00</h2>
+            </div>
+        </section>
 
-            // Cálculos incluyendo días
-            let dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-            let horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            let minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
-            let segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+        <section class="right-panel">
+            
+            <nav class="tabs-nav">
+                <button class="tab-btn active" onclick="cambiarTab(event, 'general')">General</button>
+                <button class="tab-btn" onclick="cambiarTab(event, 'musica')">Música</button>
+                <button class="tab-btn" onclick="cambiarTab(event, 'camaras')">Cámaras</button>
+            </nav>
 
-            const fmt = (n) => n.toString().padStart(2, '0');
+            <div class="tab-view">
+                <div id="general" class="tab-content active">
+                    <div class="actions-grid">
+                        <button class="c79-btn" id="p1" onclick="disparar('/actualizar_placas', 'p1')">Actualizar Placas</button>
+                        <button class="c79-btn" id="p2" onclick="disparar('/actualizar_clima', 'p2')">Actualizar Clima</button>
+                    </div>
+                </div>
 
-            // Formateamos como: 00d 00:00:00
-            document.getElementById('uptime').innerText = 
-                `${fmt(dias)}:${fmt(horas)}:${fmt(minutos)}:${fmt(segundos)}`;
-        }
+                <div id="musica" class="tab-content">
+                    <div class="actions-grid">
+                        <button class="c79-btn" id="m1" onclick="disparar('/fade_musica', 'm1')">Forzar Fade Out</button>
+                        <button class="c79-btn" id="m2" onclick="disparar('/next_track', 'm2')">Siguiente Track</button>
+                    </div>
+                </div>
 
-        actualizarUptime();
-        setInterval(actualizarUptime, 1000);
-    </script>
+                <div id="camaras" class="tab-content">
+                    <div class="actions-grid">
+                        <button class="c79-btn" id="c1" onclick="disparar('/next_cam', 'c1')">Siguiente Cámara</button>
+                        <button class="c79-btn" id="c2" onclick="disparar('/reset_cam', 'c2')">Resetear Ciclo</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="console-wrapper" id="console-wrapper">
+                <div class="console-header" onclick="toggleConsole()">
+                    <span>TERMINAL DE SISTEMA</span>
+                    <button class="toggle-btn" id="toggle-icon">▼</button>
+                </div>
+                <div class="system-log" id="terminal">
+                    > Canal 79 OS inicializado...
+                    <br>> Operador identificado. Panel listo.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="../static/js/javascript.js"></script>
 </body>
 </html>

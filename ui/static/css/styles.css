@@ -1,0 +1,141 @@
+:root {
+    --naranja: #FF6600;
+    --naranja-hover: #E65C00;
+    --blanco: #FFFFFF;
+    --fondo-gris: #F2F4F7;
+    --borde-tecnico: #D1D8E0;
+    --texto: #2D3436;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { 
+    background: var(--fondo-gris); 
+    color: var(--texto);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.main-container { display: flex; height: 100vh; }
+
+.left-panel {
+    flex: 1;
+    background: var(--blanco);
+    border-right: 1px solid var(--borde-tecnico);
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+.right-panel {
+    flex: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+.screen-box {
+    width: 100%; aspect-ratio: 16/9; background: #000;
+    border-radius: 4px; display: flex; align-items: center;
+    justify-content: center; position: relative; color: #333;
+}
+
+.aire-badge {
+    position: absolute; top: 15px; left: 15px; background: #D63031;
+    color: white; padding: 3px 8px; border-radius: 2px; font-size: 11px; font-weight: bold;
+}
+
+.runtime-card {
+    margin-top: 20px; padding: 12px; background: #F9F9F9;
+    border: 1px solid var(--borde-tecnico); border-radius: 4px; text-align: center;
+}
+
+.runtime-clock {
+    color: var(--naranja);
+    font-size: 1.7rem; /* Reducido un pelín para que entre DD:HH:MM:SS */
+    font-weight: 600;
+    font-family: 'Consolas', 'Monaco', monospace;
+    letter-spacing: 1px;
+}
+
+/* --- SOLUCIÓN TABS FLEX --- */
+.tabs-nav {
+    display: flex; 
+    gap: 2px; 
+    margin-bottom: 20px;
+    background: #DDD; 
+    padding: 2px; 
+    border-radius: 4px;
+}
+
+.tab-btn {
+    flex: 1; /* Esto hace que todos pesen lo mismo equitativamente */
+    padding: 12px; 
+    border: none; 
+    background: #EEE;
+    color: #666; 
+    font-weight: bold; 
+    cursor: pointer;
+    border-radius: 2px; 
+    transition: 0.2s;
+}
+
+.tab-btn.active { background: var(--naranja); color: white; }
+
+/* --- SOLUCIÓN BUG VISIBILIDAD --- */
+.tab-content { display: none; } /* Oculto por defecto */
+.tab-content.active { display: block; } /* Solo se ve el activo */
+
+.actions-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+
+.c79-btn {
+    padding: 18px; background: white; color: var(--naranja);
+    border: 1px solid var(--naranja); border-radius: 4px;
+    font-weight: 700; cursor: pointer; transition: 0.2s;
+}
+
+.c79-btn:hover { background: var(--naranja); color: white; }
+
+/* --- CONSOLA CON ANIMACIÓN --- */
+.console-wrapper {
+    margin-top: auto;
+    border: 1px solid var(--borde-tecnico);
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+    /* Animamos la altura máxima para que sea suave */
+    max-height: 250px; 
+    transition: max-height 0.3s ease-out;
+}
+
+.console-wrapper.collapsed {
+    max-height: 40px; /* Solo queda visible el header */
+}
+
+.console-header {
+    background: #E9ECEF;
+    height: 40px;
+    padding: 0 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #555;
+}
+
+.system-log {
+    padding: 15px;
+    font-family: 'Consolas', monospace;
+    font-size: 0.8rem;
+    color: #444;
+    height: 210px; 
+    overflow-y: auto;
+    background: #FFF;
+}
+
+.toggle-btn { background: none; border: none; color: #888; font-size: 10px; }

@@ -118,4 +118,3 @@ if __name__ == "__main__":
         Canal79(presetPath, appPath)
     except Exception as e:
         print(f"Error al conectar con vMix: {e}")
-
