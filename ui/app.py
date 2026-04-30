@@ -4,10 +4,6 @@ import threading
 
 from flask import Flask, render_template
 from pathlib import Path
-from pathlib import Path
-
-# scheduler.py se importa dandole el path absoluto xq python es una pija.
-from pathlib import Path
 
 # agrega toda la carpeta src a los imports
 raiz_del_proyecto = Path(__file__).resolve().parent.parent
@@ -18,11 +14,16 @@ if carpeta_src not in sys.path:
 from scheduler import Scheduler
 
 app = Flask(__name__)
-schMain = Scheduler() # Instancio objeto de clase Scheduler.
+schMain = Scheduler() # Instancio objeto de clase Scheduler. Variable global para no tener que pasarle a todas las funciones el objeto scheduler
  
 @app.route('/')
 def index():
     return render_template('index.html', horaArranque = horaArranque)
+
+@app.route('/restart')
+def restart():
+    schMain.restart()
+
 
 if __name__ == "__main__":
     # --- Paths ---

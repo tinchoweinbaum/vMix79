@@ -174,6 +174,41 @@ class Scheduler:
             self._tick()
             time.sleep(0.2)
 
+    def stop(self):
+        self.running = False
+
+        self.nroBloqueAire = 1
+        self.bloqueAire: List[Contenido] = [] # Vacío las listas de contenido
+        self.bloqueProx: List[Contenido] = [] 
+        self.indexBloque = 0 # Reinicio punteros.
+
+        self.videoAct = None
+        self.videoProx = None
+
+        self.microAct = None
+        self.microProx = None
+
+        self.camaraLive = False
+        self.indexBloqueCam = 0
+        self.horaProxCam = datetime.now()
+        self.bloqueCamaras: List[Camara] = []
+
+        self.camsInit = False
+        self.camAct = None
+        self.camProx = None
+
+        self.obsAct = None
+        self.obsProx = None
+
+        self.musicaLive = False
+        self.horaFadeMusica = None
+
+        self.aguanteActualizada = False # Marco flags en False.
+
+    def restart(self): # No sé si hace falta esta función cuando Canal79 puede llamar a stop y despues a start y manejar su propio tiempo con sleep xd
+        self.stop()
+        time.sleep(5)
+        self.start()
 
     def _tick(self):
         """
@@ -311,9 +346,6 @@ class Scheduler:
 
         self.bloqueProx = self.database.getBloque_num(fechaAct, nroBloqueProx) # Guarda en bloqueProx el próximo bloque
         print(f"[INFO]: Bloque {nroBloqueProx} cargado. Ya no se puede modificar.\n")
-
-    def stop(self):
-        self.running = False
 
     def _precargaVideo(self,cont):
         vMix = self.vMix
