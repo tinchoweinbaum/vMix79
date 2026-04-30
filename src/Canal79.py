@@ -10,89 +10,109 @@ from pathlib import Path
 from vMixApiWrapper import VmixApi
 from obsManager import Obs
 
-def isVmixRunning():
-    for proc in psutil.process_iter(['name']):
-        if proc.info['name'] == 'vMix64.exe':
-            return True
-        
-    return False
+class Canal79:
+    def __init__(self):
+        # --- Procesos y Scheduler ---
+        self.vMix_process = None
+        self.Obs_process = None
 
-def Canal79(presetPath, appPath):
-    """
-    Abre el preset de Canal79, corre la app de flask y abre el Control de Emisión en el navegador.
-    """
-    VmixApi().openPreset(presetPath)
+        self.flaskApp = None
+        web_actions = { # Le paso un diccionario de punteros a funciones del objeto Canal79 a la app de flask, para no tener que pasarle TODO el objeto cuando quiera por ejemplo, reiniciar.
+            "restart": self.restart,
+        }
+
+        self.scheduler = None
+
+        # --- Paths ---
+        self.vMixPath = None
+        self.obsPath = None
+
+        # --- Información ---
+        self.running = False
+
     
-    if VmixApi().awaitPresetCargado(timeout = 100):
-        subprocess.Popen([sys.executable, appPath]) # Corre la app de flask que aparte levanta el scheduler en otro hilo.
-        time.sleep(0.5) # Espera medio segundo a que la app de flask levante el server
-        webbrowser.open("http://localhost:5000")
-
-
-def runVmix(vMixPath):
-    subprocess.Popen([vMixPath])
-
-def isObsRunning():
-    for proc in psutil.process_iter(['name']):
-        if proc.info['name'] == 'obs64.exe':
-            return True
-        
-    return False
-
-def runObs(obs_executable_path, nombre_coleccion):
-
-    obsPath = os.path.dirname(obs_executable_path)
-    try:
-        comando = [
-            obs_executable_path,
-            "--collection", nombre_coleccion,
-            "--disable-shutdown-check", # Salta el mensaje de "Safe Mode" si se cerró mal
-        ]
-    
-        subprocess.Popen(comando, cwd = obsPath)
-        
-    except FileNotFoundError:
-        print("[ERROR]: No se encontró el ejecutable de OBS en la ruta especificada.")
-    except Exception as e:
-        print(f"[ERROR]: Ocurrió un error inesperado al abrir OBS: {e}")
-
-def vmix_tcp_ready(host="127.0.0.1", port=8099, timeout=1):
-    """
-    Intenta abrir una conexión al puerto TCP de vMix.
-    Devuelve True si el server aceptó la conexión, False si no.
-    """
-    try:
-        with socket.create_connection((host, port), timeout=timeout):
-            return True
-    except (ConnectionRefusedError, socket.timeout, OSError):
+    def isVmixRunning():
+        for proc in psutil.process_iter(['name']):
+            if proc.info['name'] == 'vMix64.exe':
+                return True
         return False
 
-def wait_for_vmix_server(timeout_total=30):
-    """
-    Bucle que espera hasta que el servidor TCP responda.
-    """
-    print("[INFO]: Esperando a que vMix levante local server TCP...", end="", flush=True)
-    inicio = time.time()
-    while time.time() - inicio < timeout_total:
-        if vmix_tcp_ready():
-            print("\n[INFO]: Local server TCP levantado por vMix. Comenzando ejecución.")
-            return True
-        print(".", end="", flush=True)
-        time.sleep(1)
+    def Canal79(presetPath, appPath):
+        """
+        Abre el preset de Canal79, corre la app de flask y abre el Control de Emisión en el navegador.
+        """
+        VmixApi().openPreset(presetPath)
+        
+        if VmixApi().awaitPresetCargado(timeout = 100):
+            subprocess.Popen([sys.executable, appPath]) # Corre la app de flask que aparte levanta el scheduler en otro hilo.
+            time.sleep(0.5) # Espera medio segundo a que la app de flask levante el server
+            webbrowser.open("http://localhost:5000")
 
-    print("\n[ERROR]: Timeout. El server TCP de vMix no respondió.")
-    return False
 
-def wait_for_obs(timeout=30):
-    inicio = time.time()
-    while time.time() - inicio < timeout:
-        if isObsRunning():
-            print("\n[INFO]: OBS detectado y corriendo.")
-            return True
-        time.sleep(1)
-    
-    print("\n[ERROR]: Timeout esperando a OBS.")
-    return False
+    def runVmix(vMixPath):
+        subprocess.Popen([vMixPath])
+
+    def isObsRunning():
+        for proc in psutil.process_iter(['name']):
+            if proc.info['name'] == 'obs64.exe':
+                return True
+            
+        return False
+
+    def runObs(obs_executable_path, nombre_coleccion):
+
+        obsPath = os.path.dirname(obs_executable_path)
+        try:
+            comando = [
+                obs_executable_path,
+                "--collection", nombre_coleccion,
+                "--disable-shutdown-check", # Salta el mensaje de "Safe Mode" si se cerró mal
+            ]
+        
+            subprocess.Popen(comando, cwd = obsPath)
+            
+        except FileNotFoundError:
+            print("[ERROR]: No se encontró el ejecutable de OBS en la ruta especificada.")
+        except Exception as e:
+            print(f"[ERROR]: Ocurrió un error inesperado al abrir OBS: {e}")
+
+    def vmix_tcp_ready(host="127.0.0.1", port=8099, timeout=1):
+        """
+        Intenta abrir una conexión al puerto TCP de vMix.
+        Devuelve True si el server aceptó la conexión, False si no.
+        """
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except (ConnectionRefusedError, socket.timeout, OSError):
+            return False
+
+    def wait_for_vmix_server(timeout_total=30):
+        """
+        Bucle que espera hasta que el servidor TCP responda.
+        """
+        print("[INFO]: Esperando a que vMix levante local server TCP...", end="", flush=True)
+        inicio = time.time()
+        while time.time() - inicio < timeout_total:
+            if vmix_tcp_ready():
+                print("\n[INFO]: Local server TCP levantado por vMix. Comenzando ejecución.")
+                return True
+            print(".", end="", flush=True)
+            time.sleep(1)
+
+        print("\n[ERROR]: Timeout. El server TCP de vMix no respondió.")
+        return False
+
+    def wait_for_obs(timeout=30):
+        inicio = time.time()
+        while time.time() - inicio < timeout:
+            if isObsRunning():
+                print("\n[INFO]: OBS detectado y corriendo.")
+                return True
+            time.sleep(1)
+        
+        print("\n[ERROR]: Timeout esperando a OBS.")
+        return False
 
 
 if __name__ == "__main__":
