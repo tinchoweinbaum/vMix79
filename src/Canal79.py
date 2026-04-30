@@ -1,3 +1,10 @@
+"""
+Nueva arquitectura del programa: Ahora la clase principal va a ser la clase Canal79, un objeto de esta clase tiene y controla a todos los elementos
+que entran en juego en la emisión del canal 79: vMix, OBS, Scheduler y app de Flask.
+
+El main simplemente instancia a la clase, llama a Canal.start_all() (que inicia a todo lo necesario) y queda corriendo en el hilo del scheduler y de la app de Flask.
+"""
+
 import subprocess
 import psutil
 import time
