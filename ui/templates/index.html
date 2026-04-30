@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canal 79 - Master Control</title>
+    <link rel="stylesheet" href="../static/css/styles.css">
+</head>
+<body>
+
+    <main class="main-container">
+        
+        <section class="left-panel">
+            <div class="monitor-wrapper">
+                <div class="screen-box">
+                    <div class="aire-badge">● AIRE</div>
+                    <span>PREVIEW DE SALIDA</span>
+                </div>
+            </div>
+
+            <div class="runtime-card" id="runtime-data" data-start="{{ horaArranque }}">
+                <p class="runtime-label">TIEMPO DE EMISIÓN</p>
+                <h2 class="runtime-clock" id="uptime">00:00:00:00</h2>
+            </div>
+        </section>
+
+        <section class="right-panel">
+            
+            <nav class="tabs-nav">
+                <button class="tab-btn active" onclick="cambiarTab(event, 'general')">General</button>
+                <button class="tab-btn" onclick="cambiarTab(event, 'musica')">Música</button>
+                <button class="tab-btn" onclick="cambiarTab(event, 'camaras')">Cámaras</button>
+            </nav>
+
+            <div class="tab-view">
+                <div id="general" class="tab-content active">
+                    <div class="actions-grid">
+                        <button class="c79-btn" id="p1" onclick="disparar('/actualizar_placas', 'p1')">Actualizar Placas</button>
+                        <button class="c79-btn" id="p2" onclick="disparar('/actualizar_clima', 'p2')">Actualizar Clima</button>
+                    </div>
+                </div>
+
+                <div id="musica" class="tab-content">
+                    <div class="actions-grid">
+                        <button class="c79-btn" id="m1" onclick="disparar('/fade_musica', 'm1')">Forzar Fade Out</button>
+                        <button class="c79-btn" id="m2" onclick="disparar('/next_track', 'm2')">Siguiente Track</button>
+                    </div>
+                </div>
+
+                <div id="camaras" class="tab-content">
+                    <div class="actions-grid">
+                        <button class="c79-btn" id="c1" onclick="disparar('/next_cam', 'c1')">Siguiente Cámara</button>
+                        <button class="c79-btn" id="c2" onclick="disparar('/reset_cam', 'c2')">Resetear Ciclo</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="console-wrapper" id="console-wrapper">
+                <div class="console-header" onclick="toggleConsole()">
+                    <span>TERMINAL DE SISTEMA</span>
+                    <button class="toggle-btn" id="toggle-icon">▼</button>
+                </div>
+                <div class="system-log" id="terminal">
+                    > Canal 79 OS inicializado...
+                    <br>> Operador identificado. Panel listo.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="../static/js/javascript.js"></script>
+</body>
+</html>

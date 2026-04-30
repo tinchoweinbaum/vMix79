@@ -35,7 +35,9 @@ class Database:
         load_dotenv(str(envPath), override = True)
 
         self.host = os.getenv("DB_HOST","localhost") # El segundo parámetro es el default, por si no existe el .env o no encuentra lo que busca.
-        self.path = f"{self.host}:{os.getenv("DB_PATH",r"C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA_MARZO.FDB")}"
+        default_path = r'C:\Users\Operador\Desktop\vMix martin\CANAL79_DB_COPIA_MARZO.FDB'
+        db_file = os.getenv("DB_PATH", default_path)
+        self.path = f"{self.host}:{db_file}"
         self.user = os.getenv("DB_USER","SYSDBA")
         self.password = os.getenv("DB_PASS","masterkey")
         self.charset = "UTF8"
@@ -304,13 +306,13 @@ class Database:
             },
             "mareas": {
                 "fecha": dictPlacas.get('FECHA'),
-                "hora1": dictPlacas.get('HORA1'),
+                "hora1": str(dictPlacas.get('HORA1'))[:5],
                 "marea1": str(dictPlacas.get('MAREA1')) + " mt.", # Agrega mt. al final de la altura de las mareas.
-                "hora2": str(dictPlacas.get('HORA2')),
+                "hora2": str(dictPlacas.get('HORA2'))[:5],
                 "marea2": str(dictPlacas.get('MAREA2')) + " mt.",
-                "hora3": str(dictPlacas.get('HORA3')),
+                "hora3": str(dictPlacas.get('HORA3'))[:5],
                 "marea3": str(dictPlacas.get('MAREA3')) + " mt.",
-                "hora4": str(dictPlacas.get('HORA4')),
+                "hora4": str(dictPlacas.get('HORA4'))[:5],
                 "marea4": str(dictPlacas.get('MAREA4')) + " mt."
             },
             "lunas":{

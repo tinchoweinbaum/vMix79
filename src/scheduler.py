@@ -2,7 +2,6 @@
 Archivo principal del proyecto, se encarga de organizar la transmisión y de mandar al aire el contenido que corresponda a la hora que corresponda.
 Usa las clases de Database y vMixApiWrapper (TCP) para hacer esto.
 Es totalmente dependiente de que el preset de vMix sea el correcto. Los Enums están armados para ese preset y sólo ese preset.
-Para la música se "fabrica" un playlist artificial, para poder manejar las horas de salida y entrada de las músicas.
 """
 from utilities import Contenido, Camara, Musica # Clase que representa los Contenidos de la programación.
 from vMixApiWrapper import VmixApi # Clase wrapper de la webApi de vMix.
@@ -85,7 +84,9 @@ class ObsEscenas(str, Enum):
     CAMARA_B = "CAMARA_B"
 
 class Scheduler:
-    def __init__(self, vMix: VmixApi, database: Database):
+    def __init__(self, vMix: VmixApi = VmixApi(), database: Database = Database()):
+        self.horaArranque = time.time() # Hora de arranque para timer en app.py. No la calculo en el front porque scheduler.py puede llegar a fallar.
+
         self.nroBloqueAire = 1
         self.bloqueAire: List[Contenido] = [] # Lista de objetos de la clase Contenido representando el bloque actual
         self.bloqueProx: List[Contenido] = [] 
@@ -141,6 +142,17 @@ class Scheduler:
         self.getMusica() # Cargo el bloque de música en memoria.
         self._cargaProx() # Precarga los inputs prox para el primer tick.
 
+        if self._checkCamara_start():
+            self.indexBloqueCam, horaFadeMusicaStart = self._getIndexCam_and_horaFadeMusica_start()
+            self.__initCamaras(indexCamInicial = self.indexBloqueCam) # Inicializo las cámaras empezando por la que corresponde.
+            self._goLiveCamara()
+
+            self.horaFadeMusica = horaFadeMusicaStart
+            self._goLiveMusica() # Actualizo horaFade desde afuera de goLiveMusica para calcularlo con la hora de inicio de la música.
+        else:
+            self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS al arrancar si no van cámaras al aire
+            self.obs.clearScene(ObsEscenas.CAMARA_B)
+
         if not self.bloqueAire:
             print("Bloque de arranque vacío.\n")
             self.stop()
@@ -158,13 +170,45 @@ class Scheduler:
 
         time.sleep(1)
 
-        self.obs.clearScene(ObsEscenas.CAMARA_A) # Limpio OBS para no consumir recursos con cámaras que no voy a usar.
-        self.obs.clearScene(ObsEscenas.CAMARA_B)
-
         while self.running:
             self._tick()
             time.sleep(0.2)
 
+    def stop(self):
+        self.running = False
+
+        self.nroBloqueAire = 1
+        self.bloqueAire: List[Contenido] = [] # Vacío las listas de contenido
+        self.bloqueProx: List[Contenido] = [] 
+        self.indexBloque = 0 # Reinicio punteros.
+
+        self.videoAct = None
+        self.videoProx = None
+
+        self.microAct = None
+        self.microProx = None
+
+        self.camaraLive = False
+        self.indexBloqueCam = 0
+        self.horaProxCam = datetime.now()
+        self.bloqueCamaras: List[Camara] = []
+
+        self.camsInit = False
+        self.camAct = None
+        self.camProx = None
+
+        self.obsAct = None
+        self.obsProx = None
+
+        self.musicaLive = False
+        self.horaFadeMusica = None
+
+        self.aguanteActualizada = False # Marco flags en False.
+
+    def restart(self): # No sé si hace falta esta función cuando Canal79 puede llamar a stop y despues a start y manejar su propio tiempo con sleep xd
+        self.stop()
+        time.sleep(5)
+        self.start()
 
     def _tick(self):
         """
@@ -240,6 +284,43 @@ class Scheduler:
 
         print(f"Bloque de arranque: {self.nroBloqueAire}\n")
     
+    def _checkCamara_start(self):
+        "Método que checkea si en el momento de arranque debería haber una cámara al aire"
+        itemAireActual = self.bloqueAire[self.indexBloque]
+        return itemAireActual.tipo == TipoContenido.PLACA or itemAireActual.tipo == TipoContenido.CAMARA # Si está al aire una placa, es porque corresponde arrancar en cámara.
+    
+    def _getIndexCam_and_horaFadeMusica_start(self):
+        "Método que devuelve según la hora de arranque, el elemento del playlist de cámaras que debería estar al aire junto con la hora del fade de musica"
+        horaAct = datetime.now()
+        itemCam = next((item for item in self.bloqueAire if item.tipo == TipoContenido.CAMARA), None) # Busca el primer (y unico) elemento con tipo camara
+        if not itemCam:
+            print("[ERROR]: Error al recuperar la cámara en el bloque de arranque.")
+            return
+        
+        horaCamAct = datetime.combine(datetime.now().date(), itemCam.hora) # Horario de la orden de cámara
+        indexCamAct = 0
+        while indexCamAct < len(self.bloqueCamaras):
+            duracion = timedelta(seconds=self.bloqueCamaras[indexCamAct].tiempo)
+            horaFinCam = horaCamAct + duracion
+            
+            if horaCamAct <= horaAct and horaAct < horaFinCam:
+                break
+
+            horaCamAct = horaFinCam
+            indexCamAct += 1
+
+        print(f"indice encontrado de camaras: {indexCamAct}")
+
+        itemMusica = next((item for item in self.bloqueAire if item.tipo == TipoContenido.MUSICA), None)
+
+        if itemMusica:
+            horaInicioMusica = datetime.combine(datetime.now().date(), itemMusica.hora)
+            horaFade = horaInicioMusica + timedelta(seconds = itemMusica.dura - Musica.DuracionFade)
+        else:
+            horaFade = None
+
+        return indexCamAct, horaFade
+    
     def _startAudio(self):
         vMix = self.vMix
 
@@ -265,9 +346,6 @@ class Scheduler:
 
         self.bloqueProx = self.database.getBloque_num(fechaAct, nroBloqueProx) # Guarda en bloqueProx el próximo bloque
         print(f"[INFO]: Bloque {nroBloqueProx} cargado. Ya no se puede modificar.\n")
-
-    def stop(self):
-        self.running = False
 
     def _precargaVideo(self,cont):
         vMix = self.vMix
@@ -454,7 +532,7 @@ class Scheduler:
         # Banderas locales para saber si ya encontramos lo que buscábamos en este tick
         buscando_video = self.videoProx is None
         buscando_micro = self.microProx is None
-        buscando_cam = any(cont.tipo == TipoContenido.CAMARA for cont in self.bloqueAire) and self.camsInit == False
+        buscando_cam = any(cont.tipo == TipoContenido.CAMARA for cont in self.bloqueAire) and self.camsInit == False # Si hay camaras en este bloque y no estan inicializadas.
 
         for cont in self.bloqueAire[self.indexBloque:]:
             # print(f"TIPO DE CONTENIDO: {cont.tipo}")
@@ -546,15 +624,16 @@ class Scheduler:
         if cargaProx:
             self._cargaProx() # Después de mandar al aire precarga el prox.
     
-    def _goLiveMusica(self, duracion):
+    def _goLiveMusica(self, duracion = None):
         """
-        Da play al input de música y guarda la hora del fade out.
+        Da play al input de música y calcula la hora del fade out usando la duración de la orden MUSICA que viene de la db.
         """
         self.musicaLive = True
         print("[INFO]: Música al aire.")
         self.vMix.setAudio_on(IdInputs.MUSICA)
         self.vMix.playInput(IdInputs.MUSICA)
-        self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - Musica.DuracionFade)
+        if duracion:
+            self.horaFadeMusica = datetime.now() + timedelta(seconds = duracion - Musica.DuracionFade)
 
     def _goLiveVideo(self, musica = False, noticias = False, hora = False):
         # Toggle de inputs de video.
@@ -689,16 +768,15 @@ class Scheduler:
         self.microAct = self.microProx
         self.microProx = None
 
-    def __initCamaras(self):
+    def __initCamaras(self, indexCamInicial = 0):
         "Carga en OBS la primera cámara e inicializa los atributos de estado."
-        print("LLAMO __initCamaras")
         obs = self.obs
         
-        self.indexBloqueCam = 0 # Inicializo estados de cámaras.
+        self.indexBloqueCam = indexCamInicial# Inicializo estados de cámaras.
         self.camAct = None
         self.camProx = IdInputs.OBS_CAMARA_A
 
-        primera_camara = self.bloqueCamaras[0]
+        primera_camara = self.bloqueCamaras[indexCamInicial]
         # Agregar protección por si no existe el playlist de cámaras.
 
         obs.clearScene(ObsEscenas.CAMARA_A) # Limpio las 2 escenas de obs antes de empezar.
@@ -710,6 +788,7 @@ class Scheduler:
         self.obsProx = ObsEscenas.CAMARA_A
 
         self.camsInit = True
+        print("[INFO]: Cámaras incializadas.")
 
     def _swapCamLive(self):
         """Método interno para cambiar la cámara al aire en vMix. Actualiza atributos de estado de vMix y OBS"""
@@ -751,7 +830,6 @@ class Scheduler:
     
     def _goLiveCamara(self):
         self.camaraLive = True
-
         if not self.bloqueCamaras:
             print("[ERROR]: No se encontró un bloque de cámaras válido, se va a emitir la cámara default.") # Dar la opción de cambiar cámara default en la ui del navegador
             return
@@ -790,7 +868,7 @@ class Scheduler:
         archivo_final = directorio_destino / "fuente_datos.txt"
         
         try:
-            valor = database.getDatos_fuente(placa)
+            valor = DB.getDatos_fuente(placa)
 
             if valor == FuenteDatos.SMN:
                 fuente = "Fuente: S.M.N"
@@ -900,9 +978,4 @@ class Scheduler:
         vMix.setOverlay_off(OverlaySlots.SLOT_PLACA)
 
 if __name__ == "__main__":
-
-    database = Database()
-    vMix = VmixApi()
-    schMain = Scheduler(vMix,database)
-
-    schMain.start()
+    pass
